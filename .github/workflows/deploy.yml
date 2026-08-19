@@ -1,0 +1,53 @@
+name: Bootstrap and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1er passage : décompresse src/ depuis le zip, le committe, supprime le zip.
+      # Passages suivants : le zip n'existe plus, cette étape ne fait rien.
+      - name: Extraire src/ depuis le zip (premier passage)
+        run: |
+          if [ -f soma-src.zip ]; then
+            unzip -o soma-src.zip
+            rm soma-src.zip
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Bootstrap : extraction de src/ et suppression du zip" || echo "rien a committer"
+            git push || echo "push ignore"
+          else
+            echo "Pas de zip : etape ignoree."
+          fi
+
+      # Compilation
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      # Publication sur GitHub Pages
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
