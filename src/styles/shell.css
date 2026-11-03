@@ -109,3 +109,34 @@
   .soma-auth-brand { display: none; }
   .soma-nav { width: 200px; }
 }
+
+/* ── Guide pas à pas du contrôleur de gestion ── */
+.cgGuide{margin:0 0 16px}
+.cgGuideDetails{border:1px solid var(--border2,var(--border));border-left:3px solid var(--violet2,var(--violet));background:var(--violet-light,rgba(124,92,255,.08));border-radius:var(--radius,8px)}
+.cgGuideSummary{width:100%;margin:0;cursor:pointer;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:transparent;border:none;color:var(--ink);text-align:left}
+.cgGuideCaret{margin-left:auto;color:var(--ink65)}
+.cgGuideNum{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--violet2,var(--violet))}
+.cgGuideBody{padding:0 14px 14px;font-size:13px;line-height:1.6}
+.cgGuideQuoi{margin:0 0 10px;color:var(--ink)}
+.cgGuideCols{display:grid;grid-template-columns:3fr 2fr;gap:18px}
+@media (max-width:820px){.cgGuideCols{grid-template-columns:1fr}}
+.cgGuideCols ol,.cgGuideCols ul{margin:0 0 8px;padding-left:20px}
+.cgGuideCols li{margin-bottom:4px}
+.cgGuideCols p{margin:0 0 8px}
+.cgGuideLbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink65);margin:0 0 6px}
+.cgGuideNav{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.cgGuideNav button{width:auto;margin:0;font-size:12px;padding:7px 12px}
+.cgGuideNext{background:linear-gradient(135deg,var(--violet),var(--violet2,var(--violet)));color:#fff;border:none;font-weight:700;width:auto;margin:0;font-size:12px;padding:7px 14px}
+.cgGuideChip{font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--border2,var(--border));color:var(--ink65);white-space:nowrap}
+.cgGuideChip.ok{color:var(--green,#2e7d6f);border-color:var(--green,#2e7d6f)}
+.cgGuideChip.todo{color:var(--orange,#c45300);border-color:var(--orange,#c45300)}
+.cgParcours{border:1px solid var(--border2,var(--border));border-left:3px solid var(--violet2,var(--violet));background:var(--violet-light,rgba(124,92,255,.08));border-radius:var(--radius,8px);padding:14px}
+.cgParcoursList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cgParcoursList li{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius,8px);cursor:pointer;background:var(--bg2)}
+.cgParcoursList li:hover{border-color:var(--violet2,var(--violet))}
+.cgParcoursList li.courant{border-color:var(--violet2,var(--violet));box-shadow:0 0 0 1px var(--violet2,var(--violet)) inset}
+.cgParcoursN{flex:0 0 26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:1px solid var(--violet2,var(--violet));color:var(--violet2,var(--violet))}
+.cgParcoursList li.fait .cgParcoursN{border-color:var(--green,#2e7d6f);color:var(--green,#2e7d6f)}
+.cgParcoursT{flex:1;font-size:13px;line-height:1.45}
+.cgParcoursT span{color:var(--ink65);font-size:12px}
+@media (max-width:640px){.cgParcoursList li{flex-wrap:wrap}.cgParcoursList li .cgGuideChip{margin-left:38px}}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget } from '../lib/budgetApi.js';
+import { appliquerRefCG } from '../domain/refCG.js';
 
 // Contexte du budget en cours d'édition (pour le REX : son agence ; pour le CG :
 // l'agence ouverte). Remplace l'état global + l'autosave silencieux de l'app actuelle.
@@ -94,7 +95,20 @@ export function BudgetProvider({ agenceNom, children }) {
     });
   }, [persist, editable]);
 
-  const value = { agency, statut, loading, error, saveStatus, update, editable, agenceNom };
+  // Données CG enregistrées depuis un écran réseau (Données agences, variables de
+  // décembre) pour l'agence actuellement ouverte : on les applique à l'état en
+  // mémoire, sinon la prochaine sauvegarde automatique réécrirait l'ancienne version.
+  const applyExternal = useCallback((nom, data) => {
+    if (!nom || nom !== agenceNom) return;
+    setAgency((prev) => {
+      if (!prev) return prev;
+      const next = appliquerRefCG({ ...prev }, data);
+      if (pendingRef.current) pendingRef.current = next;
+      return next;
+    });
+  }, [agenceNom]);
+
+  const value = { agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal };
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
 }
 

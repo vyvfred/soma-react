@@ -13,7 +13,7 @@ const vac={
 };
 
 // ── Fonctions ──
-function agency(name){let a={name,histCA:null,histCA2025:null,histTXR2026:null,targetAbsRate:null,perspectives:'',targetCA:null,targetTXR:null,schoolZone:'B',actSan:true,actSai:false,actTP:false,moisVerrouilles:[],moisActif:null,cgLocked:false,tauxAbsImproductif:null,hsImproductif:{},repasRoulant:{},repasNonRoulant:{},idjfRoulant:{},idjfNonRoulant:{},
+function agency(name){let a={name,histCA:null,histCA2025:null,histTXR2026:null,targetAbsRate:null,perspectives:'',targetCA:null,targetTXR:null,schoolZone:'B',actSan:true,actSai:false,actTP:false,moisVerrouilles:[],moisActif:null,cgLocked:false,tauxAbsImproductif:null,tauxHoraireBrutJuin:null,msNRBrutMensuel:null,msNRTauxCharges:null,ratioMaintien:null,hsImproductif:{},repasRoulant:{},repasNonRoulant:{},idjfRoulant:{},idjfNonRoulant:{},
   // Calendrier des périodes de paie 2027
   // Format : [{mois:'Janvier', debut:'2026-12-07', fin:'2027-01-10', semaines:5}...]
   periodesPaie:null,variablesDec2026:null,refs:{san:refs(),sai:refs(),tp:refs()},cal:[],employees:[],presence:{},sick:Array(12).fill(null),hs50:Array(12).fill(null),tauxHoraireBrut:null,tauxChargePatronal:null,costHour:null,hsCostRate:1.25,drCostAnnual:0,drPct:0,rex:{}};T.forEach(r=>{if(r.type!=='subtotal')a.rex[r.label]={values:Array(12).fill(null),mode:r.label==='Carburant'?'annual':'month',chargeType:r.type==='charge'?'variable':'fixe',allocationKey:r.label==='Carburant'?'ca':'monthly12',pct:r.label==='Carburant'?5.2:0,annual:0}});return a}
@@ -89,12 +89,17 @@ function coutHSTotal(a){
   let total = 0;
   for(let m=0;m<12;m++){
     let hsM = hsR.filter(function(r){return mainMonth(a,r.week)===m;}).reduce(function(s,r){return s+(r.hs||0);},0);
-    total += hsM * ch * coefHSMois(a, m);
+    total += hsM * chMois(a, m) * coefHSMois(a, m);
   }
   return total;
 }
 
 function coutHoraireImproductif(a){
+  let cm = msNRMensuel(a);
+  if(cm!==null){
+    let hHebdo = a.employees.filter(e=>!isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0),0);
+    return hHebdo>0 ? cm/(hHebdo*52/12) : (+a.costHour||0);
+  }
   let imp = a.employees.filter(e=>!isRoulant(e.qual)&&e.qual!=='FACTURIERE'&&(+e.coutJour||0)>0);
   if(!imp.length) return (+a.costHour||0);
   let moyJour = imp.reduce((s,e)=>s+(+e.coutJour||0),0)/imp.length;
@@ -103,18 +108,16 @@ function coutHoraireImproductif(a){
 
 function cpGeneres(a) {
   // CP générés : chaque salarié génère 2.5J par mois de PRÉSENCE (hors absence maladie).
-  // Roulants et improductifs ont chacun leur taux d'absentéisme.
+  // Roulants et improductifs partagent le même taux d'absentéisme mensuel (paramétrage 2027).
   let salaries = a.employees.filter(e => e.qual !== 'FACTURIERE');
   if (!salaries.length) return 0;
-  let tauxImp = (a.tauxAbsImproductif!==null && a.tauxAbsImproductif!==undefined) ? +a.tauxAbsImproductif/100 : 0;
   let totalJ = 0;
   M.forEach(function(_, m) {
     let tauxMalRoulant = a.sick[m] !== null && a.sick[m] !== undefined ? +a.sick[m] / 100 : 0;
     let dateRef = '2027-' + String(m+1).padStart(2,'0') + '-15';
     salaries.forEach(function(e){
       if(!empPresent(e, dateRef)) return;
-      // Appliquer le taux d'absentéisme correspondant au type de salarié
-      let taux = isRoulant(e.qual) ? tauxMalRoulant : tauxImp;
+      let taux = tauxMalRoulant;
       totalJ += 2.5 * (1 - taux);
     });
   });
@@ -154,7 +157,7 @@ function impactCPSemaine(a, week, deltaCPjours) {
   // Si semaine en sous-charge, ajouter 1J = économie nulle (pas de HS à éviter)
   let hr = hsRows(a).find(function(r){ return r.week === week; }) || {hs:0, gap:0};
   let hsDelta = -deltaCPjours * 7; // retirer CP augmente les HS
-  let costHour = +a.costHour || 28.5;
+  let costHour = chMois(a, mainMonth(a, week)) || 28.5;
   let coefHS = coefHSMois(a, mainMonth(a, week));
   if (hr.gap > 0) {
     // Semaine en tension : chaque heure compte
@@ -189,18 +192,18 @@ function payrollMonth(a,m){
 }
 
 function payrollMonthCivil(a,m){
-  // MS roulante : heures disponibles x cout horaire + HS x coef
+  // MS roulante : heures travaillées, HS, maintien sur arrêts, précarité CDD (cf. coutRoulantSemaine)
   let msRoulant = hsRows(a).reduce((s,r)=>{
     let daysWeek=a.cal.filter(d=>d.week===r.week).length||7;
     let daysMonth=a.cal.filter(d=>d.week===r.week&&d.month===m).length;
     if(!daysMonth)return s;
     let ratio=daysMonth/daysWeek;
-    let weeklyCost=(r.av*(+a.costHour||0))+(r.hs*(+a.costHour||0)*coefHSMois(a,mainMonth(a,r.week)));
+    let weeklyCost=coutRoulantSemaine(a,r,m);
     return s+weeklyCost*ratio;
   },0);
-  // MS improductifs (régulateurs, REX, responsables) : coût journalier x jours travaillés
-  // Le coût journalier est payé même en CP/absence (salaire mensualisé), donc on compte tous les jours ouvrés
-  let msImproductif = a.employees
+  // MS improductifs : ligne globale CG (coût mensuel, absences au ratio de maintien).
+  // À défaut, ancien calcul : coût journalier x jours travaillés.
+  let msImproductif = msNRMensuel(a)!==null ? msNRMois(a,m) : a.employees
     .filter(e=>!isRoulant(e.qual)&&e.qual!=='FACTURIERE')
     .reduce((s,e)=>{
       let daysMonth=a.cal.filter(d=>d.month===m&&[1,2,3,4,5].includes(new Date(2027,d.month,d.day).getDay())).length;
@@ -233,8 +236,8 @@ function payrollMonthCivil(a,m){
     let iNR = a.idjfNonRoulant&&a.idjfNonRoulant[w] ? +a.idjfNonRoulant[w] : 0;
     repasMois += (rR + rNR + iR + iNR) * ratio;
   });
-  // Quote-part DR : cout annuel x pourcentage / 12
-  let msDR = (+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
+  // Quote-part DR : incluse dans la ligne globale non-roulante quand elle est saisie
+  let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
   return msRoulant+msImproductif+msHSImproductif+repasMois+msDR;
 }
 
@@ -249,7 +252,7 @@ function payrollPayMonth(a, moisIdx) {
 
   // Heures roulantes disponibles sur cette période
   // Pour janvier : ajouter le montant décembre 2026 si saisi
-  let msJan2026 = moisIdx === 0 ? (+a.variablesDec2026 || 0) : 0;
+  let msJan2026 = moisIdx === 0 ? varDec2026Total(a) : 0;
 
   // Agréger les semaines ISO dont la majorité des jours tombe dans la période
   let hsR = hsRows(a);
@@ -273,7 +276,7 @@ function payrollPayMonth(a, moisIdx) {
     if (ratio <= 0) return;
 
     // Coût pro-ratisé de cette semaine
-    let coutSem = (r.av * (+a.costHour || 0)) + (r.hs * (+a.costHour || 0) * coefHSMois(a,mainMonth(a,r.week)));
+    let coutSem = coutRoulantSemaine(a, r);
     ms += coutSem * ratio;
   });
 
@@ -281,8 +284,9 @@ function payrollPayMonth(a, moisIdx) {
   let nbJoursPeriode = Math.round((fin - debut) / (1000*60*60*24)) + 1;
   let nbJoursAn = 365;
 
-  // Non-roulants (régulateurs, REX)
-  let msNonRoulants = a.employees
+  // Non-roulants : ligne globale CG = un salaire mensuel par mois de paie.
+  // À défaut, ancien calcul au coût journalier pro-rata de la période.
+  let msNonRoulants = msNRMensuel(a)!==null ? msNRMois(a, moisIdx) : a.employees
     ? a.employees.filter(function(e) {
         return !['DEA','AA','TAXI','TPMR','FACTURIERE'].includes(e.qual);
       }).reduce(function(s, e) {
@@ -304,7 +308,7 @@ function payrollPayMonth(a, moisIdx) {
       }).length;
       let ratio = daysInPeriode / daysOfWeek.length;
       if (ratio <= 0) return;
-      msHSImp += hs * coutHoraireImproductif(a) * coefHSMois(a,mainMonth(a,w)) * ratio;
+      msHSImp += hs * coutHoraireImproductif(a) * coefHSMois(a,mainMonth(a,r.week)) * ratio;
     });
   }
 
@@ -328,7 +332,7 @@ function payrollPayMonth(a, moisIdx) {
   });
 
   // DR pro-rata
-  let msDR = (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJoursPeriode / nbJoursAn);
+  let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJoursPeriode / nbJoursAn);
 
   return ms + msNonRoulants + msHSImp + repasPeriode + msDR;
 }
@@ -499,10 +503,111 @@ function chargesSummary(a){
 
 function isEditableREX(label){return label!=="Chiffre d'affaires"&&label!=="Charges de personnel"&&!(T.find(r=>r.label===label)?.type==='subtotal')}
 
+// ── Paramétrage salarial 2027 (réunion de paramétrage des taux et coûts salariaux) ──
+// Prime de précarité CDD, provisionnée chaque mois comme dans la paie
+const TAUX_PRECARITE_CDD = 0.10;
+// Variables de paie de décembre 2026 (réglées sur la paie de janvier 2027)
+const VAR_DEC_RUBRIQUES = [
+  {k:'hs25',      l:'HS à 25 %',                charge:true},
+  {k:'hs50',      l:'HS à 50 %',                charge:true},
+  {k:'dimFeries', l:'Dimanches et fériés',      charge:true},
+  {k:'primes',    l:'Primes et autres variables', charge:true},
+  {k:'repas',     l:'Indemnités repas',         charge:false}
+];
+
+function fmtCoutH(v){ return (+v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €/h'; }
+
+function costHourJuin(a){
+  let brut=+a.tauxHoraireBrutJuin||0, ch=a.tauxChargePatronal;
+  if(brut>0 && ch!==null && ch!==undefined && ch!=='') return Math.round(brut*(1+(+ch||0)/100)*100)/100;
+  return null;
+}
+
+function chMois(a,m){
+  if(m>=5){ let j=costHourJuin(a); if(j) return j; }
+  return +a.costHour||0;
+}
+
+function ratioMaintien(a){
+  let v=a.ratioMaintien;
+  if(v===null||v===undefined||v==='') return 0;
+  return Math.max(0,Math.min(100,+v||0))/100;
+}
+
+function tauxAbsMois(a,m){
+  let v=a.sick?a.sick[m]:null;
+  return (v===null||v===undefined)?0:Math.max(0,+v||0)/100;
+}
+
+function isCDD(e){ return String(e.contract||e.contrat||'').toUpperCase().indexOf('CDD')===0; }
+
+function partCDDSemaine(a, week){
+  let dateRef = weekRefDate(a, week);
+  let tot=0, cdd=0;
+  a.employees.forEach(function(e){
+    if(!isRoulant(e.qual)) return;
+    if(dateRef && !empPresent(e, dateRef)) return;
+    let h=(+e.hours||0)*(+e.pctRoulant||100)/100;
+    tot+=h; if(isCDD(e)) cdd+=h;
+  });
+  return tot>0 ? cdd/tot : 0;
+}
+
+function coutRoulantSemaine(a, r, mTaux){
+  let m = mainMonth(a, r.week);
+  let ch = chMois(a, mTaux===undefined ? m : mTaux);
+  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a,m)) + ((r.mal||0)*ch*ratioMaintien(a));
+  return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
+}
+
+function msNRMensuel(a){
+  let brut=+a.msNRBrutMensuel||0;
+  if(brut<=0) return null;
+  return brut*(1+(+a.msNRTauxCharges||0)/100);
+}
+
+function msNRMois(a, m){
+  let cm=msNRMensuel(a);
+  if(cm===null) return 0;
+  return cm*(1 - tauxAbsMois(a,m)*(1-ratioMaintien(a)));
+}
+
+function varDecDetail(d){
+  let det = d && d.variablesDec2026Detail;
+  return (det && typeof det === 'object') ? det : null;
+}
+
+function varDecCalc(det, tauxCharges){
+  let brut = 0, nonCharge = 0, saisi = false;
+  VAR_DEC_RUBRIQUES.forEach(function(r){
+    let v = det ? det[r.k] : null;
+    if(v === null || v === undefined || v === '') return;
+    saisi = true;
+    if(r.charge) brut += +v || 0; else nonCharge += +v || 0;
+  });
+  return { saisi: saisi, brut: brut, nonCharge: nonCharge, total: brut*(1+(+tauxCharges||0)/100) + nonCharge };
+}
+
+function varDec2026Total(a){
+  let det = varDecDetail(a);
+  if(det) return varDecCalc(det, a.tauxChargePatronal).total;
+  return +a.variablesDec2026 || 0;
+}
+
+function chargesCGSaisies(d){
+  if(!d || !d.rex) return 0;
+  let n = 0;
+  Object.keys(d.rex).forEach(function(l){
+    if(l === "Chiffre d'affaires" || l === 'Charges de personnel') return;
+    let x = d.rex[l] || {};
+    let saisi = x.mode === 'pct' ? (+x.pct > 0)
+      : x.mode === 'annual' ? (+x.annual > 0)
+      : (x.values || []).some(function(v){ return v !== null && v !== undefined && +v !== 0; });
+    if(saisi) n++;
+  });
+  return n;
+}
+
 export {
-  T, M,
-  amount, ann, hsTot,
-  hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale,
-  chargesSummary, auditAlerts, isEditableREX,
-  agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, manual, monthCA, needWeeks, payrollMonth, payrollMonthCivil, payrollPayMonth, pres, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weekRefDate, weeks
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

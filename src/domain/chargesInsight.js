@@ -1,4 +1,4 @@
-import { manual, coefHSMoyen, T, M } from './calculations.js';
+import { manual, coefHSMoyen, T, M, fmtCoutH, costHourJuin } from './calculations.js';
 import { euro } from './format.js';
 
 // Interprétation de la saisie des charges CG — port fidèle de renderCgInsight().
@@ -19,7 +19,8 @@ export function chargesInsight(a) {
 
   const kpis = [
     { label: 'Postes saisis', value: saisis + '/' + totalPostes, note: saisis < totalPostes ? 'à compléter' : '✓ complet' },
-    { label: 'Coût horaire', value: coutHoraire ? euro(coutHoraire).replace(' €', '') + ' €/h' : '—', note: coutHoraire ? 'brut chargé' : 'à renseigner' },
+    // « 28,50 €/h » (avant : arrondi à l'euro et « € €/h » en double)
+    { label: 'Coût horaire', value: coutHoraire ? fmtCoutH(coutHoraire) : '—', note: coutHoraire ? (costHourJuin(a) ? 'janv. · juin : ' + fmtCoutH(costHourJuin(a)) : 'brut chargé') : 'à renseigner' },
     { label: 'Coefficient HS moyen', value: '×' + coefHSMoyen(a).toFixed(3), note: 'selon répartition 25/50' }
   ];
 
@@ -27,7 +28,7 @@ export function chargesInsight(a) {
   if (!coutHoraire) {
     text += 'Renseignez le taux horaire brut et les charges patronales pour calculer le coût horaire.';
   } else if (saisis < totalPostes) {
-    text += 'Le coût horaire est établi à ' + euro(coutHoraire).replace(' €', '') + ' €/h. Complétez les postes restants pour un budget prévisionnel complet.';
+    text += 'Le coût horaire est établi à ' + fmtCoutH(coutHoraire) + (costHourJuin(a) ? ' (puis ' + fmtCoutH(costHourJuin(a)) + ' à partir de juin)' : '') + '. Complétez les postes restants pour un budget prévisionnel complet.';
   } else {
     text += 'Toutes les charges sont renseignées et le coût horaire est établi. Le budget de cette agence est prêt côté charges.';
   }

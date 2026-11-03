@@ -20,6 +20,7 @@ import AdminScreen from './AdminScreen.jsx';
 import RefsScreen from './RefsScreen.jsx';
 import CalScreen from './CalScreen.jsx';
 import AffectationScreen from './AffectationScreen.jsx';
+import VariablesDecScreen from './VariablesDecScreen.jsx';
 
 export const SCREENS = {
   aide: AideScreen,
@@ -41,7 +42,8 @@ export const SCREENS = {
   periodes: PeriodesScreen,
   admin: AdminScreen,
   refs: RefsScreen,
-  cal: CalScreen
+  cal: CalScreen,
+  variablesdec: VariablesDecScreen
 };
 
 export function screenFor(panelId) {

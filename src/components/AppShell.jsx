@@ -7,6 +7,7 @@ import { roleLabel } from '../config/roles.js';
 import { agencesOps } from '../config/agences.js';
 import PlaceholderPanel from './PlaceholderPanel.jsx';
 import { screenFor } from './screens/index.js';
+import CgGuide from './CgGuide.jsx';
 
 // Panneaux qui portent sur UNE agence (donc concernés par la sélection d'agence CG).
 const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
@@ -62,6 +63,8 @@ export default function AppShell() {
               </select>
             </div>
           ) : null}
+
+          {(profile.role === 'cg' || profile.role === 'df') ? <CgGuide panel={active} cle={activeAgence} /> : null}
 
           {showPicker && !activeAgence
             ? <div className="card"><p className="hint">Sélectionnez une agence ci-dessus pour ouvrir son budget.</p></div>

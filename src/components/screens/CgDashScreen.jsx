@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { loadNetworkBudgets } from '../../lib/budgetApi.js';
 import { agencesOps } from '../../config/agences.js';
 import { useNav } from '../../context/NavContext.jsx';
+import { chargesCGSaisies } from '../../domain/calculations.js';
+import { CgParcours } from '../CgGuide.jsx';
 
 // Tableau de bord CG — vue « Préparation » (port fidèle de renderCgDashPrep).
 // Agrège l'état de préparation sur toutes les agences opérationnelles du réseau.
@@ -51,7 +53,8 @@ export default function CgDashScreen() {
     const e = map[ag.nom];
     const d = e ? e.data : {};
     const hasRef = !!(d.histTXR2026 || d.costHour || d.tauxHoraireBrut);
-    const hasCharges = !!(d.cgCharges && Object.keys(d.cgCharges).length);
+    // Postes de charges réellement saisis (avant : champ cgCharges inexistant, toujours 0)
+    const hasCharges = chargesCGSaisies(d) > 0;
     if (hasRef) avecRef++; else sansRef.push(ag.nom);
     if (hasCharges) avecCharges++; else sansCharges.push(ag.nom);
   });
@@ -65,11 +68,12 @@ export default function CgDashScreen() {
   return (
     <div className="card">
       <h2 style={{ marginBottom: 14 }}>Tableau de bord — Préparation réseau</h2>
+      <div style={{ marginBottom: 16 }}><CgParcours /></div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="Agences" value={total} note="dans le réseau" />
         <Kpi label="Données de référence" value={avecRef + '/' + total} note={avecRef < total ? 'à compléter' : '✓ complet'} />
-        <Kpi label="Périodes de paie" value={periodesOk ? '✓' : 'à faire'} note={periodesOk ? 'configurées' : 'non configurées'} />
+        <Kpi label="Périodes de paie" value={periodesOk ? '✓' : 'standard'} note={periodesOk ? 'configurées' : 'à vérifier par agence'} />
         <Kpi label="Charges saisies" value={avecCharges + '/' + total} note={avecCharges < total ? 'à compléter' : '✓ complet'} />
       </div>
 
@@ -87,10 +91,6 @@ export default function CgDashScreen() {
         <p className="hint">✓ Toutes les agences sont prêtes côté données de référence et charges.</p>
       ) : null}
 
-      <p className="hint" style={{ marginTop: 18, fontSize: 12 }}>
-        Vue « Préparation ». La vue « Supervision » (avancement des budgets dans le circuit de validation)
-        et les écrans comparatif / consolidation seront ajoutés dans les prochains incréments.
-      </p>
     </div>
   );
 }

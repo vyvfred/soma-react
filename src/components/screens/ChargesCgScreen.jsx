@@ -1,5 +1,5 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { manual, T, M } from '../../domain/calculations.js';
+import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH } from '../../domain/calculations.js';
 import { chargesInsight } from '../../domain/chargesInsight.js';
 import { euro } from '../../domain/format.js';
 
@@ -46,6 +46,26 @@ export default function ChargesCgScreen() {
     });
   }
 
+  // Paramétrage salarial de l'agence (repris des Données agences, modifiable ici)
+  function setParam(field, value) {
+    update((draft) => {
+      draft[field] = value === '' ? null : +String(value).replace(',', '.');
+      if (draft.tauxHoraireBrut && draft.tauxChargePatronal) {
+        draft.costHour = Math.round(+draft.tauxHoraireBrut * (1 + +draft.tauxChargePatronal / 100) * 100) / 100;
+      }
+      return draft;
+    });
+  }
+  const juin = costHourJuin(a);
+  const nr = msNRMensuel(a);
+  const PARAMS = [
+    ['tauxHoraireBrut', 'Taux horaire brut au 1er janvier (€/h)'],
+    ['tauxHoraireBrutJuin', 'Taux horaire brut au 1er juin (€/h)'],
+    ['tauxChargePatronal', 'Taux de charge patronal (%)'],
+    ['msNRBrutMensuel', 'MS non-roulante : brut mensuel total (€)'],
+    ['msNRTauxCharges', 'Taux de charges non-roulants (%)']
+  ];
+
   const cellStyle = { padding: '3px 4px', borderBottom: '1px solid var(--border)' };
 
   return (
@@ -58,6 +78,22 @@ export default function ChargesCgScreen() {
 
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}
         dangerouslySetInnerHTML={{ __html: insight.text }} />
+
+      <div className="paramSalarial" style={{ marginBottom: 16, padding: '12px 14px', border: '1px solid var(--border)', background: 'var(--bg2)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--violet2, var(--violet))', marginBottom: 8 }}>Paramétrage salarial</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>
+          {PARAMS.map(([k, label]) => (
+            <label key={k} style={{ fontSize: 11, color: 'var(--ink65)' }}>{label}
+              <input type="number" value={a[k] ?? ''} placeholder="—" disabled={!editable} onChange={(e) => setParam(k, e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+            </label>
+          ))}
+        </div>
+        <p className="hint" style={{ fontSize: 12, margin: '10px 0 0' }}>
+          Coût horaire chargé : <b>{a.costHour ? fmtCoutH(a.costHour) : '—'}</b> en janvier{juin ? <>, <b>{fmtCoutH(juin)}</b> à partir de juin</> : ' (pas de taux au 1er juin : celui de janvier s\'applique toute l\'année)'}.
+          {' '}Masse salariale non-roulante : <b>{nr !== null ? euro(Math.round(nr)) + ' / mois' : 'non saisie'}</b>.
+          {' '}Ratio de maintien de salaire : <b>{Math.round(ratioMaintien(a) * 100)} %</b> (paramètre réseau, Données agences).
+        </p>
+      </div>
 
       {!editable ? (
         <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.10))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 13, color: 'var(--blue2, #3d6fd6)' }}>

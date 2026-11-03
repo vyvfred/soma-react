@@ -1,16 +1,11 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { buildPeriodesPaie, payrollPayMonth } from '../../domain/calculations.js';
+import { buildPeriodesPaie, payrollPayMonth, varDec2026Total } from '../../domain/calculations.js';
+import { useNav } from '../../context/NavContext.jsx';
 import { euro } from '../../domain/format.js';
-
-// Parse un nombre saisi au format français ("1 234,5" -> 1234.5).
-function parseFr(v) {
-  if (v === '' || v === null || v === undefined) return null;
-  const n = Number(String(v).replace(/\s/g, '').replace(',', '.'));
-  return Number.isNaN(n) ? null : n;
-}
 
 export default function PeriodesScreen() {
   const { agency: a, loading, error, editable, update, agenceNom } = useBudget();
+  const navigate = useNav();
 
   if (!agenceNom) return <div className="card"><h2>Périodes de paie</h2><p className="hint">Ouvrez une agence pour configurer ses périodes de paie.</p></div>;
   if (loading) return <div className="card"><h2>Périodes de paie</h2><p className="hint">Chargement…</p></div>;
@@ -19,7 +14,8 @@ export default function PeriodesScreen() {
 
   const periodes = (a.periodesPaie && a.periodesPaie.length) ? a.periodesPaie : buildPeriodesPaie();
   const nb5sem = periodes.filter((p) => p.nbSem === 5).length;
-  const hasDec = a.variablesDec2026 !== null && a.variablesDec2026 !== undefined && a.variablesDec2026 !== '';
+  const totalDec = varDec2026Total(a);
+  const hasDec = totalDec > 0;
   const msReady = a.costHour && a.cal && a.cal.length;
   const totalMS = msReady ? periodes.reduce((s, _, i) => s + payrollPayMonth(a, i), 0) : 0;
 
@@ -30,9 +26,6 @@ export default function PeriodesScreen() {
       draft.periodesPaie = pp;
       return draft;
     });
-  }
-  function setVariables(val) {
-    update((draft) => { draft.variablesDec2026 = parseFr(val); return draft; });
   }
   function reset() {
     if (!window.confirm('Réinitialiser le calendrier avec les dates par défaut ?')) return;
@@ -48,11 +41,13 @@ export default function PeriodesScreen() {
         {hasDec ? 'Les variables de décembre 2026 sont renseignées.' : 'Pensez à saisir les variables de décembre 2026 incluses dans la paie de janvier.'}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-        <label style={{ fontSize: 13 }}>Variables décembre 2026 (incluses dans la paie de janvier) :</label>
-        <input type="text" inputMode="decimal" defaultValue={hasDec ? (+a.variablesDec2026).toLocaleString('fr-FR') : ''} placeholder="0" disabled={!editable}
-          onBlur={(e) => setVariables(e.target.value)} style={{ width: 130 }} />
-        <span style={{ color: 'var(--ink65)' }}>€</span>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', padding: '12px 14px', border: '1px solid var(--blue2, #3d6fd6)', background: 'rgba(74,158,255,.08)' }}>
+        <span id="varDecResume" style={{ fontSize: 13 }}>
+          {hasDec
+            ? <>Variables de décembre 2026 : <b>{euro(Math.round(totalDec))}</b> chargés, ajoutés à la paie de janvier.</>
+            : <span style={{ color: 'var(--orange, #c45300)' }}>Variables de décembre 2026 non saisies pour cette agence.</span>}
+        </span>
+        <button className="secondary" onClick={() => navigate('variablesdec')} style={{ fontSize: 12 }}>Saisir les variables de décembre 2026 →</button>
       </div>
 
       {!editable ? (
@@ -76,7 +71,7 @@ export default function PeriodesScreen() {
           <tbody>
             {periodes.map((p, i) => {
               const ms = msReady ? euro(Math.round(payrollPayMonth(a, i))) : '—';
-              const dec = i === 0 && a.variablesDec2026 ? euro(+a.variablesDec2026) : '';
+              const dec = i === 0 && hasDec ? euro(Math.round(totalDec)) : '';
               const t5 = p.nbSem === 5;
               return (
                 <tr key={i} style={t5 ? { background: 'rgba(74,158,255,.05)' } : null}>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { loadAffectationData, affecterDR } from '../../lib/budgetApi.js';
+import { invaliderEtatCG } from '../CgGuide.jsx';
 import { agencesOps } from '../../config/agences.js';
 import { affectationInsight } from '../../domain/affectationInsight.js';
 
@@ -39,6 +40,7 @@ export default function AffectationScreen() {
     setBusyAgence(agence); setMsg(null);
     try {
       await affecterDR(agence, drId);
+      invaliderEtatCG();
       setMsg({ type: 'ok', text: 'Affectation enregistrée pour ' + agence });
       load();
     } catch (err) {

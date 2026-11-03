@@ -50,9 +50,6 @@ export default function EquipeScreen() {
       return draft;
     });
   }
-  function setDR(field, value) {
-    update((draft) => { draft[field] = +value; return draft; });
-  }
 
   return (
     <div className="card">
@@ -77,7 +74,7 @@ export default function EquipeScreen() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
-              {['Nom', 'Qualif.', 'Contrat', 'H. base', '% roul.', 'Jours/sem', 'Entrée 2027', 'Sortie 2027', 'ETP', 'Coût/jour', ''].map((h, i) => <th key={i} style={th}>{h}</th>)}
+              {['Nom', 'Qualif.', 'Contrat', 'H. base', '% roul.', 'Jours/sem', 'Entrée 2027', 'Sortie 2027', 'ETP', ''].map((h, i) => <th key={i} style={th}>{h}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -110,25 +107,14 @@ export default function EquipeScreen() {
                   <td style={td}><input type="date" value={e.dateSortie || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateSortie', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
                   <td style={{ ...td, textAlign: 'right' }} className="num">{etp}</td>
                   <td style={td}>
-                    {!roul
-                      ? <input type="number" value={e.coutJour || 0} disabled={!editable} onChange={(ev) => setEmp(i, 'coutJour', ev.target.value)} style={{ width: 80 }} placeholder="€/j" />
-                      : <span style={{ color: 'var(--ink30)' }}>—</span>}
-                  </td>
-                  <td style={td}>
                     <button className="danger" disabled={!editable} onClick={() => delEmp(i)} style={{ padding: '4px 8px', fontSize: 11 }}>✕</button>
                   </td>
                 </tr>
               );
             })}
             <tr style={{ background: 'var(--blue-light, rgba(61,111,214,.10))' }}>
-              <td colSpan={6} style={td}><b>Quote-part Directeur Régional</b></td>
-              <td colSpan={2} style={td}>
-                <label style={{ fontSize: 10, display: 'block' }}>Coût annuel DR (€)</label>
-                <input type="number" value={a.drCostAnnual || 0} disabled={!editable} onChange={(ev) => setDR('drCostAnnual', ev.target.value)} style={{ width: 120 }} />
-              </td>
-              <td colSpan={3} style={td}>
-                <label style={{ fontSize: 10, display: 'block' }}>% affecté à cette agence</label>
-                <input type="number" value={a.drPct || 0} min="0" max="100" disabled={!editable} onChange={(ev) => setDR('drPct', ev.target.value)} style={{ width: 80 }} />%
+              <td colSpan={10} style={{ ...td, fontSize: 12 }}>
+                La masse salariale des non-roulants (régulateurs, responsables, quote-part du DR) est saisie en une ligne globale par le contrôleur de gestion.
               </td>
             </tr>
           </tbody>

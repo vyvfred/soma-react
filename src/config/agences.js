@@ -1,6 +1,6 @@
 // Liste des agences du réseau — extraite verbatim de l'application actuelle.
 export const AGENCES =[
-  {nom:'AGENCE DEMO',zone:'B'},{nom:'ANGOULEME',zone:'A'},{nom:'COGNAC',zone:'A'},{nom:'CHATELLERAULT',zone:'A'},{nom:'PARTHENAY',zone:'A'},
+  {nom:'ANGOULEME',zone:'A'},{nom:'COGNAC',zone:'A'},{nom:'CHATELLERAULT',zone:'A'},{nom:'PARTHENAY',zone:'A'},
   {nom:'POITIERS',zone:'A'},{nom:'CLERMONT',zone:'A'},{nom:'DIJON',zone:'A'},{nom:'BOURG EN BRESSE',zone:'A'},
   {nom:'CHAMBERY',zone:'A'},{nom:'THYEZ',zone:'A'},{nom:'ANNECY',zone:'A'},{nom:'LIMOGES',zone:'A'},
   {nom:'BRIVE',zone:'A'},{nom:'TULLE',zone:'A'},{nom:'SAINT GILLES CROIX DE VIE',zone:'B'},

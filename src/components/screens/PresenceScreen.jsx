@@ -1,6 +1,6 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
 import {
-  hsTot, coefHSMoyen, refAgenceSeuils, cpGeneres, cpPlanifies
+  hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies
 } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto } from '../../domain/repartitionCP.js';
@@ -48,7 +48,7 @@ export default function PresenceScreen() {
   // ── KPIs annuels (port fidèle de renderRH) ──
   const tot = hsTot(a);
   const hsAnn = tot.hs;
-  const hsCost = hsAnn * (+a.costHour || 0) * coefHSMoyen(a);
+  const hsCost = coutHSTotal(a); // taux du 1er janvier, puis du 1er juin
   const empMoy = tot.av > 0 ? tot.av / 52 / 35 : 0;
   const s = refAgenceSeuils(a);
   const hsVerdict = hsAnn > s.seuilTensionCrit * 52 ? '⚠ élevé' : hsAnn > s.seuiltensionWarn * 52 ? 'niveau modéré' : 'niveau maîtrisé';

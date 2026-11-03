@@ -1,29 +1,46 @@
 import { useEffect, useState, useMemo } from 'react';
-import { loadNetworkBudgets, saveReferenceData } from '../../lib/budgetApi.js';
-import { AGENCES, agencesOps } from '../../config/agences.js';
+import { loadNetworkBudgets, saveCgData } from '../../lib/budgetApi.js';
+import { agencesOps } from '../../config/agences.js';
 import { refAgencesInsight } from '../../domain/refAgencesInsight.js';
+import { costHourJuin } from '../../domain/calculations.js';
+import { useBudget } from '../../context/BudgetContext.jsx';
+import { invaliderEtatCG } from '../CgGuide.jsx';
 
+// Données de référence posées par le CG. Les valeurs vont dans la version du budget
+// lue par le REX (voir domain/refCG.js) ; seuls les champs saisis sont envoyés.
 const FIELDS = [
   { key: 'histCA2025', label: 'CA 2025', w: 110 },
   { key: 'histCA', label: 'CA 2026', w: 110 },
   { key: 'histTXR2026', label: 'TXR 2026 (€/h)', w: 90 },
   { key: 'targetAbsRate', label: 'Absent. cible %', w: 90 },
-  { key: 'tauxHoraireBrut', label: 'Taux brut (€/h)', w: 90 },
-  { key: 'tauxChargePatronal', label: 'Charges pat. %', w: 90 }
+  { key: 'tauxHoraireBrut', label: 'Taux brut 1er janv. (€/h)', w: 90 },
+  { key: 'tauxHoraireBrutJuin', label: 'Taux brut 1er juin (€/h)', w: 90 },
+  { key: 'tauxChargePatronal', label: 'Charges pat. %', w: 80 },
+  { key: 'msNRBrutMensuel', label: 'MS non-roulante brut/mois (€)', w: 110 },
+  { key: 'msNRTauxCharges', label: 'Charges non-roul. %', w: 80 }
 ];
 
 function Kpi({ label, value, note }) {
   return <div className="kpi"><div className="label">{label}</div><div className="value">{value}</div><div className="note">{note || ''}</div></div>;
 }
 
+function costHourOf(d) {
+  if (d.tauxHoraireBrut && d.tauxChargePatronal) {
+    return Math.round(+d.tauxHoraireBrut * (1 + (+d.tauxChargePatronal || 0) / 100) * 100) / 100;
+  }
+  return d.costHour || null;
+}
+
 export default function RefAgencesScreen() {
+  const { applyExternal } = useBudget();
   const [state, setState] = useState({ loading: true, error: null, map: null });
   const [edits, setEdits] = useState({}); // { agence: { field: value } }
+  const [ratio, setRatio] = useState(null); // saisie en cours du ratio réseau (null = inchangé)
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(null);
 
   function reload() {
-    setState({ loading: true, error: null, map: null });
+    setState((s) => ({ ...s, loading: !s.map }));
     loadNetworkBudgets()
       .then((m) => {
         const map = {};
@@ -34,18 +51,25 @@ export default function RefAgencesScreen() {
   }
   useEffect(() => { reload(); }, []);
 
+  const ops = agencesOps();
   // Valeur affichée = édition locale si présente, sinon donnée chargée.
   const merged = useMemo(() => {
     const base = state.map || {};
     const out = {};
-    AGENCES.forEach((ag) => { out[ag.nom] = { ...(base[ag.nom] || {}), ...(edits[ag.nom] || {}) }; });
+    ops.forEach((ag) => { out[ag.nom] = { ...(base[ag.nom] || {}), ...(edits[ag.nom] || {}) }; });
     return out;
-  }, [state.map, edits]);
+  }, [state.map, edits]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ratio réseau actuel : première valeur trouvée dans les budgets
+  const ratioBase = useMemo(() => {
+    const vals = Object.values(state.map || {}).map((d) => d && d.ratioMaintien);
+    const v = vals.find((x) => x !== null && x !== undefined && x !== '');
+    return v === undefined ? '' : v;
+  }, [state.map]);
 
   if (state.loading) return <div className="card"><h2>Données agences</h2><p className="hint">Chargement…</p></div>;
   if (state.error) return <div className="card"><h2>Données agences</h2><p className="hint">Erreur : {state.error}</p></div>;
 
-  const ops = agencesOps();
   const insight = refAgencesInsight(merged, ops);
 
   function setField(nom, field, value) {
@@ -53,23 +77,15 @@ export default function RefAgencesScreen() {
     setEdits((prev) => ({ ...prev, [nom]: { ...(prev[nom] || {}), [field]: val } }));
   }
 
-  function costHourOf(d) {
-    if (d.tauxHoraireBrut && d.tauxChargePatronal) {
-      return Math.round(+d.tauxHoraireBrut * (1 + (+d.tauxChargePatronal || 0) / 100) * 100) / 100;
-    }
-    return d.costHour || null;
-  }
-
   async function save() {
-    if (!Object.keys(edits).length) return;
+    if (!dirty) return;
     setSaving(true); setSavedMsg(null);
     try {
-      // On envoie, pour chaque agence éditée, ses valeurs fusionnées (chargées + éditées).
-      const refMap = {};
-      Object.keys(edits).forEach((nom) => { refMap[nom] = { ...(state.map[nom] || {}), ...edits[nom] }; });
-      const count = await saveReferenceData(refMap);
-      setSavedMsg('✓ ' + count + ' agence(s) enregistrée(s)');
-      setEdits({});
+      const r = await saveCgData(edits, ratio === null || ratio === '' ? null : +ratio);
+      Object.entries(r.ecrits).forEach(([nom, data]) => applyExternal(nom, data));
+      invaliderEtatCG();
+      setSavedMsg(r.echecs.length ? 'Enregistrement refusé pour : ' + r.echecs.join(', ') : '✓ ' + r.count + ' agence(s) enregistrée(s)');
+      setEdits({}); setRatio(null);
       reload();
     } catch (err) {
       setSavedMsg('Échec : ' + (err.message || 'erreur'));
@@ -78,7 +94,7 @@ export default function RefAgencesScreen() {
     }
   }
 
-  const dirty = Object.keys(edits).length > 0;
+  const dirty = Object.keys(edits).length > 0 || ratio !== null;
 
   return (
     <div className="card">
@@ -91,6 +107,13 @@ export default function RefAgencesScreen() {
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}
         dangerouslySetInnerHTML={{ __html: insight.text }} />
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '12px 14px', border: '1px solid var(--border)', background: 'var(--bg2)' }}>
+        <label style={{ margin: 0, fontSize: 12 }}>Ratio de maintien de salaire, tout le réseau (%) :</label>
+        <input type="number" min="0" max="100" value={ratio !== null ? ratio : ratioBase} placeholder="ex : 50"
+          onChange={(e) => setRatio(e.target.value)} style={{ width: 100 }} />
+        <span style={{ fontSize: 12, color: 'var(--ink65)' }}>Part du salaire maintenue par l'entreprise pendant un arrêt maladie / AT. Vide = absences déduites à 100 %. Appliqué à toutes les agences à l'enregistrement.</span>
+      </div>
+
       <div style={{ overflowX: 'auto', marginBottom: 14 }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
@@ -102,9 +125,10 @@ export default function RefAgencesScreen() {
             </tr>
           </thead>
           <tbody>
-            {AGENCES.map((ag) => {
+            {ops.map((ag) => {
               const d = merged[ag.nom] || {};
               const cost = costHourOf(d);
+              const juin = costHourJuin(d);
               return (
                 <tr key={ag.nom}>
                   <td style={{ padding: '4px 8px' }}><b>{ag.nom}</b></td>
@@ -114,7 +138,10 @@ export default function RefAgencesScreen() {
                       <input type="number" value={d[f.key] ?? ''} placeholder="—" onChange={(e) => setField(ag.nom, f.key, e.target.value)} style={{ width: f.w }} />
                     </td>
                   ))}
-                  <td style={{ fontWeight: 700, color: 'var(--violet2, var(--violet))', fontFamily: 'DM Mono, monospace', padding: '0 8px' }}>{cost ? cost + ' €/h' : '—'}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--violet2, var(--violet))', fontFamily: 'DM Mono, monospace', padding: '0 8px', whiteSpace: 'nowrap' }}>
+                    {cost ? cost + ' €/h' : '—'}
+                    {juin ? <div style={{ fontWeight: 400, fontSize: 11 }}>juin : {juin} €/h</div> : null}
+                  </td>
                 </tr>
               );
             })}
@@ -122,9 +149,9 @@ export default function RefAgencesScreen() {
         </table>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button onClick={save} disabled={!dirty || saving}>{saving ? '⏳ Enregistrement…' : '💾 Enregistrer les modifications'}</button>
-        {dirty ? <span className="hint" style={{ fontSize: 12 }}>{Object.keys(edits).length} agence(s) modifiée(s)</span> : null}
+        {dirty ? <span className="hint" style={{ fontSize: 12 }}>{Object.keys(edits).length} agence(s) modifiée(s){ratio !== null ? ' · ratio réseau modifié' : ''} — non enregistré</span> : null}
         {savedMsg ? <span style={{ fontSize: 13, color: savedMsg.startsWith('✓') ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{savedMsg}</span> : null}
       </div>
     </div>

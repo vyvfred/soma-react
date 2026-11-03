@@ -20,6 +20,7 @@ export const PANELS_CG = [
   ['cgdash', 'Tableau de bord'],
   ['refagences', 'Données agences'],
   ['periodes', 'Périodes de paie'],
+  ['variablesdec', 'Variables déc. 2026'],
   ['affectation', 'Affectation DR'],
   ['comparative', 'Vue comparative'],
   ['graphiques', 'Graphiques'],

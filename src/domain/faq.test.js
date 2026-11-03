@@ -26,8 +26,8 @@ describe('FAQ — intégrité des données', () => {
   });
 
   it('effectifs de questions attendus par profil', () => {
-    expect(FAQ.rex).toHaveLength(20);
-    expect(FAQ.cg).toHaveLength(14);
+    expect(FAQ.rex).toHaveLength(24); // + coût d'une HS, taux de juin, arrêts maladie, CDD
+    expect(FAQ.cg).toHaveLength(27); // FAQ CG par étapes du parcours
     expect(FAQ.valideur).toHaveLength(12);
     expect(FAQ.admin).toHaveLength(7);
   });

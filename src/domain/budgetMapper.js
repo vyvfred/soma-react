@@ -9,6 +9,7 @@
 // soit « plat » (ancien format) = les champs de l'agence directement.
 
 import { agency, refs, buildPeriodesPaie, T } from './calculations.js';
+import { pickRefCG, appliquerRefCG } from './refCG.js';
 
 const DEFAULT_META = () => ({
   activeVersion: 'v1',
@@ -20,15 +21,20 @@ const DEFAULT_META = () => ({
 export function parseBudgetRow(row) {
   const d = (row && row.data) || {};
   const validation = d.validation || null;
-  let meta, activeVersion, versionData;
+  let meta, activeVersion, versionData, versionVide = false;
 
   if (d.versions) {
     meta = d.meta || DEFAULT_META();
     if (!meta.descriptions) meta.descriptions = { v1: '', v2: '', v3: '' };
     activeVersion = meta.activeVersion || 'v1';
     versionData = d.versions[activeVersion] || d.versions.v1 || {};
+    versionVide = !Object.keys(versionData).length;
+    // Références CG laissées au premier niveau par d'anciennes sauvegardes « Données agences »
+    const orphelins = pickRefCG(d);
+    if (Object.keys(orphelins).length) versionData = appliquerRefCG({ ...versionData }, orphelins);
   } else {
     versionData = d;
+    versionVide = !Object.keys(d).length;
     activeVersion = 'v1';
     meta = DEFAULT_META();
   }
@@ -39,6 +45,7 @@ export function parseBudgetRow(row) {
     meta,
     activeVersion,
     versionData,
+    versionVide,
     validation
   };
 }
@@ -46,9 +53,9 @@ export function parseBudgetRow(row) {
 // ── Reconstruction de l'objet agence à partir d'une ligne DB ────────
 export function agencyFromRow(row) {
   const name = row.agence;
-  const { versionData } = parseBudgetRow(row);
+  const { versionData, versionVide } = parseBudgetRow(row);
 
-  if (versionData && Object.keys(versionData).length) {
+  if (!versionVide && versionData && Object.keys(versionData).length) {
     const a = { ...agency(name), ...versionData, name };
     migrateAgency(a);
     return a;
@@ -57,6 +64,9 @@ export function agencyFromRow(row) {
   // Budget vide : pré-remplir les données de référence CG si présentes.
   const a = agency(name);
   const ref = (row && row.data) || {};
+  // Paramétrage CG (taux, ligne non-roulante, ratio, variables de décembre) repris tel quel
+  Object.assign(a, pickRefCG(versionData));
+  migrateAgency(a);
   if (ref.histCA2025) a.histCA2025 = ref.histCA2025;
   if (ref.histCA) a.histCA = ref.histCA;
   if (ref.histTXR2026) {
@@ -78,7 +88,11 @@ export function buildBudgetData(existingData, activeVersion, meta, a) {
   delete aClean.versions;
   delete aClean.meta;
   versions[activeVersion] = aClean;
-  return { versions, meta };
+  const out = { versions, meta };
+  // Conserver l'état de validation (décisions, historique des refus) : sans cela,
+  // la première correction du REX après un refus effaçait data.validation.
+  if (existingData && existingData.validation) out.validation = existingData.validation;
+  return out;
 }
 
 // ── Migration d'une agence (port fidèle du corps de migrateState) ───
@@ -96,6 +110,10 @@ export function migrateAgency(a) {
   if (a.drCostAnnual === undefined) a.drCostAnnual = 0;
   if (a.tauxHoraireBrut === undefined) a.tauxHoraireBrut = null;
   if (a.tauxChargePatronal === undefined) a.tauxChargePatronal = null;
+  if (a.tauxHoraireBrutJuin === undefined) a.tauxHoraireBrutJuin = null;
+  if (a.msNRBrutMensuel === undefined) a.msNRBrutMensuel = null;
+  if (a.msNRTauxCharges === undefined) a.msNRTauxCharges = null;
+  if (a.ratioMaintien === undefined) a.ratioMaintien = null;
   if (a.tauxHoraireBrut !== null && a.tauxChargePatronal !== null && a.costHour === null) {
     a.costHour = Math.round(+a.tauxHoraireBrut * (1 + (+a.tauxChargePatronal || 0) / 100) * 100) / 100;
   }
@@ -109,6 +127,7 @@ export function migrateAgency(a) {
   if (!a.idjfNonRoulant) a.idjfNonRoulant = {};
   if (!a.periodesPaie) a.periodesPaie = buildPeriodesPaie();
   if (a.variablesDec2026 === undefined) a.variablesDec2026 = null;
+  if (a.variablesDec2026Detail === undefined) a.variablesDec2026Detail = null;
   if (a.moisActif === undefined) a.moisActif = null;
   if (a.actSan === undefined) a.actSan = true;
   if (a.actSai === undefined) a.actSai = false;

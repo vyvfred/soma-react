@@ -1,5 +1,6 @@
 import { sb } from './supabase.js';
 import { agencyFromRow, parseBudgetRow, buildBudgetData, budgetData as budgetDataOf } from '../domain/budgetMapper.js';
+import { fusionnerRefCG, appliquerRefCG, CG_KEYS_SANS_VERROU } from '../domain/refCG.js';
 import { ensureValidation as ensureValidationEngine, appliquerDecision as appliquerDecisionEngine } from '../domain/validationEngine.js';
 
 // Couche d'accès aux données budget.
@@ -26,13 +27,27 @@ export async function loadAgencyBudget(agenceNom) {
   }
 
   const parsed = parseBudgetRow(data);
+  const agency = agencyFromRow(data);
+  await reprendreRatioReseau(agency);
   return {
-    agency: agencyFromRow(data),
+    agency,
     statut: data.statut,
     budgetId: data.id,
     meta: parsed.meta,
     activeVersion: parsed.activeVersion
   };
+}
+
+// Ratio de maintien de salaire : paramètre réseau. Une agence qui ne l'a pas encore
+// (budget créé après l'enregistrement des Données agences) reprend celui du réseau.
+export async function reprendreRatioReseau(a) {
+  if (!a || (a.ratioMaintien !== null && a.ratioMaintien !== undefined && a.ratioMaintien !== '')) return;
+  try {
+    const { data } = await sb.from('budgets').select('data').eq('annee', ANNEE);
+    const rm = (data || []).map((b) => budgetDataOf(b.data).ratioMaintien)
+      .find((v) => v !== null && v !== undefined && v !== '');
+    if (rm !== undefined) a.ratioMaintien = rm;
+  } catch (e) { /* sans réseau : le ratio reste vide, signalé au CG */ }
 }
 
 // Sauvegarde le budget. Reproduit saveBudgetToSupabase :
@@ -120,29 +135,44 @@ export async function submitDecision({ agence, role, decision, commentaire, parN
   return res;
 }
 
-// Enregistre les données de référence CG par agence — reproduit saveRefAgences.
-// refMap : { agence: { histCA2025, histCA, histTXR2026, targetAbsRate,
-//   tauxHoraireBrut, tauxChargePatronal, costHour? } }. Pour chaque agence :
-// fusionne dans les données existantes (racine) avec cgLocked=true, ou crée le budget.
-export async function saveReferenceData(refMap) {
+// Enregistre des données CG par agence (Données agences, variables de décembre 2026).
+// saisies : { agence: { champ: valeur } } — uniquement les champs saisis par le CG.
+// ratioReseau (facultatif) : ratio de maintien de salaire, recopié dans toutes les
+// agences qui ont déjà un budget. Écrit dans la version lue par le REX (voir refCG.js).
+// Renvoie { count, echecs, ecrits: { agence: données appliquées } }.
+export async function saveCgData(saisies, ratioReseau = null) {
+  const noms = new Set(Object.keys(saisies));
+  if (ratioReseau !== null) {
+    const { data: tous } = await sb.from('budgets').select('agence').eq('annee', ANNEE);
+    (tous || []).forEach((b) => noms.add(b.agence));
+  }
   let count = 0;
-  for (const [nom, ref] of Object.entries(refMap)) {
-    const data = { ...ref };
-    if (!data.costHour && data.tauxHoraireBrut && data.tauxChargePatronal) {
-      data.costHour = Math.round(+data.tauxHoraireBrut * (1 + +data.tauxChargePatronal / 100) * 100) / 100;
-    }
+  const echecs = [], ecrits = {};
+  for (const nom of noms) {
+    const data = { ...(saisies[nom] || {}) };
+    if (ratioReseau !== null) data.ratioMaintien = Math.max(0, Math.min(100, ratioReseau));
+    if (!Object.keys(data).length) continue;
     const { data: existing } = await sb.from('budgets').select('id,data').eq('agence', nom).eq('annee', ANNEE).single();
+    let res;
     if (existing) {
-      const merged = { ...existing.data, ...data, cgLocked: true };
-      const { error } = await sb.from('budgets').update({ data: merged }).eq('id', existing.id);
-      if (error) throw error;
+      res = await sb.from('budgets').update({ data: fusionnerRefCG(existing.data, data) }).eq('id', existing.id);
+    } else if (Object.keys(data).some((k) => CG_KEYS_SANS_VERROU.indexOf(k) < 0 || k.startsWith('variablesDec'))) {
+      // Pas de ligne vide pour le seul ratio réseau : il est repris à l'ouverture (reprendreRatioReseau)
+      res = await sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: appliquerRefCG({}, data), statut: 'brouillon' });
     } else {
-      const { error } = await sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: { ...data, cgLocked: true }, statut: 'brouillon' });
-      if (error) throw error;
+      continue;
     }
+    if (res && res.error) { echecs.push(nom); continue; }
+    ecrits[nom] = data;
     count++;
   }
-  return count;
+  return { count, echecs, ecrits };
+}
+
+// Ancien nom conservé pour compatibilité : n'envoie que les champs fournis.
+export async function saveReferenceData(refMap) {
+  const r = await saveCgData(refMap);
+  return r.count;
 }
 
 // ── Affectation DR ──────────────────────────────────────────────

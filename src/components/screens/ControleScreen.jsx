@@ -1,10 +1,11 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { chargesSummary, auditAlerts, ann } from '../../domain/calculations.js';
 import { euro, pct } from '../../domain/format.js';
+import { alertesParametrage } from '../../domain/refCG.js';
 
 // Écran Contrôles — port fidèle de renderControl() : audit financier de l'agence
 // ouverte (charges par nature, résultats) + alertes de cohérence.
-const ALERT_BORDER = { crit: 'var(--orange, #c45300)', warn: '#FF8F00', info: 'var(--blue2, #3d6fd6)', ok: 'var(--green, #2e7d6f)' };
+const ALERT_BORDER = { crit: 'var(--orange, #c45300)', critique: 'var(--orange, #c45300)', warn: '#FF8F00', warning: '#FF8F00', info: 'var(--blue2, #3d6fd6)', ok: 'var(--green, #2e7d6f)' };
 
 export default function ControleScreen() {
   const { agency: a, loading, error, agenceNom } = useBudget();
@@ -26,7 +27,7 @@ export default function ControleScreen() {
     ['REX', euro(rex), pct(ca ? rex / ca * 100 : 0)],
     ['Résultat net', euro(net), pct(ca ? net / ca * 100 : 0)]
   ];
-  const alerts = auditAlerts(a);
+  const alerts = auditAlerts(a).concat(alertesParametrage(a).map((x) => [x.t === 'warn' ? 'warning' : x.t, 'Paramétrage salarial', x.m]));
 
   return (
     <div className="card">

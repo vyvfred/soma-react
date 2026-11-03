@@ -117,7 +117,10 @@ export default function ValidationScreen() {
         const role = profile.role;
         const aValider = [], traites = [];
         budgets.forEach((b) => {
-          const v = ensureValidation(b.data && b.data.validation);
+          // Jamais soumis (pas de data.validation) : rien à valider. Avant, une validation
+          // neuve « en cours, étage 1 » le faisait apparaître « à valider » chez le DR.
+          if (!b.data || !b.data.validation) return;
+          const v = ensureValidation(b.data.validation);
           const item = { agence: b.agence, v, d: budgetData(b.data), updated: b.updated_at };
           if (enAttenteDe(v, role)) aValider.push(item);
           else if (v.decisions[role] && v.decisions[role].decision) traites.push(item);
