@@ -64,3 +64,33 @@ export function objectifInsight(a) {
 
   return { recall, phrase, banner, tauxCharge, caMaxSansHS };
 }
+
+// Détail du calcul de capacité — port fidèle de renderCoherence().
+// Renvoie null tant que l'effectif ou le TXR cible manquent.
+export function coherenceCapacite(a) {
+  const baseHebdo = baseH(a);
+  const txr = +a.targetTXR || 0;
+  const caObj = +a.targetCA || 0;
+  if (!baseHebdo || !txr) return null;
+  const sickVals = (a.sick || []).filter((v) => v !== null);
+  const tauxMalMoy = sickVals.reduce((s, v) => s + (+v || 0), 0) / (sickVals.length || 12);
+  const dispoHebdoMoy = baseHebdo * (1 - tauxMalMoy / 100);
+  const caMaxSansHS = Math.round(dispoHebdoMoy * txr * 52);
+  const tauxCharge = caObj && caMaxSansHS ? Math.round((caObj / caMaxSansHS) * 100) : 0;
+  const nbRoulants = (a.employees || []).filter((e) => isRoulant(e.qual)).length;
+  const niveau = tauxCharge > 115 ? 'critique' : tauxCharge > 100 ? 'tendu' : tauxCharge > 85 ? 'coherent' : 'confortable';
+  return {
+    baseHebdo, txr, dispoHebdoMoy, tauxCharge, niveau,
+    caMaxSansHS,
+    caMaxAvecHS10: Math.round(caMaxSansHS * 1.10),
+    caMaxAvecHS20: Math.round(caMaxSansHS * 1.20),
+    caJourCible: nbRoulants > 0 ? Math.round((dispoHebdoMoy / 5) * txr) : 0,
+    icone: { critique: '🔴', tendu: '🟡', coherent: '🔵', confortable: '🟢' }[niveau],
+    message: {
+      critique: 'Objectif difficile à atteindre sans recours massif aux HS. Vérifiez vos références CA.',
+      tendu: 'Objectif atteignable avec un recours modéré aux HS (≤ 20%).',
+      coherent: 'Objectif cohérent. Quelques semaines tendues possibles.',
+      confortable: 'Objectif confortable. Capacité disponible suffisante.'
+    }[niveau]
+  };
+}

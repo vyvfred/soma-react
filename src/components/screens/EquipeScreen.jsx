@@ -1,6 +1,9 @@
+import { useRef, useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { teamInsight } from '../../domain/teamInsight.js';
-import { isRoulant } from '../../domain/calculations.js';
+import { teamInsight, etpParMois } from '../../domain/teamInsight.js';
+import { isRoulant, M } from '../../domain/calculations.js';
+import { parseEquipe } from '../../domain/imports.js';
+import { lireClasseur } from '../../lib/importExcel.js';
 
 const QUALS = ['DEA', 'AA', 'TAXI', 'TPMR', 'REGULATEUR', 'REX'];
 const CONTRACTS = ['CDI', 'CDD', 'APPRENTI', 'INTERIM'];
@@ -11,6 +14,8 @@ const td = { padding: '4px 8px', borderBottom: '1px solid var(--border)' };
 
 export default function EquipeScreen() {
   const { agency: a, loading, error, editable, update, agenceNom } = useBudget();
+  const fichier = useRef(null);
+  const [importMsg, setImportMsg] = useState(null);
 
   if (!agenceNom) return <div className="card"><h2>Équipe</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Équipe</h2><p className="hint">Chargement du budget…</p></div>;
@@ -18,6 +23,25 @@ export default function EquipeScreen() {
   if (!a) return <div className="card"><h2>Équipe — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const { nbSal, etpTotal, capaciteAn, phrase } = teamInsight(a);
+  const evolution = etpParMois(a);
+
+  // Import Excel de l'équipe (port de handleExcelImport) : feuille « Saisie personnel »
+  async function importer(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const { rows } = await lireClasseur(file, (noms) => noms.find((n) => n.toLowerCase().includes('saisie')));
+      const r = parseEquipe(rows);
+      if (r.erreur) { setImportMsg({ ok: false, t: r.erreur }); return; }
+      if (!r.employees.length) { setImportMsg({ ok: false, t: 'Aucun salarié trouvé. Vérifiez le fichier.' }); return; }
+      if (a.employees.length > 0 && !window.confirm(r.employees.length + ' salariés trouvés. Remplacer la liste existante ?')) return;
+      update((d) => { d.employees = r.employees; return d; });
+      setImportMsg({ ok: true, t: r.employees.length + ' salariés importés !' + (r.ignores ? ' (' + r.ignores + ' facturier(s) ignoré(s))' : '') });
+    } catch (err) {
+      setImportMsg({ ok: false, t: 'Erreur de lecture : ' + (err.message || err) });
+    }
+  }
 
   // Mutations — reproduisent setEmp / delEmp / addEmployee / setDR de l'app actuelle.
   function setEmp(i, field, value) {
@@ -122,10 +146,34 @@ export default function EquipeScreen() {
       </div>
 
       {editable ? (
-        <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={addEmployee}>+ Ajouter un salarié</button>
           <button className="secondary" onClick={addPoste}>+ Poste prévisionnel (CDD saisonnier)</button>
+          <button className="secondary" onClick={() => fichier.current && fichier.current.click()}>📥 Importer depuis Excel</button>
+          <input ref={fichier} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={importer} data-testid="fichier-equipe" />
+          {importMsg ? <span data-testid="equipe-import-msg" style={{ fontSize: 13, color: importMsg.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{importMsg.t}</span> : null}
         </div>
+      ) : null}
+
+      {evolution ? (
+        <details className="objCollapse" style={{ marginTop: 16 }} data-testid="evolution-effectif">
+          <summary>Évolution de l'effectif dans l'année</summary>
+          <div className="objCollapseBody">
+            <p className="hint" style={{ marginBottom: 12 }}>Nombre d'ETP roulants présents chaque mois, selon les dates d'entrée et de sortie saisies.</p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 120, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '0 8px' }}>
+              {evolution.map((etp, m) => {
+                const max = Math.max(...evolution, 1);
+                return (
+                  <div key={m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ fontSize: 9, color: 'var(--ink65)', marginBottom: 2 }}>{etp.toFixed(0)}</div>
+                    <div style={{ width: '100%', background: 'linear-gradient(to top,var(--violet),var(--violet2))', height: Math.round(etp / max * 100) + '%', minHeight: 2 }} />
+                    <div style={{ fontSize: 9, color: 'var(--ink65)', marginTop: 3 }}>{M[m].slice(0, 3)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </details>
       ) : null}
     </div>
   );

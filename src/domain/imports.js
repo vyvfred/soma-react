@@ -235,3 +235,46 @@ export function parseVariablesDec(rows, agences) {
   }
   return { saisies, inconnues };
 }
+
+// ── Équipe (import Excel du REX, écran Équipe) ─────────────────────
+// Port de handleExcelImport : feuille « Saisie personnel » (ou la première), ligne
+// d'en-tête contenant « nom ». Les facturières sont ignorées ; le contrat est reconnu
+// quel que soit son libellé (CDD, C.D.D, contrat à durée déterminée…).
+export function parseEquipe(rows) {
+  const hr = rows.findIndex((r) => (r || []).some((c) => typeof c === 'string' && enTete(c).includes('nom')));
+  if (hr < 0) return { erreur: 'En-tête non trouvée. Vérifiez le fichier.', employees: [], ignores: 0 };
+  const h = rows[hr].map(enTete);
+  const col = {
+    name: h.findIndex((x) => x.includes('nom') || x.includes('pr')),
+    qual: h.findIndex((x) => x.includes('qual')),
+    contract: h.findIndex((x) => x.includes('contrat')),
+    hours: h.findIndex((x) => x.includes('base') || (x.includes('heure') && x.includes('contract') && !x.includes('major'))),
+    hoursM: h.findIndex((x) => x.includes('major')),
+    hsTarget: h.findIndex((x) => x.includes('hs') || x.includes('suppl')),
+    pctRoulant: h.findIndex((x) => x.includes('%') || x.includes('pct') || x.includes('roulant')),
+    joursSem: h.findIndex((x) => x.includes('jour'))
+  };
+  const lire = (row, k, defaut) => (col[k] >= 0 && !vide(row[col[k]]) ? row[col[k]] : defaut);
+  const employees = [];
+  let ignores = 0;
+  for (let i = hr + 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const name = String(lire(row, 'name', '')).trim();
+    if (!name) continue;
+    const qual = sansAccents(lire(row, 'qual', '')).trim().toUpperCase();
+    if (qual === 'FACTURIERE') { ignores++; continue; }
+    const brutH = String(lire(row, 'hours', '0')).replace(',', '.');
+    employees.push({
+      name,
+      qual: ['DEA', 'AA', 'TAXI', 'TPMR', 'REGULATEUR', 'REX'].includes(qual) ? qual : 'DEA',
+      contract: contratImport(lire(row, 'contract', 'CDI')),
+      hours: brutH.toUpperCase() === 'FORFAIT' ? 0 : parseFloat(brutH) || 0,
+      hoursM: nombre(lire(row, 'hoursM', 0)) || 0,
+      hsTarget: nombre(lire(row, 'hsTarget', 0)) || 0,
+      pctRoulant: nombre(String(lire(row, 'pctRoulant', 100)).replace('%', '')) || 0,
+      joursSem: parseInt(String(lire(row, 'joursSem', 5)), 10) || 5,
+      coutJour: 0
+    });
+  }
+  return { employees, ignores };
+}

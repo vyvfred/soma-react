@@ -1,4 +1,4 @@
-import { baseH, isRoulant } from './calculations.js';
+import { baseH, baseHWeek, needWeeks, isRoulant } from './calculations.js';
 import { euro } from './format.js';
 
 // KPI + interprétation de l'équipe — port fidèle de renderTeamKpis().
@@ -31,4 +31,18 @@ export function teamInsight(a) {
   }
 
   return { nbSal, etpTotal, capaciteAn, phrase };
+}
+
+// ETP roulants présents chaque mois selon les dates d'entrée/sortie — port de la
+// courbe « Évolution de l'effectif dans l'année ». null s'il n'y a aucun mouvement.
+export function etpParMois(a) {
+  const mouvements = (a.employees || []).some((e) => e.dateEntree || e.dateSortie);
+  if (!mouvements || !a.cal || !a.cal.length) return null;
+  const semaines = needWeeks(a);
+  return Array.from({ length: 12 }, (_, m) => {
+    const sm = semaines.filter((w) => a.cal.some((d) => d.week === w.week && d.month === m));
+    if (!sm.length) return 0;
+    const moy = sm.reduce((s, w) => s + baseHWeek(a, w.week) / 35, 0) / sm.length;
+    return Math.round(moy * 10) / 10;
+  });
 }
