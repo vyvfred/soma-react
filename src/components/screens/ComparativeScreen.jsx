@@ -32,6 +32,7 @@ function Cell({ val, median, unit, higherIsBad }) {
 
 export default function ComparativeScreen() {
   const [state, setState] = useState({ loading: true, error: null, map: null });
+  const [k, setK] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -39,7 +40,7 @@ export default function ComparativeScreen() {
       .then((map) => { if (active) setState({ loading: false, error: null, map }); })
       .catch((err) => { if (active) setState({ loading: false, error: err.message || 'Erreur de chargement', map: null }); });
     return () => { active = false; };
-  }, []);
+  }, [k]);
 
   if (state.loading) return <div className="card"><h2>Vue comparative</h2><p className="hint">Chargement des budgets du réseau…</p></div>;
   if (state.error) return <div className="card"><h2>Vue comparative</h2><p className="hint">Impossible de charger les budgets : {state.error}</p></div>;
@@ -62,7 +63,7 @@ export default function ComparativeScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Vue comparative — réseau</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}><h2 style={{ margin: 0 }}>Vue comparative — réseau</h2><button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button></div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="TXR médian réseau" value={fmt(medians.txr, 1, ' €/h')} note="2026" />

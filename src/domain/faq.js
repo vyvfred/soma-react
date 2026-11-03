@@ -74,3 +74,15 @@ export const FAQ_ROLE_LABEL = {
 let _aideCible = null;
 export function setAideCible(texte) { _aideCible = texte || null; }
 export function prendreAideCible() { const c = _aideCible; _aideCible = null; return c; }
+
+// Pastille « ? » de chaque onglet : question de la FAQ à dérouler (port de AIDE_ONGLET_Q)
+export const AIDE_ONGLET_Q = {
+  rex: { objectif: 'Par où je commence', refs: 'références CA journalières', team: 'importer mon équipe', rh: 'répartition automatique des congés', cal: 'courbe de charge' },
+  cg: {
+    cgdash: 'Dans quel ordre', objectif: 'Dans quel ordre', refagences: 'bien préparer les références',
+    periodes: 'Les dates s\'appliquent', variablesdec: 'variables de paie de décembre',
+    affectation: 'affectation des DR', cg: 'saisir les charges d\'une agence', controle: 'écran Contrôles',
+    consolidation: 'suivre l\'avancement', comparative: 'vue comparative', graphiques: 'graphiques',
+    validation: 'valider ou refuser', rex: 'masse salariale du prévisionnel', finance: 'masse salariale du prévisionnel'
+  }
+};

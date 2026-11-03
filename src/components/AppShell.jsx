@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PANELS_REX } from '../config/panels.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { BudgetProvider } from '../context/BudgetContext.jsx';
 import { NavContext } from '../context/NavContext.jsx';
@@ -11,6 +12,8 @@ import CgGuide from './CgGuide.jsx';
 import StepNav from './StepNav.jsx';
 import ChangePasswordModal from './ChangePasswordModal.jsx';
 import { VisionOverlay, visionDejaVue } from './Vision.jsx';
+import AideOnglet from './AideOnglet.jsx';
+import CgAlertes from './CgAlertes.jsx';
 import ToastHost from './Toast.jsx';
 import { useBudget } from '../context/BudgetContext.jsx';
 import { VERSION_LABELS, VERSION_COLORS } from '../domain/versions.js';
@@ -94,12 +97,18 @@ const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'previsionnel', 'fi
 export default function AppShell() {
   const { profile, logout, simRole, simuler, recuperation } = useAuth();
   const [mdpOuvert, setMdpOuvert] = useState(false);
+  const [navReduite, setNavReduite] = useState(false);
   // Vision SOMA : affichée au premier lancement de chaque utilisateur, puis sur demande
   const [vision, setVision] = useState(() => (visionDejaVue(profile.id) ? null : 'premiere'));
   // Le CG peut basculer en vue « REX exploitation » sur l'agence ouverte (port de setRole).
   const [vueRex, setVueRex] = useState(false);
   const roleNav = profile.role === 'cg' && vueRex ? 'rex' : profile.role;
-  const { panels, landing, group } = useMemo(() => navForRole(roleNav), [roleNav]);
+  // Mode consultation : un valideur parcourt tous les écrans du REX en lecture seule (port de consulterBudget)
+  const [consult, setConsult] = useState(null);
+  const navRole = useMemo(() => navForRole(roleNav), [roleNav]);
+  const { panels, landing, group } = consult
+    ? { panels: PANELS_REX.filter((p) => p[0] !== 'aide'), landing: 'finance', group: 'Consultation — ' + consult }
+    : navRole;
   const [active, setActive] = useState(landing);
   const basculerVue = (rex) => { setVueRex(rex); setActive(rex ? 'finance' : 'cgdash'); };
   // Changement de rôle simulé : revenir à l'écran d'atterrissage du rôle
@@ -107,17 +116,27 @@ export default function AppShell() {
 
   // Agence courante : fixe pour le REX (son agence), sélectionnable pour le CG/DF.
   const [cgAgence, setCgAgence] = useState(null);
-  const activeAgence = profile.agence || cgAgence;
+  const activeAgence = consult || profile.agence || cgAgence;
   const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex'].includes(profile.role);
 
   const activeLabel = (panels.find((p) => p[0] === active) || [active, active])[1];
   const Screen = screenFor(active);
-  const showPicker = needsPicker && PER_AGENCY_PANELS.has(active);
+  const showPicker = !consult && needsPicker && PER_AGENCY_PANELS.has(active);
 
   return (
-    <NavContext.Provider value={(panel, agence) => { if (agence && needsPicker) setCgAgence(agence); setActive(panel); }}>
-    <BudgetProvider agenceNom={activeAgence}>
+    <NavContext.Provider value={(panel, agence) => {
+      if (panel === '__consulter') { setConsult(agence); setActive('finance'); return; }
+      if (agence && needsPicker) setCgAgence(agence); setActive(panel);
+    }}>
+    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult}>
     <div className="soma-shell">
+      {consult ? (
+        <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>
+          <span className="consultBannerDot" />
+          <span>Mode consultation — lecture seule</span>
+          <button onClick={() => { setConsult(null); setActive('validation'); }}>↩ Revenir à la validation</button>
+        </div>
+      ) : null}
       {simRole ? (
         <div data-testid="sim-banner" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', padding: '6px 14px', background: 'var(--orange, #c45300)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
           <span>● Vous testez la vue « {roleLabel(simRole)} »</span>
@@ -148,7 +167,10 @@ export default function AppShell() {
       </header>
 
       <div className="soma-body">
-        <nav className="soma-nav" aria-label="Navigation principale">
+        <nav className="soma-nav" aria-label="Navigation principale" style={navReduite ? { width: 44, minWidth: 44, padding: '8px 4px', overflow: 'hidden' } : undefined}>
+          <button data-testid="nav-toggle" onClick={() => setNavReduite(!navReduite)} title={navReduite ? 'Agrandir le menu' : 'Réduire le menu'}
+            style={{ width: 'auto', margin: '0 0 8px', padding: '4px 10px', fontSize: 12, background: 'transparent', border: '1px solid var(--border)', color: 'var(--ink65)', alignSelf: navReduite ? 'center' : 'flex-end' }}>{navReduite ? '»' : '«'}</button>
+          {navReduite ? null : <>
           {group ? <div className="soma-nav-group">{group}</div> : null}
           {panels.map(([id, label]) => (
             <button
@@ -160,25 +182,33 @@ export default function AppShell() {
             </button>
           ))}
           <button className="soma-navbtn" data-testid="lien-vision" onClick={() => setVision('demande')} style={{ marginTop: 18, fontSize: 12, color: 'var(--ink65)', fontStyle: 'italic' }}>La vision de SOMA</button>
+          </>}
         </nav>
 
         <VersionBorder>
+          <AideOnglet panel={active} role={consult ? 'rex' : roleNav} onNavigate={setActive} />
+          {profile.role === 'cg' && !consult ? <CgAlertes /> : null}
           {showPicker ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, color: 'var(--ink65)' }}>Agence ouverte :</span>
               <select value={activeAgence || ''} onChange={(e) => setCgAgence(e.target.value || null)} style={{ minWidth: 200 }}>
                 <option value="">— Choisir une agence —</option>
                 {agencesOps().map((ag) => <option key={ag.nom} value={ag.nom}>{ag.nom}</option>)}
+                {activeAgence && !agencesOps().some((ag) => ag.nom === activeAgence) ? <option value={activeAgence}>{activeAgence} (hors référentiel)</option> : null}
               </select>
+              {['cg', 'admin'].includes(profile.role) ? (
+                <button className="secondary" data-testid="hors-ref" style={{ width: 'auto', margin: 0, fontSize: 12, padding: '6px 12px' }}
+                  onClick={() => { const n = window.prompt('Nom de l\'agence hors référentiel'); if (n && n.trim()) setCgAgence(n.trim().toUpperCase()); }}>Agence hors référentiel</button>
+              ) : null}
             </div>
           ) : null}
 
-          {(profile.role === 'cg' || profile.role === 'df') ? <CgGuide panel={active} cle={activeAgence} /> : null}
+          {!consult && (profile.role === 'cg' || profile.role === 'df') ? <CgGuide panel={active} cle={activeAgence} /> : null}
 
           {showPicker && !activeAgence
             ? <div className="card"><p className="hint">Sélectionnez une agence ci-dessus pour ouvrir son budget.</p></div>
             : Screen ? <Screen /> : <PlaceholderPanel id={active} label={activeLabel} />}
-          {['rex', 'cg', 'admin'].includes(profile.role) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
+          {(consult || ['rex', 'cg', 'admin'].includes(profile.role)) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
         </VersionBorder>
       </div>
     <ToastHost />

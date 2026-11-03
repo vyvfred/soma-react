@@ -22,6 +22,8 @@ import CalScreen from './CalScreen.jsx';
 import AffectationScreen from './AffectationScreen.jsx';
 import VariablesDecScreen from './VariablesDecScreen.jsx';
 
+function PrevisionnelCgScreen() { return PrevisionnelScreen({ vueCG: true }); }
+
 export const SCREENS = {
   aide: AideScreen,
   finance: SyntheseScreen,
@@ -34,7 +36,7 @@ export const SCREENS = {
   consolidation: ConsolidationScreen,
   validation: ValidationScreen,
   refagences: RefAgencesScreen,
-  rex: PrevisionnelScreen,
+  rex: PrevisionnelCgScreen,
   cg: ChargesCgScreen,
   affectation: AffectationScreen,
   controle: ControleScreen,

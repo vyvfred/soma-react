@@ -11,7 +11,7 @@ const BudgetContext = createContext(null);
 const SAVE_DEBOUNCE_MS = 900;
 const DEFAULT_META = () => ({ activeVersion: 'v1', submittedVersion: null, descriptions: { v1: '', v2: '', v3: '' } });
 
-export function BudgetProvider({ agenceNom, children }) {
+export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
   const [agency, setAgency] = useState(null);
   const [statut, setStatut] = useState('brouillon');
   const [loading, setLoading] = useState(true);
@@ -86,6 +86,12 @@ export function BudgetProvider({ agenceNom, children }) {
     loadAgencyBudget(agenceNom)
       .then((res) => {
         if (!active) return;
+        // En consultation, le valideur voit la version soumise (celle qu'il valide)
+        const sv = res.meta && res.meta.submittedVersion;
+        if (lectureSeule && sv && sv !== res.activeVersion && res.data && res.data.versions && res.data.versions[sv]) {
+          res.agency = agenceDeVersion(agenceNom, res.data, sv);
+          res.activeVersion = sv;
+        }
         setAgency(res.agency);
         setStatut(res.statut);
         budgetIdRef.current = res.budgetId;
@@ -110,10 +116,10 @@ export function BudgetProvider({ agenceNom, children }) {
         if (pendingRef.current) persist(pendingRef.current);
       }
     };
-  }, [agenceNom, persist]);
+  }, [agenceNom, persist, lectureSeule]);
 
   // Un budget n'est modifiable qu'en brouillon, refusé ou complément demandé
-  const editable = estModifiable(statut);
+  const editable = !lectureSeule && estModifiable(statut);
 
   const update = useCallback((mutator) => {
     if (!editable) return;

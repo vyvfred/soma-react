@@ -43,7 +43,7 @@ function KpiCard({ label, value, note }) {
   );
 }
 
-export default function PrevisionnelScreen() {
+export default function PrevisionnelScreen({ vueCG = false }) {
   const { loading, error, agency: a, agenceNom } = useBudget();
 
   if (!agenceNom) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
@@ -57,7 +57,16 @@ export default function PrevisionnelScreen() {
   const ebe = ann(a, "EXCEDENT BRUT D'EXPLOITATION");
   const tauxMS = ca ? (ms / ca) * 100 : 0;
 
-  const kpis = [
+  const rexR = ann(a, "RESULTAT D'EXPLOITATION");
+  // Vue CG (port de renderREX) : 6 indicateurs du SIG
+  const kpis = vueCG ? [
+    { label: 'CA', value: euro(ca) },
+    { label: 'Charges personnel', value: euro(ms), note: pct(tauxMS) },
+    { label: 'VA', value: euro(ann(a, 'VALEUR AJOUTEE')) },
+    { label: 'EBE', value: euro(ebe) },
+    { label: 'REX', value: euro(rexR), note: pct(ca ? (rexR / ca) * 100 : 0) },
+    { label: 'Résultat net', value: euro(net), note: pct(ca ? (net / ca) * 100 : 0) }
+  ] : [
     { label: 'CA budgété', value: euro(ca) },
     { label: 'Résultat net', value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
     { label: 'Masse salariale / CA', value: pct(tauxMS), note: tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
@@ -67,6 +76,7 @@ export default function PrevisionnelScreen() {
   return (
     <div className="card">
       <h2 style={{ marginBottom: 14 }}>Prévisionnel — {agenceNom}</h2>
+      {vueCG ? <p className="hint" style={{ margin: '0 0 14px', fontSize: 13 }}>📊 <b>Prévisionnel de l'agence sélectionnée.</b> Ce tableau de résultat (SIG) est calculé automatiquement à partir des données du REX et des charges que vous avez saisies. Vue en lecture seule.</p> : null}
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} />)}

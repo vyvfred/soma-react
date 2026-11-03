@@ -120,3 +120,27 @@ describe('Centre d\'attention', () => {
     expect(l.some((x) => /congés à placer/.test(x.text) && x.panel === 'rh')).toBe(true);
   });
 });
+
+import { ficheDecisions, lignesFiche } from './ficheDecisions.js';
+describe('Fiche des décisions du valideur', () => {
+  it('juge l\'absentéisme contre la référence RH et calcule les médianes réseau', () => {
+    const a = base(); a.histCA = 2000000; a.targetAbsRate = 8; a.sick = Array(12).fill(6);
+    const b = base(); b.name = 'AUTRE'; b.histCA = 1000000;
+    const f = ficheDecisions(a, [b]);
+    expect(f.absMoy).toBe(6);
+    expect(f.medCroissance).not.toBeNull();
+    const l = lignesFiche(f);
+    expect(l.find((x) => x.titre === 'Absentéisme maladie')).toMatchObject({ type: 'warn' });
+    expect(l.find((x) => x.titre === 'Structure des HS').type).toBe('ok');
+  });
+});
+
+import { alertesBudgetSoumis } from './alertesCG.js';
+describe('Alertes CG sur budget soumis', () => {
+  it('signale ligne non-roulante, ratio de maintien et TXR manquants', () => {
+    const m = alertesBudgetSoumis(agency('X')).map((x) => x.m).join(' | ');
+    expect(m).toMatch(/Coût horaire/);
+    expect(m).toMatch(/Ratio de maintien/);
+    expect(m).toMatch(/TXR cible/);
+  });
+});

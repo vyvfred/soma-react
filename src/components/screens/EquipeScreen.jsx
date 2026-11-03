@@ -12,6 +12,16 @@ const NUM_FIELDS = ['hours', 'hoursM', 'hsTarget', 'pctRoulant', 'joursSem', 'co
 const th = { textAlign: 'left', fontSize: 11, color: 'var(--ink65)', padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td = { padding: '4px 8px', borderBottom: '1px solid var(--border)' };
 
+// Info-bulles des colonnes (reprises verbatim du mono-fichier)
+const AIDE_COLONNES = {
+  'Qualif.': 'DEA = ambulancier diplômé, AA = auxiliaire, TAXI = chauffeur taxi, TPMR = transport PMR. Ces qualifications sont roulantes. REGULATEUR et REX sont non-roulants.',
+  'H. base': 'Heures travaillées par semaine. Ex : 35h pour un temps plein, 17,5h pour un mi-temps.',
+  '% roul.': 'Part du temps passée en roulant (sur la route). 100% pour un ambulancier à temps plein roulant. Pour un salarié partagé, indiquez sa part roulante : par exemple 50% pour une personne mi-roulant, mi-régulation. Le reste est compté comme improductif.',
+  'Entrée 2027': 'Date d\'arrivée en 2027. Laissez vide si la personne est déjà présente au 1er janvier.',
+  'Sortie 2027': 'Date de départ en 2027 (fin de CDD, retraite...). Laissez vide si la personne reste toute l\'année.',
+  'ETP': 'Équivalent temps plein : heures ÷ 35. Un temps plein = 1 ETP.'
+};
+
 export default function EquipeScreen() {
   const { agency: a, loading, error, editable, update, agenceNom } = useBudget();
   const fichier = useRef(null);
@@ -98,7 +108,9 @@ export default function EquipeScreen() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
-              {['Nom', 'Qualif.', 'Contrat', 'H. base', '% roul.', 'Jours/sem', 'Entrée 2027', 'Sortie 2027', 'ETP', ''].map((h, i) => <th key={i} style={th}>{h}</th>)}
+              {['Nom', 'Qualif.', 'Contrat', 'H. base', '% roul.', 'Jours/sem', 'Entrée 2027', 'Sortie 2027', 'ETP', ''].map((h, i) => (
+                <th key={i} style={th}>{h}{AIDE_COLONNES[h] ? <span className="aide-info">i<span className="aide-tip">{AIDE_COLONNES[h]}</span></span> : null}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
