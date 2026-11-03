@@ -82,7 +82,7 @@ export default function ObjectifScreen() {
         </label>
         <label style={{ flex: 1, minWidth: 220 }}>
           <span style={{ display: 'block', fontSize: 12, color: 'var(--ink65)', marginBottom: 6 }}>
-            TXR cible <span title="Taux de recette par heure : chiffre d'affaires ÷ heures de conduite. Généralement proche du TXR réalisé en 2026.">ⓘ</span>
+            TXR cible <span className="objKpiHelp" title="Taux de recette par heure : chiffre d'affaires ÷ heures de conduite. Généralement proche du TXR réalisé en 2026.">?</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" value={a.targetTXR ?? ''} onChange={nombre('targetTXR')} disabled={!editable} style={{ flex: 1 }} />

@@ -2,6 +2,7 @@ import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { syntheseBudget, coutChoix, bilanEnveloppesCP, indicateursDetailles } from '../../domain/syntheseBudget.js';
 import { euro, pct } from '../../domain/format.js';
+import { Pourquoi } from '../Vision.jsx';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -74,7 +75,7 @@ export default function SyntheseScreen() {
             <span style={{ fontSize: 20 }}>{choix.surcout <= 0 ? '✓' : '⚖️'}</span>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>
-                {choix.surcout <= 0 ? 'Répartition des congés optimale' : <>Choix de répartition : surcoût de <b>{euro(choix.surcout)}</b></>}
+                {choix.surcout <= 0 ? 'Répartition des congés optimale' : <>Choix de répartition : surcoût de <b>{euro(choix.surcout)}</b></>} <Pourquoi k="coutchoix" />
               </div>
               <div style={{ fontSize: 13, color: 'var(--ink65)', marginTop: 4 }}>
                 {choix.surcout <= 0

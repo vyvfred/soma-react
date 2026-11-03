@@ -105,3 +105,18 @@ describe('Pré-remplissage des charges standards', () => {
     expect(a.rex.Assurance.mode).toBe('annual');
   });
 });
+
+import { collecterAnomalies } from './anomalies.js';
+import { agency } from './calculations.js';
+describe('Centre d\'attention', () => {
+  it('budget vierge : objectif et équipe à renseigner', () => {
+    const l = collecterAnomalies(agency('X'));
+    expect(l.map((x) => x.panel)).toEqual(['objectif', 'team']);
+  });
+  it('signale les congés à placer et relie chaque point à un écran', () => {
+    const a = base();
+    a.presence = {};
+    const l = collecterAnomalies(a);
+    expect(l.some((x) => /congés à placer/.test(x.text) && x.panel === 'rh')).toBe(true);
+  });
+});

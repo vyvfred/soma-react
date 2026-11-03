@@ -7,6 +7,8 @@ const ENV_NAMES = ['Juin–Octobre (60% des congés)', 'Nov–Janvier (20%)', 'F
 // Courbe de charge hebdomadaire — port fidèle de renderChargeCurve().
 // Construit le même SVG (HS/personne par semaine, zones légales, seuils).
 // Le clic « ouvrir le mois » n'est pas encore câblé (navigation mois non portée).
+import { Pourquoi } from '../Vision.jsx';
+
 export default function ChargeCurve({ agency: a }) {
   const weeks = needWeeks(a);
   const pts = weeks.map((w) => {
@@ -73,7 +75,7 @@ export default function ChargeCurve({ agency: a }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Charge hebdomadaire (heures supp. / personne)</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Charge des équipes présentes sur l'année <Pourquoi k="lissage" /> <span style={{ fontWeight: 400, color: 'var(--ink65)', fontSize: 12 }}>— heures supplémentaires par personne, semaine par semaine</span></div>
       <div dangerouslySetInnerHTML={{ __html: svg }} />
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, fontSize: 11, color: 'var(--ink65)' }}>
         {ENV_NAMES.map((name, i) => (

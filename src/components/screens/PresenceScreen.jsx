@@ -11,6 +11,7 @@ import {
 import { euro, pct } from '../../domain/format.js';
 import { toast } from '../Toast.jsx';
 import ChargeCurve from './ChargeCurve.jsx';
+import { Pourquoi } from '../Vision.jsx';
 
 const M = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 const MOIS_LONGS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -297,7 +298,7 @@ export default function PresenceScreen() {
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
         💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les autres absences, puis <b>validez-le</b> : il passe en lecture seule
-        et SOMA répartit à nouveau les congés restants sur les mois encore libres.
+        et SOMA répartit à nouveau les congés restants sur les mois encore libres. <Pourquoi k="conges" />
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
         {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
@@ -364,7 +365,7 @@ export default function PresenceScreen() {
       </Repli>
 
       {/* ── HS 25 % / 50 % ── */}
-      <Repli titre="Répartition des heures supplémentaires (25% / 50%)" testid="repli-hs50">
+      <Repli titre={<>Répartition des heures supplémentaires (25% / 50%) <Pourquoi k="hs50" /></>} testid="repli-hs50">
         <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
           <span>⏱️</span>
           <div>Les 8 premières heures supplémentaires par semaine et par salarié sont majorées à <b>+25%</b>, au-delà à <b>+50%</b>.

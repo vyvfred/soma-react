@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { BudgetProvider } from '../context/BudgetContext.jsx';
 import { NavContext } from '../context/NavContext.jsx';
@@ -9,9 +9,63 @@ import PlaceholderPanel from './PlaceholderPanel.jsx';
 import { screenFor } from './screens/index.js';
 import CgGuide from './CgGuide.jsx';
 import StepNav from './StepNav.jsx';
+import ChangePasswordModal from './ChangePasswordModal.jsx';
+import { VisionOverlay, visionDejaVue } from './Vision.jsx';
 import ToastHost from './Toast.jsx';
 import { useBudget } from '../context/BudgetContext.jsx';
 import { VERSION_LABELS, VERSION_COLORS } from '../domain/versions.js';
+import { collecterAnomalies } from '../domain/anomalies.js';
+import { toast } from './Toast.jsx';
+
+// Sauvegarde manuelle (port de « 💾 Sauvegarder maintenant »)
+function SaveButton() {
+  const { agency, agenceNom, saveNow, editable } = useBudget();
+  if (!agency || !agenceNom || !editable) return null;
+  return (
+    <button className="soma-btn-ghost" data-testid="btn-sauver" title="Sauvegarder maintenant"
+      onClick={async () => { try { await saveNow(); toast('Budget enregistré', 'success'); } catch (e) { toast('Échec de l\'enregistrement', 'error'); } }}>💾</button>
+  );
+}
+
+// Centre d'attention (port de updateAttentionCenter / toggleAttentionPanel)
+function AttentionCenter({ onNavigate }) {
+  const { agency, agenceNom } = useBudget();
+  const [ouvert, setOuvert] = useState(false);
+  useEffect(() => {
+    if (!ouvert) return undefined;
+    const f = (e) => { if (!e.target.closest('[data-attention]')) setOuvert(false); };
+    document.addEventListener('click', f);
+    return () => document.removeEventListener('click', f);
+  }, [ouvert]);
+  if (!agency || !agenceNom) return null;
+  const l = collecterAnomalies(agency);
+  return (
+    <span data-attention style={{ position: 'relative', marginLeft: 12 }}>
+      <button data-testid="attention" className={'somAttention ' + (l.length ? 'alert' : 'calm')} onClick={() => setOuvert(!ouvert)}>
+        <span className="somAttentionDot" />
+        <span className="somAttentionText">{l.length ? l.length + ' point' + (l.length > 1 ? 's' : '') + ' à vérifier' : 'Aucun point à vérifier'}</span>
+      </button>
+      {ouvert ? (
+        <div className="attentionPanel" data-testid="attention-panel" style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 1000 }}>
+          <div className="attentionHeader">Centre d'attention</div>
+          {!l.length ? (
+            <div className="attentionEmpty">✓ Tout est en ordre.<br /><span>Aucun point ne demande votre attention.</span></div>
+          ) : (
+            <div className="attentionList">
+              {l.map((an, i) => (
+                <button key={i} className="attentionItem" onClick={() => { setOuvert(false); onNavigate(an.panel); }}>
+                  <span className={'attentionItemIcon ' + (an.level === 'warn' ? 'warn' : 'todo')}>{an.level === 'warn' ? '⚠' : '○'}</span>
+                  <span className="attentionItemText">{an.text}</span>
+                  <span className="attentionItemArrow">→</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+    </span>
+  );
+}
 
 // Version en cours d'édition, rappelée dans l'en-tête (port de updateCrumb / updateVersionIndicator)
 function VersionChip() {
@@ -38,18 +92,23 @@ function VersionBorder({ children }) {
 const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
 
 export default function AppShell() {
-  const { profile, logout } = useAuth();
+  const { profile, logout, simRole, simuler, recuperation } = useAuth();
+  const [mdpOuvert, setMdpOuvert] = useState(false);
+  // Vision SOMA : affichée au premier lancement de chaque utilisateur, puis sur demande
+  const [vision, setVision] = useState(() => (visionDejaVue(profile.id) ? null : 'premiere'));
   // Le CG peut basculer en vue « REX exploitation » sur l'agence ouverte (port de setRole).
   const [vueRex, setVueRex] = useState(false);
   const roleNav = profile.role === 'cg' && vueRex ? 'rex' : profile.role;
   const { panels, landing, group } = useMemo(() => navForRole(roleNav), [roleNav]);
   const [active, setActive] = useState(landing);
   const basculerVue = (rex) => { setVueRex(rex); setActive(rex ? 'finance' : 'cgdash'); };
+  // Changement de rôle simulé : revenir à l'écran d'atterrissage du rôle
+  useEffect(() => { setActive(landing); setVueRex(false); }, [profile.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Agence courante : fixe pour le REX (son agence), sélectionnable pour le CG/DF.
   const [cgAgence, setCgAgence] = useState(null);
   const activeAgence = profile.agence || cgAgence;
-  const needsPicker = !profile.agence && (profile.role === 'cg' || profile.role === 'df');
+  const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex'].includes(profile.role);
 
   const activeLabel = (panels.find((p) => p[0] === active) || [active, active])[1];
   const Screen = screenFor(active);
@@ -59,9 +118,18 @@ export default function AppShell() {
     <NavContext.Provider value={(panel, agence) => { if (agence && needsPicker) setCgAgence(agence); setActive(panel); }}>
     <BudgetProvider agenceNom={activeAgence}>
     <div className="soma-shell">
+      {simRole ? (
+        <div data-testid="sim-banner" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', padding: '6px 14px', background: 'var(--orange, #c45300)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+          <span>● Vous testez la vue « {roleLabel(simRole)} »</span>
+          <button onClick={() => simuler(null)} style={{ width: 'auto', margin: 0, padding: '4px 12px', fontSize: 12, background: '#fff', color: 'var(--orange, #c45300)', border: 'none', fontWeight: 700 }}>↩ Revenir à l'administration</button>
+        </div>
+      ) : null}
+      {vision ? <VisionOverlay premiereFois={vision === 'premiere'} userId={profile.id} onClose={() => setVision(null)} /> : null}
+      {mdpOuvert || recuperation ? <ChangePasswordModal onClose={() => setMdpOuvert(false)} /> : null}
       <header className="soma-topbar">
         <div className="soma-brand">SOMA</div>
         <VersionChip />
+        {['rex', 'cg'].includes(roleNav) || (profile.role === 'cg') ? <AttentionCenter onNavigate={setActive} /> : null}
         {profile.role === 'cg' ? (
           <div className="roleSwitch" data-testid="role-switch" style={{ display: 'flex', gap: 0, marginLeft: 12 }}>
             {[[true, 'REX exploitation'], [false, 'Contrôleur de gestion']].map(([rex, l]) => (
@@ -73,6 +141,8 @@ export default function AppShell() {
         <div className="soma-user">
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
+          {['rex', 'cg', 'admin'].includes(profile.role) ? <SaveButton /> : null}
+          <button className="soma-btn-ghost" data-testid="btn-mdp" onClick={() => setMdpOuvert(true)} title="Changer mon mot de passe">🔑</button>
           <button className="soma-btn-ghost" onClick={logout}>Déconnexion</button>
         </div>
       </header>
@@ -89,6 +159,7 @@ export default function AppShell() {
               {label}
             </button>
           ))}
+          <button className="soma-navbtn" data-testid="lien-vision" onClick={() => setVision('demande')} style={{ marginTop: 18, fontSize: 12, color: 'var(--ink65)', fontStyle: 'italic' }}>La vision de SOMA</button>
         </nav>
 
         <VersionBorder>

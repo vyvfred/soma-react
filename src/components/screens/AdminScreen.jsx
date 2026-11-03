@@ -7,6 +7,7 @@ import { AGENCES, agencesOps } from '../../config/agences.js';
 import { STATUT_LABELS, statutLabel } from '../../config/statut.js';
 import { roleLabel } from '../../config/roles.js';
 import { euro } from '../../domain/format.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const ROLES = ['rex', 'dr', 'cg', 'df', 'dg', 'pdg', 'admin'];
 
@@ -15,6 +16,7 @@ export default function AdminScreen() {
   const [msg, setMsg] = useState(null);
   const [form, setForm] = useState({ nom: '', email: '', role: 'rex', agence: '' });
   const [creating, setCreating] = useState(false);
+  const { simuler } = useAuth();
 
   const load = useCallback(() => {
     setState((p) => ({ ...p, loading: true }));
@@ -55,6 +57,17 @@ export default function AdminScreen() {
           {msg.ok ? '✓ ' : '⚠ '}{msg.text}
         </div>
       ) : null}
+
+      {/* Voir en tant que… (port de simulerRole) */}
+      <div data-testid="voir-en-tant-que" style={{ marginBottom: 20, padding: '12px 14px', border: '1px solid var(--border)', background: 'var(--bg2)' }}>
+        <h3 style={{ fontSize: 14, margin: '0 0 6px' }}>👁 Voir en tant que…</h3>
+        <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>Simulez la vue d'un utilisateur sans vous déconnecter. Utile pour tester l'interface avant de la déployer.</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[['rex', 'REX Exploitation', 'var(--violet)'], ['cg', 'Contrôleur de gestion', 'var(--blue)'], ['dr', 'Directeur Régional', '#2C3E7A'], ['df', 'Directeur Financier', '#4A235A'], ['dg', 'Direction', '#1A5276']].map(([r, l, c]) => (
+            <button key={r} onClick={() => simuler(r)} style={{ width: 'auto', margin: 0, background: c, color: '#fff', border: 'none', fontWeight: 700, fontSize: 12, padding: '7px 12px' }}>{l}</button>
+          ))}
+        </div>
+      </div>
 
       {/* Création de compte */}
       <h3 style={{ fontSize: 14, marginBottom: 10 }}>Créer un compte</h3>

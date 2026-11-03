@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 export default function LoginScreen() {
-  const { login, error } = useAuth();
+  const { login, error, motDePasseOublie } = useAuth();
+  const [oubli, setOubli] = useState(false);
+  const [emailOubli, setEmailOubli] = useState('');
+  const [msgOubli, setMsgOubli] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -58,6 +61,19 @@ export default function LoginScreen() {
         <button className="soma-btn-primary" onClick={handleSubmit} disabled={busy}>
           {busy ? 'Connexion…' : 'Se connecter'}
         </button>
+
+        <button type="button" data-testid="mdp-oublie" onClick={() => { setOubli(!oubli); setEmailOubli(emailOubli || email); setMsgOubli(null); }}
+          style={{ background: 'transparent', border: 'none', color: 'var(--ink65)', fontSize: 12, textDecoration: 'underline', marginTop: 12, padding: 0, width: 'auto', cursor: 'pointer' }}>
+          Mot de passe oublié ?
+        </button>
+        {oubli ? (
+          <div style={{ marginTop: 10 }}>
+            <label htmlFor="forgotEmail">E-mail du compte</label>
+            <input id="forgotEmail" type="email" value={emailOubli} onChange={(e) => setEmailOubli(e.target.value)} />
+            <button className="soma-btn-ghost" style={{ marginTop: 8 }} onClick={async () => setMsgOubli(await motDePasseOublie(emailOubli))}>Envoyer le lien de réinitialisation</button>
+            {msgOubli ? <div data-testid="mdp-oublie-msg" className={msgOubli.ok ? '' : 'soma-auth-err'} style={{ fontSize: 12, marginTop: 8, color: msgOubli.ok ? 'var(--green, #2e7d6f)' : undefined }}>{msgOubli.message}</div> : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );
