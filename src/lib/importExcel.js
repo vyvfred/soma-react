@@ -19,3 +19,15 @@ export async function lireClasseur(file, choisirFeuille) {
 
 // Feuille « Données agences » si elle existe (comme la version mono-fichier)
 export const feuilleAgences = (noms) => noms.find((n) => n.toLowerCase().includes('agence') || n.toLowerCase().includes('donn'));
+
+// Écrit un classeur à partir de feuilles [{ nom, lignes, largeurs }] et le télécharge.
+export async function telechargerClasseur(feuilles, nomFichier) {
+  const XLSX = await xlsx();
+  const wb = XLSX.utils.book_new();
+  feuilles.forEach((f) => {
+    const ws = XLSX.utils.aoa_to_sheet(f.lignes);
+    if (f.largeurs) ws['!cols'] = f.largeurs.map((wch) => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, ws, f.nom);
+  });
+  XLSX.writeFile(wb, nomFichier);
+}

@@ -4,6 +4,8 @@ import { agencesOps } from '../../config/agences.js';
 import { statutLabel } from '../../config/statut.js';
 import { computeConsolidation } from '../../domain/consolidation.js';
 import { euro } from '../../domain/format.js';
+import { feuillesConsolidation, nomFichierConsolidation } from '../../domain/exportConsolidation.js';
+import { telechargerClasseur } from '../../lib/importExcel.js';
 
 function Kpi({ label, value, note }) {
   return (
@@ -19,6 +21,7 @@ const ALERT_COLOR = { crit: 'var(--orange, #c45300)', warn: '#FF8F00', info: 'va
 
 export default function ConsolidationScreen() {
   const [state, setState] = useState({ loading: true, error: null, map: null });
+  const [exportEtat, setExportEtat] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -48,7 +51,18 @@ export default function ConsolidationScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Consolidation réseau</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <h2 style={{ margin: 0 }}>Consolidation réseau</h2>
+        <button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
+          onClick={async () => {
+            setExportEtat('cours');
+            try { await telechargerClasseur(feuillesConsolidation(state.map || {}, ops), nomFichierConsolidation()); setExportEtat('ok'); }
+            catch (e) { setExportEtat('erreur'); }
+          }}
+          style={{ width: 'auto', margin: 0, fontSize: 12, padding: '7px 14px', background: 'linear-gradient(135deg,var(--green),#45c87a)', color: '#fff', border: 'none', fontWeight: 700 }}>
+          {exportEtat === 'cours' ? '⏳ Génération…' : exportEtat === 'ok' ? '✓ Exporté' : exportEtat === 'erreur' ? '⚠ Échec, réessayer' : '📥 Export Excel'}
+        </button>
+      </div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="Agences réseau" value={c.total} />

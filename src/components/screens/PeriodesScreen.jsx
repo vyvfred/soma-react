@@ -1,5 +1,5 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { buildPeriodesPaie, payrollPayMonth, varDec2026Total } from '../../domain/calculations.js';
+import { buildPeriodesPaie, payrollPayMonth, varDec2026Total, chargesReport2028 } from '../../domain/calculations.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { euro } from '../../domain/format.js';
 
@@ -96,6 +96,14 @@ export default function PeriodesScreen() {
           ) : null}
         </table>
       </div>
+
+      {a.costHour && a.cal && a.cal.length && chargesReport2028(a) > 0 ? (
+        <div data-testid="report-2028" style={{ marginTop: 14, padding: 14, background: 'rgba(196,83,0,.08)', border: '1px solid var(--orange, #c45300)' }}>
+          <h3 style={{ margin: '0 0 8px', color: 'var(--orange, #c45300)', fontSize: 15 }}>Charges à reporter sur paie Janvier 2028</h3>
+          <p className="hint" style={{ margin: '0 0 8px', fontSize: 12 }}>La période du 06/12/2027 au 31/12/2027 ne sera pas comptabilisée en 2027. Ces charges apparaîtront en paie de janvier 2028.</p>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 18, fontWeight: 700, color: 'var(--orange, #c45300)' }}>{euro(chargesReport2028(a))}</div>
+        </div>
+      ) : null}
 
       {editable ? (
         <div style={{ marginTop: 14 }}>

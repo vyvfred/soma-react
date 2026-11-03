@@ -4,6 +4,8 @@ import { agencesOps } from '../../config/agences.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { chargesCGSaisies } from '../../domain/calculations.js';
 import { CgParcours } from '../CgGuide.jsx';
+import { supervisionReseau, STATUT_LABELS } from '../../domain/cgSupervision.js';
+import { euro } from '../../domain/format.js';
 
 // Tableau de bord CG — vue « Préparation » (port fidèle de renderCgDashPrep).
 // Agrège l'état de préparation sur toutes les agences opérationnelles du réseau.
@@ -17,10 +19,10 @@ function Kpi({ label, value, note }) {
   );
 }
 
-function ActionItem({ text, action, onClick }) {
+function ActionItem({ text, action, onClick, warn }) {
   return (
     <button className="attentionItem" style={{ border: '1px solid var(--border)', marginBottom: 6, width: '100%' }} onClick={onClick}>
-      <span className="attentionItemIcon todo">○</span>
+      <span className={'attentionItemIcon ' + (warn ? 'warn' : 'todo')}>{warn ? '⚠' : '○'}</span>
       <span className="attentionItemText">{text}</span>
       <span className="attentionItemArrow">{action} →</span>
     </button>
@@ -30,6 +32,7 @@ function ActionItem({ text, action, onClick }) {
 export default function CgDashScreen() {
   const navigate = useNav();
   const [state, setState] = useState({ loading: true, error: null, map: null });
+  const [vue, setVue] = useState('prep');
 
   useEffect(() => {
     let active = true;
@@ -65,9 +68,55 @@ export default function CgDashScreen() {
   else insight += 'Toutes les agences ont leurs données de référence. ';
   if (sansCharges.length) insight += sansCharges.length + ' agence' + (sansCharges.length > 1 ? 's' : '') + " n'ont pas encore de charges saisies.";
 
+  const bascule = (
+    <div className="segmented" style={{ display: 'flex', gap: 0 }} data-testid="cgdash-vue">
+      {[['prep', 'Préparation'], ['superv', 'Supervision']].map(([k, l]) => (
+        <button key={k} onClick={() => setVue(k)} style={{ width: 'auto', margin: 0, padding: '7px 16px', fontSize: 13, border: '1px solid var(--border)',
+          background: vue === k ? 'var(--violet2)' : 'transparent', color: vue === k ? '#fff' : 'var(--ink65)', fontWeight: vue === k ? 700 : 400 }}>{l}</button>
+      ))}
+    </div>
+  );
+  const entete = (titre) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+      <h2 style={{ margin: 0 }}>{titre}</h2>{bascule}
+    </div>
+  );
+
+  if (vue === 'superv') {
+    const sv = supervisionReseau(ops, map);
+    return (
+      <div className="card" data-testid="cgdash-superv">
+        {entete('Tableau de bord réseau — Supervision 2027')}
+        <div className="kpis" style={{ marginBottom: 16 }}>{sv.kpis.map((k) => <Kpi key={k.label} {...k} />)}</div>
+        <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 18 }}
+          dangerouslySetInnerHTML={{ __html: '💬 ' + sv.insight }} />
+        <h3 style={{ fontSize: 14, marginBottom: 10 }}>Agences nécessitant attention</h3>
+        {sv.anomalies.map((an) => <ActionItem key={'a' + an.nom} warn text={<><b>{an.nom}</b> — {an.text}</>} action="voir" onClick={() => navigate('objectif', an.nom)} />)}
+        {sv.nonSoumis.map((r) => <ActionItem key={'n' + r.nom} text={<><b>{r.nom}</b> — pas encore soumis</>} action="voir" onClick={() => navigate('objectif', r.nom)} />)}
+        {!sv.anomalies.length && !sv.nonSoumis.length ? <p className="hint">✓ Aucune agence atypique. Les budgets soumis sont cohérents avec le réseau.</p> : null}
+        <details style={{ border: '1px solid var(--border)', marginTop: 16 }}>
+          <summary style={{ cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fontSize: 14 }}>Voir toutes les agences (état détaillé)</summary>
+          <div style={{ padding: '4px 14px 14px', overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }} data-testid="cgdash-toutes">
+              <thead><tr style={{ color: 'var(--ink65)' }}><th style={{ textAlign: 'left', padding: 6 }}>Agence</th><th style={{ textAlign: 'left', padding: 6 }}>Statut</th><th style={{ textAlign: 'right', padding: 6 }}>CA budgété</th></tr></thead>
+              <tbody>
+                {sv.rows.map((r) => (
+                  <tr key={r.nom} style={{ borderTop: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => navigate('objectif', r.nom)}>
+                    <td style={{ padding: 6 }}>{r.nom}</td><td style={{ padding: 6 }}>{STATUT_LABELS[r.statut] || r.statut}</td>
+                    <td className="num" style={{ padding: 6, textAlign: 'right' }}>{r.ca > 0 ? euro(r.ca) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    );
+  }
+
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Tableau de bord — Préparation réseau</h2>
+      {entete('Tableau de bord — Préparation réseau')}
       <div style={{ marginBottom: 16 }}><CgParcours /></div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>

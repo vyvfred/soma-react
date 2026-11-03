@@ -39,8 +39,12 @@ const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'previsionnel', 'fi
 
 export default function AppShell() {
   const { profile, logout } = useAuth();
-  const { panels, landing, group } = useMemo(() => navForRole(profile.role), [profile.role]);
+  // Le CG peut basculer en vue « REX exploitation » sur l'agence ouverte (port de setRole).
+  const [vueRex, setVueRex] = useState(false);
+  const roleNav = profile.role === 'cg' && vueRex ? 'rex' : profile.role;
+  const { panels, landing, group } = useMemo(() => navForRole(roleNav), [roleNav]);
   const [active, setActive] = useState(landing);
+  const basculerVue = (rex) => { setVueRex(rex); setActive(rex ? 'finance' : 'cgdash'); };
 
   // Agence courante : fixe pour le REX (son agence), sélectionnable pour le CG/DF.
   const [cgAgence, setCgAgence] = useState(null);
@@ -52,12 +56,20 @@ export default function AppShell() {
   const showPicker = needsPicker && PER_AGENCY_PANELS.has(active);
 
   return (
-    <NavContext.Provider value={setActive}>
+    <NavContext.Provider value={(panel, agence) => { if (agence && needsPicker) setCgAgence(agence); setActive(panel); }}>
     <BudgetProvider agenceNom={activeAgence}>
     <div className="soma-shell">
       <header className="soma-topbar">
         <div className="soma-brand">SOMA</div>
         <VersionChip />
+        {profile.role === 'cg' ? (
+          <div className="roleSwitch" data-testid="role-switch" style={{ display: 'flex', gap: 0, marginLeft: 12 }}>
+            {[[true, 'REX exploitation'], [false, 'Contrôleur de gestion']].map(([rex, l]) => (
+              <button key={l} onClick={() => basculerVue(rex)} style={{ width: 'auto', margin: 0, padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)',
+                background: vueRex === rex ? 'var(--violet2)' : 'transparent', color: vueRex === rex ? '#fff' : 'var(--ink65)', fontWeight: vueRex === rex ? 700 : 400 }}>{l}</button>
+            ))}
+          </div>
+        ) : null}
         <div className="soma-user">
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>

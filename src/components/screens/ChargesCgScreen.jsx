@@ -1,4 +1,5 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
+import { prefillCharges } from '../../domain/prefillCharges.js';
 import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH } from '../../domain/calculations.js';
 import { chargesInsight } from '../../domain/chargesInsight.js';
 import { euro } from '../../domain/format.js';
@@ -88,6 +89,10 @@ export default function ChargesCgScreen() {
             </label>
           ))}
         </div>
+        {editable ? (
+          <button data-testid="prefill-charges" onClick={() => { if (window.confirm('Pré-remplir les postes standards (carburant, crédit-bail, loyers, assurance, impôts, honoraires, péages, charges financières) à partir du CA ? Les montants actuels de ces postes seront remplacés.')) update((draft) => prefillCharges(JSON.parse(JSON.stringify(draft)))); }}
+            style={{ width: 'auto', margin: '10px 0 0', fontSize: 12, padding: '7px 14px' }}>Pré-remplir standards</button>
+        ) : null}
         <p className="hint" style={{ fontSize: 12, margin: '10px 0 0' }}>
           Coût horaire chargé : <b>{a.costHour ? fmtCoutH(a.costHour) : '—'}</b> en janvier{juin ? <>, <b>{fmtCoutH(juin)}</b> à partir de juin</> : ' (pas de taux au 1er juin : celui de janvier s\'applique toute l\'année)'}.
           {' '}Masse salariale non-roulante : <b>{nr !== null ? euro(Math.round(nr)) + ' / mois' : 'non saisie'}</b>.

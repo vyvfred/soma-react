@@ -49,3 +49,59 @@ describe('Synthèse du budget', () => {
     expect(ind.fin.length).toBe(6);
   });
 });
+
+import { supervisionReseau } from './cgSupervision.js';
+describe('Supervision réseau CG', () => {
+  it('compte soumissions et validations, détecte les CA atypiques', () => {
+    const cal = (v) => [{ total: v }];
+    const ops = ['A', 'B', 'C', 'D', 'E'].map((nom) => ({ nom }));
+    const map = {
+      A: { statut: 'soumis_dr', data: { cal: cal(1000) } },
+      B: { statut: 'valide_pdg', data: { cal: cal(1100) } },
+      C: { statut: 'brouillon', data: { cal: cal(1050) } },
+      D: { statut: 'soumis_df', data: { cal: cal(3000) } }
+    };
+    const s = supervisionReseau(ops, map);
+    expect(s.kpis[0].value).toBe('3/5');
+    expect(s.kpis[1].value).toBe('1/5');
+    expect(s.caTotal).toBe(6150);
+    expect(s.anomalies.map((x) => x.nom)).toEqual(['D']);
+    expect(s.nonSoumis.map((x) => x.nom)).toEqual(['C', 'E']);
+    expect(s.rows.find((r) => r.nom === 'E').statut).toBe('—');
+  });
+});
+
+import { feuillesConsolidation } from './exportConsolidation.js';
+describe('Export Excel de la consolidation', () => {
+  it('3 feuilles, une ligne par agence, agences sans budget marquées', () => {
+    const ops = [{ nom: 'A', zone: 'B' }, { nom: 'B', zone: 'A' }];
+    const map = { A: { statut: 'soumis_dr', updatedAt: '2026-11-01T10:00:00Z', data: { histTXR2026: 100, targetAbsRate: 10, cal: [{ total: 400000 }], employees: [{ qual: 'DEA', hours: 35, pctRoulant: 100 }] } } };
+    const f = feuillesConsolidation(map, ops);
+    expect(f.map((x) => x.nom)).toEqual(['Consolidation', 'Statuts', 'Indicateurs']);
+    expect(f[0].lignes.length).toBe(3);
+    const a = f[0].lignes[1];
+    expect(a[11]).toBe(400000);
+    expect(a[12]).toBe(Math.round(35 * 0.9 * 100 * 52));
+    expect(f[1].lignes[2][2]).toBe('Non commencé');
+  });
+});
+
+import { chargesReport2028 } from './calculations.js';
+describe('Charges à reporter sur janvier 2028', () => {
+  it('positives pour une agence avec équipe et coût horaire', () => {
+    const a = base();
+    expect(chargesReport2028(a)).toBeGreaterThan(0);
+  });
+});
+
+import { prefillCharges } from './prefillCharges.js';
+import { annualCA } from './calculations.js';
+describe('Pré-remplissage des charges standards', () => {
+  it('applique les ratios du CA', () => {
+    const a = base();
+    prefillCharges(a);
+    expect(a.rex.Carburant).toMatchObject({ mode: 'pct', pct: 5.2, allocationKey: 'ca' });
+    expect(a.rex.Assurance.annual).toBe(Math.round(annualCA(a) * 0.018));
+    expect(a.rex.Assurance.mode).toBe('annual');
+  });
+});

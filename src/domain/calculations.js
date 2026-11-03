@@ -608,6 +608,27 @@ function chargesCGSaisies(d){
   return n;
 }
 
+// Charges à reporter sur la paie de janvier 2028 : heures du 06/12/2027 au 31/12/2027
+// (port fidèle de chargesReport2028).
+function chargesReport2028(a){
+  let debut = new Date(2027, 11, 6), fin = new Date(2027, 11, 31), nbJours = 26;
+  let ms = 0;
+  hsRows(a).forEach(function(r){
+    let daysOfWeek = a.cal.filter(function(d){ return d.week === r.week; });
+    if(!daysOfWeek.length) return;
+    let daysIn = daysOfWeek.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length;
+    let ratio = daysIn / daysOfWeek.length;
+    if(ratio <= 0) return;
+    ms += coutRoulantSemaine(a, r) * ratio;
+  });
+  if(msNRMensuel(a) === null) ms += (a.employees || [])
+    .filter(function(e){ return !['DEA','AA','TAXI','TPMR','FACTURIERE'].includes(e.qual); })
+    .reduce(function(s, e){ return s + (+e.coutJour || 0) * nbJours * (+e.joursSem || 5) / 7; }, 0);
+  if(msNRMensuel(a) === null) ms += (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJours / 365);
+  return Math.round(ms);
+}
+
 export {
+  chargesReport2028,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
