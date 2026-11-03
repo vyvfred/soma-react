@@ -1,5 +1,6 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { objectifInsight } from '../../domain/objectifInsight.js';
+import BudgetBar from '../BudgetBar.jsx';
 
 const BANNER_STYLE = {
   ok: { border: 'var(--green, #2e7d6f)', bg: 'rgba(46,125,111,.10)', color: 'var(--green, #2e7d6f)' },
@@ -33,6 +34,7 @@ export default function ObjectifScreen() {
 
   return (
     <div className="card">
+      <BudgetBar />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <h2 style={{ margin: 0 }}>Objectif 2027 — {agenceNom}</h2>
         <SaveIndicator status={saveStatus} />

@@ -140,3 +140,8 @@
 .cgParcoursT{flex:1;font-size:13px;line-height:1.45}
 .cgParcoursT span{color:var(--ink65);font-size:12px}
 @media (max-width:640px){.cgParcoursList li{flex-wrap:wrap}.cgParcoursList li .cgGuideChip{margin-left:38px}}
+
+/* Confettis du récapitulatif de fin de parcours */
+.somaConfetti{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;opacity:.9;animation:somaConfettiChute 1.8s ease-in forwards}
+@keyframes somaConfettiChute{to{transform:translateY(105vh) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion: reduce){.somaConfetti{display:none}}

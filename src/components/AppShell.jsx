@@ -8,6 +8,31 @@ import { agencesOps } from '../config/agences.js';
 import PlaceholderPanel from './PlaceholderPanel.jsx';
 import { screenFor } from './screens/index.js';
 import CgGuide from './CgGuide.jsx';
+import StepNav from './StepNav.jsx';
+import ToastHost from './Toast.jsx';
+import { useBudget } from '../context/BudgetContext.jsx';
+import { VERSION_LABELS, VERSION_COLORS } from '../domain/versions.js';
+
+// Version en cours d'édition, rappelée dans l'en-tête (port de updateCrumb / updateVersionIndicator)
+function VersionChip() {
+  const { agency, agenceNom, budgetId, activeVersion, saveStatus } = useBudget();
+  if (!agency || !agenceNom) return null;
+  const c = VERSION_COLORS[activeVersion] || VERSION_COLORS.v1;
+  const etat = { saving: 'Enregistrement…', saved: 'Enregistré', error: 'Non enregistré' }[saveStatus] || '';
+  return (
+    <span className="soma-crumb" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+      <b>{agenceNom}</b>
+      {budgetId ? <span data-testid="version-chip" style={{ padding: '2px 8px', borderRadius: 20, background: c.bg, color: c.fg, fontWeight: 700 }}>{VERSION_LABELS[activeVersion]}</span> : null}
+      {etat ? <span style={{ color: saveStatus === 'error' ? 'var(--orange)' : 'var(--ink30)' }}>{etat}</span> : null}
+    </span>
+  );
+}
+// Bordure d'ambiance de la version en cours d'édition
+function VersionBorder({ children }) {
+  const { agency, budgetId, activeVersion } = useBudget();
+  const c = VERSION_COLORS[activeVersion] || VERSION_COLORS.v1;
+  return <main className="soma-main" style={agency && budgetId ? { borderTop: '3px solid ' + c.solid } : undefined}>{children}</main>;
+}
 
 // Panneaux qui portent sur UNE agence (donc concernés par la sélection d'agence CG).
 const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
@@ -32,6 +57,7 @@ export default function AppShell() {
     <div className="soma-shell">
       <header className="soma-topbar">
         <div className="soma-brand">SOMA</div>
+        <VersionChip />
         <div className="soma-user">
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
@@ -53,7 +79,7 @@ export default function AppShell() {
           ))}
         </nav>
 
-        <main className="soma-main">
+        <VersionBorder>
           {showPicker ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, color: 'var(--ink65)' }}>Agence ouverte :</span>
@@ -69,8 +95,10 @@ export default function AppShell() {
           {showPicker && !activeAgence
             ? <div className="card"><p className="hint">Sélectionnez une agence ci-dessus pour ouvrir son budget.</p></div>
             : Screen ? <Screen /> : <PlaceholderPanel id={active} label={activeLabel} />}
-        </main>
+          {['rex', 'cg', 'admin'].includes(profile.role) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
+        </VersionBorder>
       </div>
+    <ToastHost />
     </div>
     </BudgetProvider>
     </NavContext.Provider>

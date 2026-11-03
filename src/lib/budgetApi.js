@@ -1,5 +1,8 @@
 import { sb } from './supabase.js';
-import { agencyFromRow, parseBudgetRow, buildBudgetData, budgetData as budgetDataOf } from '../domain/budgetMapper.js';
+import { agencyFromRow, parseBudgetRow, buildBudgetData, migrateAgency, budgetData as budgetDataOf } from '../domain/budgetMapper.js';
+import { agency } from '../domain/calculations.js';
+import { donneesSoumission } from '../domain/versions.js';
+import { AGENCES } from '../config/agences.js';
 import { fusionnerRefCG, appliquerRefCG, CG_KEYS_SANS_VERROU } from '../domain/refCG.js';
 import { fusionnerEquipe } from '../domain/imports.js';
 import { ensureValidation as ensureValidationEngine, appliquerDecision as appliquerDecisionEngine } from '../domain/validationEngine.js';
@@ -24,19 +27,50 @@ export async function loadAgencyBudget(agenceNom) {
   // PGRST116 = aucune ligne (budget pas encore créé) : cas normal.
   if (error && error.code !== 'PGRST116') throw error;
   if (!data) {
-    return { agency: null, statut: 'brouillon', budgetId: null, meta: null, activeVersion: 'v1' };
+    // Budget pas encore créé : on part d'une agence vierge (comme la version mono-fichier) ;
+    // la première modification crée la ligne en base.
+    const neuve = migrateAgency(agency(agenceNom));
+    const ref = AGENCES.find((x) => x.nom === agenceNom);
+    if (ref) neuve.schoolZone = ref.zone || 'B';
+    await reprendreRatioReseau(neuve);
+    return { agency: neuve, statut: 'brouillon', budgetId: null, meta: null, activeVersion: 'v1', data: null, validation: null };
   }
 
   const parsed = parseBudgetRow(data);
-  const agency = agencyFromRow(data);
-  await reprendreRatioReseau(agency);
+  const a = agencyFromRow(data);
+  await reprendreRatioReseau(a);
   return {
-    agency,
+    agency: a,
     statut: data.statut,
     budgetId: data.id,
     meta: parsed.meta,
-    activeVersion: parsed.activeVersion
+    activeVersion: parsed.activeVersion,
+    data: data.data || null,
+    validation: parsed.validation
   };
+}
+
+// Lit le jsonb `data` d'un budget (versions, meta, validation)
+export async function loadBudgetData(budgetId) {
+  const { data, error } = await sb.from('budgets').select('data,statut').eq('id', budgetId).single();
+  if (error) throw error;
+  return { data: (data && data.data) || {}, statut: data && data.statut };
+}
+
+// Réécrit le jsonb `data` d'un budget (changement de version, duplication, description)
+export async function writeBudgetData(budgetId, data, statut) {
+  const patch = statut ? { data, statut } : { data };
+  const { error } = await sb.from('budgets').update(patch).eq('id', budgetId);
+  if (error) throw error;
+}
+
+// Soumission au circuit de validation (port de soumettreBudget) : la version donnée
+// devient la version soumise, un nouveau cycle de validation démarre (historique conservé).
+export async function submitBudget(budgetId, version, parNom) {
+  const { data } = await loadBudgetData(budgetId);
+  const d = donneesSoumission(data, version, parNom);
+  await writeBudgetData(budgetId, d, 'soumis_dr');
+  return d;
 }
 
 // Ratio de maintien de salaire : paramètre réseau. Une agence qui ne l'a pas encore
