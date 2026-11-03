@@ -46,13 +46,28 @@ reste compté. L'écran Périodes de paie affiche un résumé et un lien.
   de cette version. FAQ REX : 4 questions ajoutées.
 
 ## Vérification
-- 120 tests au vert (89 d'origine + 31 nouveaux : `parametrage2027`, `refCG`,
-  `cgParcours`).
+- 131 tests au vert (89 d'origine + 42 nouveaux : `parametrage2027`, `refCG`,
+  `cgParcours`, `imports`).
 - Moteur comparé au mono-fichier sur trois scénarios (paramétrage complet, ancien
   modèle, mois civil) : résultats identiques au centime.
-- Parcours CG complet joué dans un navigateur contre une base simulée : 21 contrôles
-  au vert.
+- Parcours CG complet, imports compris, joué dans un navigateur contre une base
+  simulée : 27 contrôles au vert.
+
+## Imports Excel du CG
+Fonctions pures dans `domain/imports.js` (testées dans `imports.test.js`), lecture du
+fichier dans `lib/importExcel.js` (SheetJS 0.18.5, chargé seulement au premier import) :
+- **Données agences** (écran Données agences) : colonnes reconnues par leur intitulé,
+  taux de juin et colonnes non-roulantes distingués, écriture dans la version lue par
+  le REX (`saveCgData`).
+- **Registre RH** (écran Données agences) : CDD reconnus quel que soit le libellé,
+  sorties avant 2027 écartées et dates 2027 conservées, heures des non-roulants
+  gardées, emplois reconnus avec ou sans accents ; une équipe déjà construite par le
+  REX n'est pas écrasée (`saveEquipesImportees`, `fusionnerEquipe`).
+- **Variables de décembre 2026** (écran Variables déc. 2026) : montants mis en
+  attente, le CG vérifie puis enregistre.
+- Une ligne de titre (« Données agences 2027 ») n'est plus prise pour l'en-tête
+  (défaut corrigé aussi dans le mono-fichier).
 
 ## Pas encore porté (existe dans le mono-fichier)
-Imports Excel (Données agences, registre RH), export Excel de la consolidation,
-vue Supervision du tableau de bord, bloc des HS improductives de l'écran Présence.
+Export Excel de la consolidation, vue Supervision du tableau de bord, bloc des HS
+improductives de l'écran Présence.

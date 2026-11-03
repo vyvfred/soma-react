@@ -1,5 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
-import { loadNetworkBudgets, saveCgData } from '../../lib/budgetApi.js';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { loadNetworkBudgets, saveCgData, saveEquipesImportees } from '../../lib/budgetApi.js';
+import { lireClasseur, feuilleAgences } from '../../lib/importExcel.js';
+import { parseRefAgences, parseRegistre } from '../../domain/imports.js';
 import { agencesOps } from '../../config/agences.js';
 import { refAgencesInsight } from '../../domain/refAgencesInsight.js';
 import { costHourJuin } from '../../domain/calculations.js';
@@ -38,6 +40,9 @@ export default function RefAgencesScreen() {
   const [ratio, setRatio] = useState(null); // saisie en cours du ratio réseau (null = inchangé)
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState(null);
+  const fichierRefs = useRef(null), fichierRegistre = useRef(null);
 
   function reload() {
     setState((s) => ({ ...s, loading: !s.map }));
@@ -96,9 +101,70 @@ export default function RefAgencesScreen() {
 
   const dirty = Object.keys(edits).length > 0 || ratio !== null;
 
+  // Import « Données agences » : écrit directement dans le budget de chaque agence
+  // (version lue par le REX), comme la version mono-fichier.
+  async function importerRefs(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true); setImportMsg(null);
+    try {
+      const { rows } = await lireClasseur(file, feuilleAgences);
+      const r = parseRefAgences(rows, ops);
+      if (r.erreur) { setImportMsg({ ok: false, t: r.erreur }); return; }
+      const w = await saveCgData(r.saisies);
+      Object.entries(w.ecrits).forEach(([nom, data]) => applyExternal(nom, data));
+      invaliderEtatCG();
+      // L'import fait foi : les saisies en cours pour ces agences sont remplacées
+      setEdits((prev) => { const n = { ...prev }; Object.keys(w.ecrits).forEach((k) => delete n[k]); return n; });
+      let t = w.count + ' agence(s) mise(s) à jour';
+      if (r.inconnues.length) t += ' — non reconnues : ' + r.inconnues.slice(0, 3).join(', ') + (r.inconnues.length > 3 ? '…' : '');
+      if (w.echecs.length) t += ' — refusées par le serveur : ' + w.echecs.join(', ');
+      setImportMsg({ ok: !r.inconnues.length && !w.echecs.length, t });
+      reload();
+    } catch (err) {
+      setImportMsg({ ok: false, t: 'Erreur : ' + (err.message || 'lecture impossible') });
+    } finally { setImporting(false); }
+  }
+
+  // Import du registre RH : équipes de chaque agence (une équipe déjà construite par le
+  // REX n'est pas écrasée ; le message le signale).
+  async function importerRegistre(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true); setImportMsg(null);
+    try {
+      const { rows, decoderSerie } = await lireClasseur(file);
+      const r = parseRegistre(rows, decoderSerie);
+      if (r.erreur) { setImportMsg({ ok: false, t: r.erreur }); return; }
+      const w = await saveEquipesImportees(r.parAgence);
+      Object.entries(w.ecrites).forEach(([nom, employees]) => applyExternal(nom, { employees }, true));
+      invaliderEtatCG();
+      let t = w.count + ' agence(s) mise(s) à jour (' + w.totalSal + ' salariés importés)';
+      if (r.ecartes) t += ' — ' + r.ecartes + ' ligne(s) écartée(s) (sortis avant 2027, emploi ou agence non reconnus)';
+      if (w.gardees.length) t += ' — équipe déjà construite par le REX, non remplacée : ' + w.gardees.join(', ');
+      if (w.echecs.length) t += ' — refusées par le serveur : ' + w.echecs.join(', ');
+      setImportMsg({ ok: !w.echecs.length, t });
+      reload();
+    } catch (err) {
+      setImportMsg({ ok: false, t: 'Erreur : ' + (err.message || 'lecture impossible') });
+    } finally { setImporting(false); }
+  }
+
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Données agences — références CG</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+        <h2 style={{ margin: 0 }}>Données agences — références CG</h2>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={() => fichierRegistre.current && fichierRegistre.current.click()} disabled={importing}>👥 Importer registre RH</button>
+          <button onClick={() => fichierRefs.current && fichierRefs.current.click()} disabled={importing}>📥 Importer données agences</button>
+          <input ref={fichierRegistre} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={importerRegistre} data-testid="fichier-registre" />
+          <input ref={fichierRefs} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={importerRefs} data-testid="fichier-refs" />
+        </div>
+      </div>
+      {importing ? <p className="hint">⏳ Import en cours…</p> : null}
+      {importMsg ? <p data-testid="import-msg" style={{ fontSize: 13, margin: '0 0 12px', color: importMsg.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{importMsg.t}</p> : null}
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         {insight.kpis.map((k, i) => <Kpi key={i} {...k} />)}

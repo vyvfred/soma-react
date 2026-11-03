@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { lireClasseur } from '../../lib/importExcel.js';
+import { parseVariablesDec } from '../../domain/imports.js';
 import { loadNetworkBudgets, saveCgData } from '../../lib/budgetApi.js';
 import { agencesOps } from '../../config/agences.js';
 import { VAR_DEC_RUBRIQUES, varDecDetail, varDecCalc, buildPeriodesPaie } from '../../domain/calculations.js';
@@ -33,6 +35,7 @@ export default function VariablesDecScreen() {
   const [edits, setEdits] = useState({}); // { agence: { rubrique: valeur } }
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const fichier = useRef(null);
 
   function reload() {
     loadNetworkBudgets()
@@ -68,6 +71,28 @@ export default function VariablesDecScreen() {
     const v = val === '' ? null : Math.max(0, +String(val).replace(',', '.') || 0);
     setEdits((prev) => ({ ...prev, [nom]: { ...(prev[nom] || {}), [k]: v } }));
   }
+  // Import Excel : les montants lus restent en attente (« non enregistré ») ;
+  // le CG vérifie puis enregistre. Une cellule vide n'efface pas une valeur saisie.
+  async function importer(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const { rows } = await lireClasseur(file);
+      const r = parseVariablesDec(rows, ops);
+      if (r.erreur) { setMsg(r.erreur); return; }
+      setEdits((prev) => {
+        const n = { ...prev };
+        Object.entries(r.saisies).forEach(([nom, det]) => { n[nom] = { ...(n[nom] || {}), ...det }; });
+        return n;
+      });
+      const nbLues = Object.keys(r.saisies).length;
+      setMsg((r.inconnues.length ? '' : '✓ ') + nbLues + ' agence(s) lue(s) — vérifiez puis enregistrez' + (r.inconnues.length ? ' (non reconnues : ' + r.inconnues.slice(0, 3).join(', ') + ')' : ''));
+    } catch (err) {
+      setMsg('Erreur : ' + (err.message || 'lecture impossible'));
+    }
+  }
+
   async function save() {
     if (!enCours) return;
     setSaving(true); setMsg(null);
@@ -95,6 +120,8 @@ export default function VariablesDecScreen() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
         <h2 style={{ margin: 0 }}>Variables de paie de décembre 2026</h2>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => fichier.current && fichier.current.click()}>📥 Importer depuis Excel</button>
+          <input ref={fichier} type="file" accept=".xlsx" style={{ display: 'none' }} onChange={importer} data-testid="fichier-vardec" />
           <button onClick={save} disabled={!enCours || saving}>{saving ? '⏳ Enregistrement…' : '💾 Enregistrer'}</button>
           {msg ? <span style={{ fontSize: 13, color: msg.startsWith('✓') ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{msg}</span> : null}
         </div>

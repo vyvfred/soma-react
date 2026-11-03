@@ -1,6 +1,7 @@
 import { sb } from './supabase.js';
 import { agencyFromRow, parseBudgetRow, buildBudgetData, budgetData as budgetDataOf } from '../domain/budgetMapper.js';
 import { fusionnerRefCG, appliquerRefCG, CG_KEYS_SANS_VERROU } from '../domain/refCG.js';
+import { fusionnerEquipe } from '../domain/imports.js';
 import { ensureValidation as ensureValidationEngine, appliquerDecision as appliquerDecisionEngine } from '../domain/validationEngine.js';
 
 // Couche d'accès aux données budget.
@@ -167,6 +168,30 @@ export async function saveCgData(saisies, ratioReseau = null) {
     count++;
   }
   return { count, echecs, ecrits };
+}
+
+// Enregistre les équipes issues de l'import du registre RH.
+// parAgence : { agence: employees[] }. Un budget que le REX a déjà ouvert garde son
+// équipe si elle est construite (voir domain/imports.js › fusionnerEquipe).
+// Renvoie { count, totalSal, gardees, echecs, ecrites: { agence: employees } }.
+export async function saveEquipesImportees(parAgence) {
+  let count = 0, totalSal = 0;
+  const gardees = [], echecs = [], ecrites = {};
+  for (const [nom, employees] of Object.entries(parAgence)) {
+    const { data: existing } = await sb.from('budgets').select('id,data').eq('agence', nom).eq('annee', ANNEE).single();
+    let res;
+    if (existing) {
+      const { data, remplace } = fusionnerEquipe(existing.data, employees);
+      if (!remplace) { gardees.push(nom); continue; }
+      res = await sb.from('budgets').update({ data }).eq('id', existing.id);
+    } else {
+      res = await sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: { employees }, statut: 'brouillon' });
+    }
+    if (res && res.error) { echecs.push(nom); continue; }
+    ecrites[nom] = employees;
+    count++; totalSal += employees.length;
+  }
+  return { count, totalSal, gardees, echecs, ecrites };
 }
 
 // Ancien nom conservé pour compatibilité : n'envoie que les champs fournis.

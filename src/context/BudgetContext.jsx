@@ -98,11 +98,14 @@ export function BudgetProvider({ agenceNom, children }) {
   // Données CG enregistrées depuis un écran réseau (Données agences, variables de
   // décembre) pour l'agence actuellement ouverte : on les applique à l'état en
   // mémoire, sinon la prochaine sauvegarde automatique réécrirait l'ancienne version.
-  const applyExternal = useCallback((nom, data) => {
+  // Données écrites par le CG pendant que l'agence est ouverte : mises à jour en mémoire,
+  // sinon la sauvegarde automatique suivante réécrirait l'ancienne version.
+  // brut = true : simple remplacement de champs (ex. équipe importée), sans verrou CG.
+  const applyExternal = useCallback((nom, data, brut = false) => {
     if (!nom || nom !== agenceNom) return;
     setAgency((prev) => {
       if (!prev) return prev;
-      const next = appliquerRefCG({ ...prev }, data);
+      const next = brut ? { ...prev, ...data } : appliquerRefCG({ ...prev }, data);
       if (pendingRef.current) pendingRef.current = next;
       return next;
     });
