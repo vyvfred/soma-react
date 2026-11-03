@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { euro } from '../../domain/format.js';
+import { needWeeks } from '../../domain/calculations.js';
 
 const M = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const WD = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -68,6 +69,23 @@ export default function CalScreen() {
             </div>
           );
         })}
+      </div>
+
+      <h3 style={{ margin: '22px 0 8px', fontSize: 15 }}>Synthèse hebdomadaire</h3>
+      <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }} data-testid="cal-semaines">
+        <table style={{ borderCollapse: 'collapse', fontSize: 12, minWidth: 360 }}>
+          <thead><tr style={{ color: 'var(--ink65)' }}><th style={{ textAlign: 'left', padding: '4px 8px' }}>Semaine</th><th style={{ padding: '4px 8px' }}>Jours</th><th style={{ padding: '4px 8px', textAlign: 'right' }}>CA</th><th style={{ padding: '4px 8px', textAlign: 'right' }}>Heures</th></tr></thead>
+          <tbody>
+            {needWeeks(a).map((w) => (
+              <tr key={w.week} style={{ borderTop: '1px solid var(--border)' }}>
+                <td style={{ padding: '4px 8px' }}>S{w.week}</td>
+                <td style={{ padding: '4px 8px', textAlign: 'center' }}>{w.days}</td>
+                <td className="num" style={{ padding: '4px 8px', textAlign: 'right' }}>{euro(w.ca)}</td>
+                <td className="num" style={{ padding: '4px 8px', textAlign: 'right' }}>{w.hours.toFixed(1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

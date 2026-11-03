@@ -77,6 +77,12 @@ export default function PrevisionnelScreen() {
         dangerouslySetInnerHTML={{ __html: previsionnelInsight(a, ca, net, tauxMS) }}
       />
 
+      {a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length ? (
+        <div data-testid="prev-paie-badge" style={{ padding: '6px 12px', background: 'rgba(74,158,255,.08)', border: '1px solid var(--blue2)', fontSize: 12, color: 'var(--blue2)', marginBottom: 12 }}>
+          ℹ La ligne <b>Charges de personnel</b> est calculée selon les périodes de paie 2027 (et non par mois civil). Les mois 5 semaines ont une charge plus élevée.
+        </div>
+      ) : null}
+
       <div style={{ overflowX: 'auto' }}>
         <table className="prev-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
