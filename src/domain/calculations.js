@@ -359,7 +359,51 @@ function payrollPayMonth(a, moisIdx) {
   // DR pro-rata
   let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJoursPeriode / nbJoursAn);
 
-  return ms + msNonRoulants + msHSImp + repasPeriode + msDR;
+  // Lissage de la 5e semaine de variables sur le trimestre (voir lissage5eSemaine)
+  return ms + msNonRoulants + msHSImp + repasPeriode + msDR + lissage5eSemaine(a, moisIdx);
+}
+
+// ── Lissage de la 5e semaine de variables (règle du contrôle de gestion, nov. 2026) ──
+// Chaque trimestre compte un mois de paie à 5 semaines de variables (janvier, avril, juillet, octobre)
+// et deux mois à 4 semaines. On ne garde que 4 semaines de variables par mois et on lisse la 5e :
+//   mois à 5 semaines : − (coût des HS du mois : taux plein + majorations 25 % et 50 %) / 5 × 2/3
+//   chacun des 2 mois à 4 semaines du trimestre : + la moitié de ce montant.
+// Le total du trimestre est inchangé ; chaque mois porte 4 semaines 1/3 de variables.
+function nbSemPeriode(p){
+  if(!p || !p.debut || !p.fin) return 0;
+  return Math.round(((new Date(p.fin) - new Date(p.debut)) / 86400000 + 1) / 7);
+}
+// Coût des heures supplémentaires rattachées à un mois de paie (roulants + improductifs ;
+// pour janvier, les HS de décembre 2026 saisies dans « Variables déc. 2026 », charges comprises)
+function coutHSPeriodePaie(a, moisIdx){
+  let periodes = a.periodesPaie || buildPeriodesPaie();
+  let p = periodes[moisIdx]; if(!p) return 0;
+  let debut = new Date(p.debut), fin = new Date(p.fin);
+  let total = 0;
+  hsRows(a).forEach(function(r){
+    let jours = a.cal.filter(function(d){ return d.week === r.week; });
+    if(!jours.length) return;
+    let dedans = jours.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length;
+    if(!dedans) return;
+    let ratio = dedans / jours.length, m = mainMonth(a, r.week);
+    total += r.hs * chMois(a, m) * coefHSMois(a, m) * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week)) * ratio;
+    let hsImp = a.hsImproductif && a.hsImproductif[r.week] ? +a.hsImproductif[r.week] : 0;
+    if(hsImp) total += hsImp * coutHoraireImproductif(a) * coefHSMois(a, m) * ratio;
+  });
+  if(moisIdx === 0){
+    let det = varDecDetail(a);
+    if(det) total += ((+det.hs25||0) + (+det.hs50||0)) * (1 + (+a.tauxChargePatronal||0)/100);
+  }
+  return total;
+}
+function lissage5eSemaine(a, moisIdx){
+  let periodes = a.periodesPaie || buildPeriodesPaie();
+  let t = Math.floor(moisIdx / 3), mois = [3*t, 3*t+1, 3*t+2];
+  let m5 = mois.filter(function(m){ return nbSemPeriode(periodes[m]) === 5; });
+  if(m5.length !== 1) return 0; // trimestre sans (ou avec plusieurs) mois à 5 semaines : pas de lissage
+  let x = coutHSPeriodePaie(a, m5[0]) / 5 * 2/3;
+  if(moisIdx === m5[0]) return -x;
+  return nbSemPeriode(periodes[moisIdx]) === 4 ? x / 2 : 0;
 }
 
 function pres(a,w){
@@ -657,6 +701,6 @@ function chargesReport2028(a){
 }
 
 export {
-  chargesReport2028, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

@@ -93,7 +93,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
 
       {a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length ? (
         <div data-testid="prev-paie-badge" style={{ padding: '6px 12px', background: 'rgba(74,158,255,.08)', border: '1px solid var(--blue2)', fontSize: 12, color: 'var(--blue2)', marginBottom: 12 }}>
-          ℹ La ligne <b>Charges de personnel</b> est calculée selon les périodes de paie 2027 (et non par mois civil). Les mois 5 semaines ont une charge plus élevée.
+          ℹ La ligne <b>Charges de personnel</b> est calculée selon les périodes de paie 2027 (et non par mois civil). Les heures supplémentaires de la 5e semaine des mois de 5 semaines (janvier, avril, juillet, octobre) sont lissées sur les deux mois suivants du trimestre.
         </div>
       ) : null}
 

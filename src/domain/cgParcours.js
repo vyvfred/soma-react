@@ -24,7 +24,7 @@ export const CG_PARCOURS = [
       '<b>« Réinitialiser le calendrier par défaut »</b> remet le calendrier standard (paie de janvier : du 7 décembre 2026 au 10 janvier 2027).'
     ],
     fini: 'Les dates correspondent au calendrier de paie réel. Si le calendrier standard convient, il n\'y a rien à modifier.',
-    vigilance: ['Les mois de paie à 5 semaines ont une masse salariale plus élevée : c\'est normal.'],
+    vigilance: ['Mois de paie à 5 semaines : les heures supplémentaires de la 5e semaine sont lissées sur le trimestre (colonne « dont lissage 5e semaine »).'],
     aide: 'Les dates s\'appliquent',
     etat: () => ({ ok: null, txt: 'Calendrier standard par défaut — à vérifier par agence' }) },
   { n: 3, panel: 'variablesdec', ecrans: ['variablesdec'], titre: 'Variables de décembre 2026',

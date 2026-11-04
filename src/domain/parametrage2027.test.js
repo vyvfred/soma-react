@@ -117,8 +117,10 @@ describe('variables de paie de décembre 2026', () => {
     const a = base(); a.periodesPaie = buildPeriodesPaie();
     const jan = payrollPayMonth(a, 0), fev = payrollPayMonth(a, 1);
     a.variablesDec2026Detail = { hs25: 4000, hs50: 1500, dimFeries: 2000, primes: 500, repas: 1200 };
-    expect(payrollPayMonth(a, 0) - jan).toBeCloseTo(12560, 4);
-    expect(payrollPayMonth(a, 1)).toBeCloseTo(fev, 6);
+    // + 12 560 € de variables, dont 7 810 € de HS (5 500 € × 1,42) qui entrent dans le lissage de la 5e semaine :
+    // janvier − 7 810 / 5 × 2/3 = − 1 041,33 € ; février et mars + 520,67 € chacun
+    expect(payrollPayMonth(a, 0) - jan).toBeCloseTo(12560 - 7810 / 5 * 2 / 3, 4);
+    expect(payrollPayMonth(a, 1) - fev).toBeCloseTo(7810 / 5 * 2 / 3 / 2, 4);
     a.tauxChargePatronal = 45;
     expect(varDec2026Total(a)).toBeCloseTo(8000 * 1.45 + 1200, 6);
   });
@@ -141,4 +143,26 @@ describe('compteur « Charges saisies » du tableau de bord', () => {
 // Vérification de cohérence : les helpers utilisés ci-dessus existent bien
 it('les fonctions du paramétrage sont exportées', () => {
   [mainMonth, tauxAbsMois, isRoulant].forEach((f) => expect(typeof f).toBe('function'));
+});
+
+import { lissage5eSemaine, coutHSPeriodePaie, nbSemPeriode } from './calculations.js';
+describe('Lissage de la 5e semaine de variables (règle du CG)', () => {
+  const avecHS = () => { const a = base(); a.periodesPaie = buildPeriodesPaie(); a.targetTXR = (+a.targetTXR || 100) * 0.6; return a; };
+  it('mois à 5 semaines : − HS / 5 × 2/3 ; les deux autres mois du trimestre : + la moitié', () => {
+    const a = avecHS();
+    [0, 3, 6, 9].forEach((m5) => {
+      const x = coutHSPeriodePaie(a, m5) / 5 * 2 / 3;
+      expect(x).toBeGreaterThan(0);
+      expect(lissage5eSemaine(a, m5)).toBeCloseTo(-x, 6);
+      expect(lissage5eSemaine(a, m5 + 1)).toBeCloseTo(x / 2, 6);
+      expect(lissage5eSemaine(a, m5 + 2)).toBeCloseTo(x / 2, 6);
+    });
+  });
+  it('total de l\'année inchangé', () => {
+    const a = avecHS();
+    expect([...Array(12).keys()].reduce((s, m) => s + lissage5eSemaine(a, m), 0)).toBeCloseTo(0, 6);
+  });
+  it('nombre de semaines déduit des dates de la période', () => {
+    expect(buildPeriodesPaie().map(nbSemPeriode)).toEqual([5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4]);
+  });
 });
