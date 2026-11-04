@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sb, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase.js';
+import { sb, ecrire, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase.js';
 import { budgetData } from '../domain/budgetMapper.js';
 
 const ANNEE = 2027;
@@ -60,15 +60,15 @@ export async function createAccount({ nom, email, role, agence }) {
 }
 
 export async function updateUserRole(userId, role) {
-  const { error } = await sb.from('profiles').update({ role }).eq('id', userId);
+  const { error } = await ecrire(sb.from('profiles').update({ role }).eq('id', userId));
   if (error) throw error;
 }
 export async function updateUserAgence(userId, agence) {
-  const { error } = await sb.from('profiles').update({ agence: agence || null }).eq('id', userId);
+  const { error } = await ecrire(sb.from('profiles').update({ agence: agence || null }).eq('id', userId));
   if (error) throw error;
 }
 export async function forceStatut(budgetId, statut) {
-  const { error } = await sb.from('budgets').update({ statut }).eq('id', budgetId);
+  const { error } = await ecrire(sb.from('budgets').update({ statut }).eq('id', budgetId));
   if (error) throw error;
 }
 export async function resetPassword(email) {

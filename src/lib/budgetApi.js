@@ -1,4 +1,4 @@
-import { sb } from './supabase.js';
+import { sb, ecrire } from './supabase.js';
 import { agencyFromRow, parseBudgetRow, buildBudgetData, migrateAgency, budgetData as budgetDataOf } from '../domain/budgetMapper.js';
 import { agency } from '../domain/calculations.js';
 import { donneesSoumission } from '../domain/versions.js';
@@ -60,7 +60,7 @@ export async function loadBudgetData(budgetId) {
 // Réécrit le jsonb `data` d'un budget (changement de version, duplication, description)
 export async function writeBudgetData(budgetId, data, statut) {
   const patch = statut ? { data, statut } : { data };
-  const { error } = await sb.from('budgets').update(patch).eq('id', budgetId);
+  const { error } = await ecrire(sb.from('budgets').update(patch).eq('id', budgetId));
   if (error) throw error;
 }
 
@@ -100,7 +100,7 @@ export async function saveAgencyBudget({ budgetId, activeVersion, meta, statut, 
   const fullData = buildBudgetData(existingData, activeVersion, meta, agency);
 
   if (budgetId) {
-    const { error } = await sb.from('budgets').update({ data: fullData, statut }).eq('id', budgetId);
+    const { error } = await ecrire(sb.from('budgets').update({ data: fullData, statut }).eq('id', budgetId));
     if (error) throw error;
     return budgetId;
   }
@@ -165,7 +165,7 @@ export async function submitDecision({ agence, role, decision, commentaire, parN
   if (res.refus) data.validation.statut = 'refuse';
   const nouveauStatut = res.refus ? 'brouillon' : (res.definitif ? 'valide_pdg' : 'soumis');
 
-  const { error } = await sb.from('budgets').update({ data, statut: nouveauStatut }).eq('id', rec.id);
+  const { error } = await ecrire(sb.from('budgets').update({ data, statut: nouveauStatut }).eq('id', rec.id));
   if (error) throw error;
   return res;
 }
@@ -190,7 +190,7 @@ export async function saveCgData(saisies, ratioReseau = null) {
     const { data: existing } = await sb.from('budgets').select('id,data').eq('agence', nom).eq('annee', ANNEE).single();
     let res;
     if (existing) {
-      res = await sb.from('budgets').update({ data: fusionnerRefCG(existing.data, data) }).eq('id', existing.id);
+      res = await ecrire(sb.from('budgets').update({ data: fusionnerRefCG(existing.data, data) }).eq('id', existing.id));
     } else if (Object.keys(data).some((k) => CG_KEYS_SANS_VERROU.indexOf(k) < 0 || k.startsWith('variablesDec'))) {
       // Pas de ligne vide pour le seul ratio réseau : il est repris à l'ouverture (reprendreRatioReseau)
       res = await sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: appliquerRefCG({}, data), statut: 'brouillon' });
@@ -217,7 +217,7 @@ export async function saveEquipesImportees(parAgence) {
     if (existing) {
       const { data, remplace } = fusionnerEquipe(existing.data, employees);
       if (!remplace) { gardees.push(nom); continue; }
-      res = await sb.from('budgets').update({ data }).eq('id', existing.id);
+      res = await ecrire(sb.from('budgets').update({ data }).eq('id', existing.id));
     } else {
       res = await sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: { employees }, statut: 'brouillon' });
     }
