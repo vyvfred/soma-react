@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 // racine '/' en développement local (npm run dev).
 // ⚠️ Si tu renommes le dépôt, change '/soma-react/' pour '/<nom-du-depot>/'.
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/soma-react/' : '/',
+  // BASE_PATH permet un autre hébergement (Netlify : '/').
+  base: command === 'build' ? (process.env.BASE_PATH || '/soma-react/') : '/',
   plugins: [react()],
   build: {
     outDir: 'dist',

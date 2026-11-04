@@ -1,0 +1,9 @@
+# Déploiement Netlify (vyv2027-react.netlify.app) : servi à la racine du domaine.
+# GitHub Pages continue d'utiliser /soma-react/ (valeur par défaut de vite.config.js).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  BASE_PATH = "/"
+  NODE_VERSION = "20"
