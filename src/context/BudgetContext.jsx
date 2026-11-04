@@ -116,7 +116,10 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
         }
         setAgency(res.agency);
         // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)
-        baseRef.current = res.budgetId ? JSON.parse(JSON.stringify(res.agency)) : null;
+        // = la version BRUTE lue en base (avant les compléments par défaut de migrateAgency) :
+        // sinon ces compléments passeraient pour des modifications faites par quelqu'un d'autre.
+        const brute = res.data && res.data.versions ? res.data.versions[res.activeVersion] : null;
+        baseRef.current = res.budgetId && brute ? JSON.parse(JSON.stringify(brute)) : null;
         metaBaseRef.current = res.meta ? JSON.parse(JSON.stringify(res.meta)) : null;
         setStatut(res.statut);
         budgetIdRef.current = res.budgetId;
@@ -186,7 +189,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     majMeta({ ...(metaRef.current || DEFAULT_META()), activeVersion: v });
     setAgency(a);
     const remplie = !!(data.versions && data.versions[v] && Object.keys(data.versions[v]).length);
-    baseRef.current = remplie ? JSON.parse(JSON.stringify(a)) : null;
+    baseRef.current = remplie ? JSON.parse(JSON.stringify(data.versions[v])) : null;
     metaBaseRef.current = data.meta ? JSON.parse(JSON.stringify(data.meta)) : null;
     return remplie
       ? 'Version ' + VERSION_LABELS[v] + ' active'
