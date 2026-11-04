@@ -1,7 +1,10 @@
 // Consolidation réseau — logique pure extraite de renderConsolidation().
 // Prend la map réseau { agence: { statut, data, updatedAt } } et les agences
 // opérationnelles ; renvoie les KPI globaux, les lignes détaillées et les alertes.
-// Lit les données brutes (comme l'original), sans passer par le noyau de calcul.
+// Les indicateurs passent par le moteur de calcul (audit nov. 2026) : mêmes chiffres que l'écran de l'agence.
+
+import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles } from './calculations.js';
+import { entiteDepuisBudget } from './consolideSIG.js';
 
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
 
@@ -33,17 +36,15 @@ export function computeConsolidation(map, ops) {
         .reduce((s, e) => s + (+e.hours || 0) * (+e.pctRoulant || 100) / 100, 0);
     }
     const txr = +d.targetTXR || 0;
-    const sickFilled = d.sick ? d.sick.filter((v) => v !== null) : [];
-    const malMoy = sickFilled.length ? sickFilled.reduce((s, v) => s + (+v || 0), 0) / sickFilled.length : 8;
-    const caMax = Math.round(baseH * (1 - malMoy / 100) * txr * 52);
+    let ent = null; try { ent = entiteDepuisBudget(ag.nom, d); } catch (e) { ent = null; }
+    const caMax = ent ? Math.round(heuresDispoAnnuelles(ent) * txr) : 0;
     const txCharge = caMax > 0 ? Math.round(caB / caMax * 100) : 0;
 
     // HS annuelles (approximation, reprise verbatim de l'original).
-    const hsAnn = txr > 0 ? Math.round(Math.max(0, caB - caMax * txr / txr)) : 0;
+    let hsAnn = 0; try { hsAnn = ent && txr > 0 ? Math.round(hsTot(ent).hs) : 0; } catch (e) { hsAnn = 0; }
 
-    const nbSal = d.employees ? d.employees.filter((e) => e.qual !== 'FACTURIERE').length : 0;
-    const cpGen = Math.round(nbSal * 2.5 * 12 * 10) / 10;
-    const cpPlan = d.presence ? Object.values(d.presence).reduce((s, p) => s + (+p.cp || 0), 0) : 0;
+    const cpGen = ent ? cpGeneres(ent) : 0;
+    const cpPlan = ent ? cpPlanifies(ent) : 0;
     const cpEcart = Math.round((cpGen - cpPlan) * 10) / 10;
 
     const alertes = [];

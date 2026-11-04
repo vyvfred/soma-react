@@ -100,9 +100,10 @@ describe('ligne unique de masse salariale non-roulante', () => {
 });
 
 describe('absentéisme unique roulants / improductifs', () => {
-  it('les CP générés appliquent le taux mensuel des roulants à tout le monde', () => {
+  it('les CP générés (roulants seulement, prorata heures et part roulante) suivent le taux mensuel d\'absentéisme', () => {
     const a = base(); a.tauxAbsImproductif = 2;
-    const attendu = Math.round(a.employees.filter((e) => e.qual !== 'FACTURIERE').length * 12 * 2.5 * (1 - 0.08) * 10) / 10;
+    const etp = a.employees.filter((e) => ['DEA', 'AA', 'TAXI', 'TPMR'].includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) / 35 * (+e.pctRoulant || 100) / 100, 0);
+    const attendu = Math.round(etp * 25 * (1 - 0.08) * 10) / 10;
     expect(cpGeneres(a)).toBe(attendu);
   });
 });

@@ -1,4 +1,4 @@
-import { baseH, isRoulant } from './calculations.js';
+import { baseH, isRoulant, heuresDispoAnnuelles } from './calculations.js';
 import { euro } from './format.js';
 
 // Interprétation de l'objectif — port fidèle de renderObjectifInsight().
@@ -32,10 +32,9 @@ export function objectifInsight(a) {
   }
 
   // Cas 3 : interprétation complète.
-  const sickVals = (a.sick || []).filter((v) => v !== null);
-  const tauxMalMoy = sickVals.reduce((s, v) => s + (+v || 0), 0) / (sickVals.length || 12);
-  const dispoHebdoMoy = baseHebdo * (1 - tauxMalMoy / 100);
-  const caMaxSansHS = Math.round(dispoHebdoMoy * txr * 52);
+  // Capacité hors HS : base moins la maladie ET les congés (audit nov. 2026)
+  const dispoHebdoMoy = heuresDispoAnnuelles(a) / 52;
+  const caMaxSansHS = Math.round(heuresDispoAnnuelles(a) * txr);
   const tauxCharge = caMaxSansHS ? Math.round((caObj / caMaxSansHS) * 100) : 0;
 
   let evolTxt = '';
@@ -72,10 +71,9 @@ export function coherenceCapacite(a) {
   const txr = +a.targetTXR || 0;
   const caObj = +a.targetCA || 0;
   if (!baseHebdo || !txr) return null;
-  const sickVals = (a.sick || []).filter((v) => v !== null);
-  const tauxMalMoy = sickVals.reduce((s, v) => s + (+v || 0), 0) / (sickVals.length || 12);
-  const dispoHebdoMoy = baseHebdo * (1 - tauxMalMoy / 100);
-  const caMaxSansHS = Math.round(dispoHebdoMoy * txr * 52);
+  // Capacité hors HS : base moins la maladie ET les congés (audit nov. 2026)
+  const dispoHebdoMoy = heuresDispoAnnuelles(a) / 52;
+  const caMaxSansHS = Math.round(heuresDispoAnnuelles(a) * txr);
   const tauxCharge = caObj && caMaxSansHS ? Math.round((caObj / caMaxSansHS) * 100) : 0;
   const nbRoulants = (a.employees || []).filter((e) => isRoulant(e.qual)).length;
   const niveau = tauxCharge > 115 ? 'critique' : tauxCharge > 100 ? 'tendu' : tauxCharge > 85 ? 'coherent' : 'confortable';

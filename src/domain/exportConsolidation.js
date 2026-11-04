@@ -1,11 +1,13 @@
 // Export Excel de la consolidation réseau — port fidèle d'exportConsolidation.
 // Fonction PURE : renvoie les feuilles (tableaux de lignes) ; l'écriture du fichier est dans lib/.
 import { statutLabel } from '../config/statut.js';
+import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles } from './calculations.js';
+import { entiteDepuisBudget } from './consolideSIG.js';
 
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
 const dateFr = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR') : '—');
 
-function indicateurs(d) {
+function indicateurs(d, nom) {
   let baseHebdo = 0, etp = 0, nbRoulants = 0;
   (d.employees || []).filter((e) => ROULANTS.includes(e.qual)).forEach((e) => {
     const h = ((+e.hours || 0) * (+e.pctRoulant || 100)) / 100;
@@ -13,14 +15,14 @@ function indicateurs(d) {
   });
   etp = Math.round(etp * 100) / 100;
   const caB = d.cal && d.cal.length ? d.cal.reduce((s, day) => s + (day.total || 0), 0) : 0;
-  const txr = +d.histTXR2026 || +d.targetTXR || 0;
-  const mal = +d.targetAbsRate || 8;
-  const caMax = txr > 0 ? Math.round(baseHebdo * (1 - mal / 100) * txr * 52) : 0;
+  // Mêmes calculs que l'écran de l'agence (moteur) : TXR cible, maladie et congés déduits
+  const txr = +d.targetTXR || +d.histTXR2026 || 0;
+  let ent = null; try { ent = entiteDepuisBudget(nom || 'X', d); } catch (e) { ent = null; }
+  const caMax = ent && txr > 0 ? Math.round(heuresDispoAnnuelles(ent) * txr) : 0;
   const txCharge = caMax > 0 ? Math.round((caB / caMax) * 100) : 0;
-  const hs = txr > 0 ? Math.round(Math.max(0, caB / txr - baseHebdo * (1 - mal / 100) * 52)) : 0;
-  const nbSal = d.employees ? d.employees.filter((e) => e.qual !== 'FACTURIERE').length : 0;
-  const cpGen = Math.round(nbSal * 2.5 * 12 * 10) / 10;
-  const cpPlan = d.presence ? Math.round(Object.values(d.presence).reduce((s, p) => s + (+(p && p.cp) || 0), 0) * 10) / 10 : 0;
+  let hs = 0; try { hs = ent && txr > 0 ? Math.round(hsTot(ent).hs) : 0; } catch (e) { hs = 0; }
+  const cpGen = ent ? cpGeneres(ent) : 0;
+  const cpPlan = ent ? Math.round(cpPlanifies(ent) * 10) / 10 : 0;
   const tauxHS = caMax > 0 ? Math.round(Math.max(0, ((caB - caMax) / caMax) * 100)) : null;
   return { baseHebdo, etp, nbRoulants, caB, caMax, txCharge, hs, cpGen, cpPlan, tauxHS };
 }
@@ -40,7 +42,7 @@ export function feuillesConsolidation(map, ops) {
     const d = (b && b.data) || {};
     const st = b ? statutLabel(b.statut) : 'Non commencé';
     const date = b ? dateFr(b.updatedAt) : '—';
-    const i = indicateurs(d);
+    const i = indicateurs(d, ag.nom);
     conso.push([ag.nom, ag.zone, st, date, d.histCA2025 || '', d.histCA || '', d.histTXR2026 || '',
       d.targetAbsRate || '', d.tauxHoraireBrut || '', d.tauxChargePatronal || '', d.costHour || '',
       i.caB || '', i.caMax || '', i.txCharge || '', i.hs || '', i.etp || '', i.cpGen || '', i.cpPlan || '', i.nbRoulants || '']);

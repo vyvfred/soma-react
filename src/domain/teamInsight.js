@@ -1,4 +1,4 @@
-import { baseH, baseHWeek, needWeeks, isRoulant } from './calculations.js';
+import { baseH, baseHWeek, needWeeks, isRoulant, heuresDispoAnnuelles } from './calculations.js';
 import { euro } from './format.js';
 
 // KPI + interprétation de l'équipe — port fidèle de renderTeamKpis().
@@ -16,10 +16,8 @@ export function teamInsight(a) {
   if (nbSal === 0) {
     phrase = 'Ajoutez vos salariés ou importez votre équipe. SOMA calculera aussitôt votre capacité de production et la comparera à votre objectif.';
   } else if (caObj && txr) {
-    const sickVals = (a.sick || []).filter((v) => v !== null);
-    const tauxMalMoy = sickVals.reduce((s, v) => s + (+v || 0), 0) / (sickVals.length || 12);
-    const dispoHebdoMoy = baseH(a) * (1 - tauxMalMoy / 100);
-    const caMaxSansHS = Math.round(dispoHebdoMoy * txr * 52);
+    // Capacité hors HS : base moins la maladie ET les congés (audit nov. 2026)
+    const caMaxSansHS = Math.round(heuresDispoAnnuelles(a) * txr);
     const ecart = caMaxSansHS - caObj;
     if (caMaxSansHS >= caObj) {
       phrase = 'Votre équipe représente <b>' + etpTotal.toFixed(1) + ' ETP</b>, ce qui permet de couvrir votre objectif de <b>' + euro(caObj) + '</b> sans recourir aux heures supplémentaires.';

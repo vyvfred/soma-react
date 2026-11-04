@@ -120,22 +120,31 @@ function coutHoraireImproductif(a){
   return moyJour/7;
 }
 
+// Congés payés : 25 jours ouvrés par an (5 semaines légales = 175 h pour un temps plein), soit 25/12 par mois.
+const CP_JOURS_MOIS = 25/12;
 function cpGeneres(a) {
-  // CP générés : chaque salarié génère 2.5J par mois de PRÉSENCE (hors absence maladie).
-  // Roulants et improductifs partagent le même taux d'absentéisme mensuel (paramétrage 2027).
-  let salaries = a.employees.filter(e => e.qual !== 'FACTURIERE');
+  // CP générés, en jours de 7 h retirés de la présence ROULANTE (audit nov. 2026) :
+  // 25/12 j par mois de présence hors maladie, au prorata du temps de travail (heures / 35) et de la part roulante.
+  // Les non-roulants n'entrent pas : leurs congés n'enlèvent pas de capacité de production.
+  let salaries = a.employees.filter(e => isRoulant(e.qual));
   if (!salaries.length) return 0;
   let totalJ = 0;
   M.forEach(function(_, m) {
-    let tauxMalRoulant = a.sick[m] !== null && a.sick[m] !== undefined ? +a.sick[m] / 100 : 0;
+    let tauxMal = a.sick[m] !== null && a.sick[m] !== undefined ? +a.sick[m] / 100 : 0;
     let dateRef = '2027-' + String(m+1).padStart(2,'0') + '-15';
     salaries.forEach(function(e){
       if(!empPresent(e, dateRef)) return;
-      let taux = tauxMalRoulant;
-      totalJ += 2.5 * (1 - taux);
+      totalJ += CP_JOURS_MOIS * (1 - tauxMal) * ((+e.hours||0) / 35) * ((+e.pctRoulant||100) / 100);
     });
   });
   return Math.round(totalJ * 10) / 10;
+}
+// Heures roulantes disponibles sur l'année hors heures supplémentaires : base contractuelle moins
+// la maladie (taux moyen saisi, sinon cible) et les congés générés. Ne dépend pas du placement des CP.
+function heuresDispoAnnuelles(a) {
+  let remplis = (a.sick||[]).filter(function(v){ return v!==null && v!==undefined; });
+  let mal = remplis.length ? remplis.reduce(function(s,v){ return s+(+v||0); },0)/remplis.length/100 : (+a.targetAbsRate||0)/100;
+  return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*7);
 }
 
 function cpPlanifies(a) {
@@ -355,6 +364,8 @@ function payrollPayMonth(a, moisIdx) {
 
 function pres(a,w){
   let base=baseHWeek(a,w);
+  // Semaine partielle de l'année (1er-3 janvier, 27-31 décembre) : base au prorata des jours
+  let nbj=a.cal.filter(d=>d.week===w).length; if(nbj && nbj<7) base=base*nbj/7;
   let p=a.presence[w]||{cp:0,other:0};
   let m=mainMonth(a,w);
   let rate=a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
@@ -572,7 +583,8 @@ function partCDDSemaine(a, week){
 function coutRoulantSemaine(a, r, mTaux){
   let m = mainMonth(a, r.week);
   let ch = chMois(a, mTaux===undefined ? m : mTaux);
-  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a,m)) + ((r.mal||0)*ch*ratioMaintien(a));
+  // Heures travaillées + heures supplémentaires + maintien sur arrêts + indemnité de congés payés (salaire maintenu)
+  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a,m)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch);
   return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
 }
 
@@ -645,6 +657,6 @@ function chargesReport2028(a){
 }
 
 export {
-  chargesReport2028, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

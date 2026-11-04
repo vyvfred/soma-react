@@ -45,3 +45,11 @@ describe('repartirCPAuto — répartition automatique des congés', () => {
     expect(cpPlanifies(a)).toBeCloseTo(p1, 1);
   });
 });
+
+import { agency as agFix, genCal as gc } from './calculations.js';
+describe('Répartition automatique sans congé à placer', () => {
+  it('ne plante pas quand il ne reste rien à répartir', () => {
+    const a = agFix('X'); gc(a); a.employees = [];
+    expect(() => repartirCPAuto(a)).not.toThrow();
+  });
+});

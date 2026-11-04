@@ -12,7 +12,8 @@ describe('fonctions d’analyse de présence', () => {
     expect(r).toHaveProperty('hs');
     expect(r).toHaveProperty('etp');
     expect(r).toHaveProperty('ratio');
-    expect(r.etp).toBeCloseTo((35 + 35 + 24) / 35, 3);
+    // Première semaine = 1er-3 janvier : base au prorata 3/7
+    expect(r.etp).toBeCloseTo((35 + 35 + 24) / 35 * 3 / 7, 3);
   });
 
   it('qualifierSemaine renvoie un libellé', () => {

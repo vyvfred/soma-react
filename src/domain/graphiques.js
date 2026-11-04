@@ -1,5 +1,13 @@
 // Préparation des données des graphiques réseau — pur, extrait de renderGraphiques().
+import { heuresDispoAnnuelles } from './calculations.js';
+import { entiteDepuisBudget } from './consolideSIG.js';
+
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
+// Capacité hors HS par le moteur (maladie et congés déduits) — même calcul que l'écran de l'agence
+export function capaciteHorsHS(nom, d, txr) {
+  if (!(txr > 0)) return 0;
+  try { const e = entiteDepuisBudget(nom, d); return e ? Math.round(heuresDispoAnnuelles(e) * txr) : 0; } catch (err) { return 0; }
+}
 
 export function computeGraphiquesRows(map, ops) {
   return ops.map((ag) => {
@@ -11,8 +19,7 @@ export function computeGraphiquesRows(map, ops) {
     const baseHebdo = d.employees
       ? d.employees.filter((e) => ROULANTS.includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) * (+e.pctRoulant || 100) / 100, 0)
       : 0;
-    const mal = +d.targetAbsRate || 8;
-    const caMax = txr > 0 ? baseHebdo * (1 - mal / 100) * txr * 52 : 0;
+    const caMax = baseHebdo > 0 ? capaciteHorsHS(ag.nom, d, txr) : 0;
     const txCharge = caMax > 0 ? Math.round(caB2027 / caMax * 100) : 0;
     return { nom: ag.nom, ca2025, ca2026, caB2027, txr, txCharge, hasData: !!(ca2025 || ca2026 || caB2027) };
   }).filter((r) => r.hasData);

@@ -85,11 +85,13 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('congés payés générés sur l’année', () => {
-    expect(+cpGeneres(a).toFixed(1)).toBe(120);
+    // Audit nov. 2026 : 25 j ouvrés par an, roulants seulement, au prorata des heures = 25 × (35 + 35 + 24) / 35
+    expect(+cpGeneres(a).toFixed(1)).toBe(67.1);
   });
 
   it('masse salariale de janvier', () => {
-    expect(Math.round(payrollMonth(a, 0))).toBe(17805);
+    // 1er-3 janvier (semaine 53) : 3/7 d'une semaine au lieu d'une semaine entière (−4/7 × 2 679 €)
+    expect(Math.round(payrollMonth(a, 0))).toBe(16274);
   });
 
   it('découpage en semaines ISO 2027', () => {
@@ -97,14 +99,45 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('compte de résultat de janvier — résultat net', () => {
-    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(63595);
+    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(65126);
   });
 
   it('agrégats annuels du compte de résultat (KPI Synthèse)', () => {
     expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(949600);
-    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(196797);
-    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(752803);
-    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(752803);
+    // Semaines partielles au prorata : −4/7 (1er-3 janv.) − 2/7 (27-31 déc.) d'une semaine à 2 679 € = −2 296 €
+    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(194501);
+    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(755099);
+    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(755099);
     expect(Math.round(hsTot(a).hs)).toBe(0);
+  });
+});
+
+import { pres, coutRoulantSemaine, hsRows, heuresDispoAnnuelles, baseH } from './calculations.js';
+describe('Corrections de l\'audit (nov. 2026)', () => {
+  const unTempsPlein = () => { const a = agenceReference(); a.employees = [{ name: 'X', qual: 'DEA', hours: 35, pctRoulant: 100 }]; return a; };
+  it('un temps plein génère 25 jours de 7 h = 175 h de congés (5 semaines légales)', () => {
+    expect(cpGeneres(unTempsPlein())).toBe(25);
+  });
+  it('mi-temps et salarié à 50 % roulant au prorata ; non-roulant exclu', () => {
+    const a = unTempsPlein();
+    a.employees = [{ qual: 'DEA', hours: 17.5, pctRoulant: 100 }, { qual: 'AA', hours: 35, pctRoulant: 50 }, { qual: 'REGULATEUR', hours: 35 }];
+    expect(cpGeneres(a)).toBe(25);
+  });
+  it('les heures de congés sont payées (indemnité de congés payés)', () => {
+    const a = unTempsPlein(); a.genCal; const w = 10;
+    a.presence = { [w]: { cp: 5, other: 0 } };
+    const r = hsRows(a).find((x) => x.week === w);
+    const sansCP = { ...r, cpH: 0 };
+    expect(coutRoulantSemaine(a, r) - coutRoulantSemaine(a, sansCP)).toBeCloseTo(35 * 28.5, 6);
+  });
+  it('semaines partielles au prorata des jours', () => {
+    const a = unTempsPlein();
+    expect(pres(a, 53).base).toBeCloseTo(35 * 3 / 7, 6);
+    expect(pres(a, 52).base).toBeCloseTo(35 * 5 / 7, 6);
+    expect(pres(a, 10).base).toBe(35);
+  });
+  it('capacité annuelle hors HS : maladie et congés retirés', () => {
+    const a = unTempsPlein(); a.sick = Array(12).fill(10);
+    expect(heuresDispoAnnuelles(a)).toBeCloseTo(baseH(a) * 52 * 0.9 - cpGeneres(a) * 7, 6);
   });
 });

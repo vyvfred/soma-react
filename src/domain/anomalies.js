@@ -1,6 +1,6 @@
 // Centre d'attention — port fidèle de collectAnomalies : les points du budget ouvert
 // qui demandent l'attention du REX ou du CG, chacun relié à l'écran où agir.
-import { ann, isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, resultatAffiche, vueExploitation } from './calculations.js';
+import { ann, isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, resultatAffiche, vueExploitation, heuresDispoAnnuelles } from './calculations.js';
 import { euro, pct } from './format.js';
 
 export function collecterAnomalies(a, role) {
@@ -17,9 +17,7 @@ export function collecterAnomalies(a, role) {
   if (!caObj || !txr) out.push({ panel: 'objectif', level: 'todo', text: 'Objectif de CA ou TXR non renseigné' });
   if (nbRoulants === 0) out.push({ panel: 'team', level: 'todo', text: 'Aucun salarié roulant dans l\'équipe' });
   if (caObj && txr && nbRoulants > 0) {
-    const remplis = (a.sick || []).filter((v) => v !== null && v !== undefined);
-    const malMoy = remplis.reduce((s, v) => s + (+v || 0), 0) / (remplis.length || 12);
-    const caMaxSansHS = Math.round(baseH(a) * (1 - malMoy / 100) * txr * 52);
+    const caMaxSansHS = Math.round(heuresDispoAnnuelles(a) * txr);
     const tauxCharge = caMaxSansHS ? Math.round((caObj / caMaxSansHS) * 100) : 0;
     if (tauxCharge > 115) out.push({ panel: 'objectif', level: 'warn', text: 'Objectif supérieur à la capacité de l\'effectif (' + tauxCharge + ' %)' });
   }

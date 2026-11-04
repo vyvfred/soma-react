@@ -1,3 +1,4 @@
+import { capaciteHorsHS } from './graphiques.js';
 // Comparaison inter-agences — logique pure extraite de renderComparative().
 // Prend la map réseau { agence: { statut, data } } et la liste des agences
 // opérationnelles ; renvoie les lignes, les médianes réseau et les agences atypiques.
@@ -32,7 +33,7 @@ export function computeComparative(map, ops) {
         ? d.employees.filter((e) => ROULANTS.includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) * (+e.pctRoulant || 100) / 100, 0)
         : 0;
       const caB = d.cal.reduce((s, day) => s + (day.total || 0), 0);
-      const caMax = baseHs * (1 - (+d.targetAbsRate || 8) / 100) * (+d.histTXR2026 || +d.targetTXR || 40) * 52;
+      const caMax = baseHs > 0 ? capaciteHorsHS(ag.nom, d, +d.targetTXR || +d.histTXR2026 || 0) : 0;
       tauxHS = caMax > 0 ? Math.round(Math.max(0, (caB - caMax) / caMax * 100)) : null;
     }
 

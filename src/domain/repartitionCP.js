@@ -32,7 +32,7 @@ export function repartirCPAuto(a, moissLibres){
 
   let generes = cpGeneres(a);
   let restant = Math.round((generes - cpVerrouilles) * 10) / 10;
-  if(restant <= 0){ render(); return; }
+  if(restant <= 0){ return; } // rien à répartir (dans le mono-fichier : render() puis sortie)
 
   // ── COUCHE 1 : enveloppes légales CONSCIENTES des mois verrouillés ──
   // Cible de chaque enveloppe = pct × total généré.

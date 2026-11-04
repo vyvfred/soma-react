@@ -82,7 +82,8 @@ describe('Export Excel de la consolidation', () => {
     expect(f[0].lignes.length).toBe(3);
     const a = f[0].lignes[1];
     expect(a[11]).toBe(400000);
-    expect(a[12]).toBe(Math.round(35 * 0.9 * 100 * 52));
+    // Capacité hors HS = (35 h × 52 × (1 − 10 % maladie) − 25 j × 7 h de congés) × TXR 100
+    expect(a[12]).toBe(Math.round((35 * 52 * 0.9 - 175) * 100));
     expect(f[1].lignes[2][2]).toBe('Non commencé');
   });
 });
