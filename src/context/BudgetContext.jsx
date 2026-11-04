@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
 import { appliquerRefCG } from '../domain/refCG.js';
+import { toast } from '../components/Toast.jsx';
 import { estModifiable, cibleDuplication, agenceDeVersion, copieVersion, comparerVersions, VERSION_LABELS } from '../domain/versions.js';
 
 // Contexte du budget en cours d'édition (pour le REX : son agence ; pour le CG :
@@ -30,6 +31,9 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
   const inFlightRef = useRef(Promise.resolve()); // sérialise les sauvegardes
   const pendingRef = useRef(null);               // dernière agence modifiée non encore sauvegardée
   const agencyRef = useRef(null);
+  // État chargé (ou dernier état enregistré) : point de départ de la fusion à l'enregistrement
+  const baseRef = useRef(null);
+  const metaBaseRef = useRef(null);
   agencyRef.current = agency;
 
   // statut lu via une ref pour ne pas recréer la fonction de sauvegarde
@@ -43,13 +47,31 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
       await inFlightRef.current.catch(() => {});
       setSaveStatus('saving');
       try {
-        const id = await saveAgencyBudget({
+        const avant = baseRef.current;
+        const res = await saveAgencyBudget({
           budgetId: budgetIdRef.current,
           activeVersion: versionRef.current,
           meta: metaRef.current,
-          statut: statutRef.current,
-          agency: a
+          agency: a,
+          base: avant,
+          metaBase: metaBaseRef.current
         });
+        const id = res.id;
+        baseRef.current = JSON.parse(JSON.stringify(res.version));
+        metaBaseRef.current = JSON.parse(JSON.stringify(res.meta || metaRef.current || {}));
+        // Rubriques enregistrées entre-temps par quelqu'un d'autre : reportées à l'écran
+        // (sauf si l'utilisateur vient lui-même de les modifier)
+        if (res.distantes && res.distantes.length && avant) {
+          const J = (v) => JSON.stringify(v);
+          const patch = (prev) => {
+            if (!prev) return prev;
+            const next = { ...prev };
+            res.distantes.forEach((k) => { if (J(prev[k]) === J(avant[k])) next[k] = JSON.parse(JSON.stringify(res.version[k] === undefined ? null : res.version[k])); });
+            return next;
+          };
+          setAgency((prev) => { const n = patch(prev); if (pendingRef.current) pendingRef.current = patch(pendingRef.current); return n; });
+          toast('Budget mis à jour avec les modifications enregistrées par un autre utilisateur', 'info');
+        }
         budgetIdRef.current = id;
         setBudgetId(id);
         pendingRef.current = null;
@@ -93,6 +115,9 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
           res.activeVersion = sv;
         }
         setAgency(res.agency);
+        // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)
+        baseRef.current = res.budgetId ? JSON.parse(JSON.stringify(res.agency)) : null;
+        metaBaseRef.current = res.meta ? JSON.parse(JSON.stringify(res.meta)) : null;
         setStatut(res.statut);
         budgetIdRef.current = res.budgetId;
         setBudgetId(res.budgetId);
@@ -161,6 +186,8 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     majMeta({ ...(metaRef.current || DEFAULT_META()), activeVersion: v });
     setAgency(a);
     const remplie = !!(data.versions && data.versions[v] && Object.keys(data.versions[v]).length);
+    baseRef.current = remplie ? JSON.parse(JSON.stringify(a)) : null;
+    metaBaseRef.current = data.meta ? JSON.parse(JSON.stringify(data.meta)) : null;
     return remplie
       ? 'Version ' + VERSION_LABELS[v] + ' active'
       : 'Version ' + VERSION_LABELS[v] + ' vide — repartez de zéro ou dupliquez une autre version';
@@ -180,6 +207,8 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     m.activeVersion = cible;
     const out = { ...data, versions, meta: m };
     await writeBudgetData(budgetIdRef.current, out);
+    baseRef.current = JSON.parse(JSON.stringify(versions[cible]));
+    metaBaseRef.current = JSON.parse(JSON.stringify(m));
     versionRef.current = cible;
     setActiveVersion(cible);
     majMeta(m);

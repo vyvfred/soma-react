@@ -90,25 +90,29 @@ export async function reprendreRatioReseau(a) {
 //   - écrit la version active,
 //   - update si le budget existe, insert sinon.
 // Retourne l'identifiant du budget (nouveau en cas d'insert).
-export async function saveAgencyBudget({ budgetId, activeVersion, meta, statut, agency }) {
+// Enregistre la version active SANS écraser le travail des autres (fusion par rubrique, cf. fusion.js)
+// et SANS réécrire le statut : seules la soumission, les décisions et l'admin changent le statut.
+// Renvoie { id, version (fusionnée), meta, distantes (rubriques modifiées par d'autres) }.
+export async function saveAgencyBudget({ budgetId, activeVersion, meta, agency, base = null, metaBase = null }) {
   let existingData = null;
   if (budgetId) {
     const { data: existing } = await sb.from('budgets').select('data').eq('id', budgetId).single();
     existingData = (existing && existing.data) || null;
   }
 
-  const fullData = buildBudgetData(existingData, activeVersion, meta, agency);
+  const fullData = buildBudgetData(existingData, activeVersion, meta, agency, base, metaBase);
+  const info = fullData._fusion;
 
   if (budgetId) {
-    const { error } = await ecrire(sb.from('budgets').update({ data: fullData, statut }).eq('id', budgetId));
+    const { error } = await ecrire(sb.from('budgets').update({ data: fullData }).eq('id', budgetId));
     if (error) throw error;
-    return budgetId;
+    return { id: budgetId, ...info };
   }
 
-  const payload = { agence: agency.name, annee: ANNEE, data: fullData, statut };
+  const payload = { agence: agency.name, annee: ANNEE, data: fullData, statut: 'brouillon' };
   const { data, error } = await sb.from('budgets').insert(payload).select().single();
   if (error) throw error;
-  return data.id;
+  return { id: data.id, ...info };
 }
 
 // Charge tous les budgets du réseau (vue CG/direction) et renvoie une map

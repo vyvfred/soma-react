@@ -1,3 +1,4 @@
+import { fusionnerVersion } from './fusion.js';
 // Couche de mapping budget ⇄ Supabase.
 // Reproduit fidèlement loadBudgetFromSupabase() et saveBudgetToSupabase() de
 // l'application actuelle, mais sous forme de fonctions PURES et testables :
@@ -82,16 +83,20 @@ export function agencyFromRow(row) {
 }
 
 // ── Écriture : agence -> jsonb `data` (préserve les autres versions) ─
-export function buildBudgetData(existingData, activeVersion, meta, a) {
+// Données à écrire : la version active est FUSIONNÉE avec celle relue en base (fusionnerVersion) —
+// seules les rubriques modifiées par cette session depuis « base » sont écrites. Idem pour meta.
+// Sans « base » (ancien appel), la version locale fait foi.
+export function buildBudgetData(existingData, activeVersion, meta, a, base = null, metaBase = null) {
   const versions = existingData && existingData.versions ? { ...existingData.versions } : {};
-  const aClean = JSON.parse(JSON.stringify(a));
-  delete aClean.versions;
-  delete aClean.meta;
-  versions[activeVersion] = aClean;
-  const out = { versions, meta };
+  const distant = existingData && existingData.versions ? existingData.versions[activeVersion] : null;
+  const fv = fusionnerVersion(base, a, distant);
+  versions[activeVersion] = fv.fusion;
+  const fm = metaBase ? fusionnerVersion(metaBase, meta, existingData && existingData.meta) : { fusion: meta };
+  const out = { versions, meta: fm.fusion };
   // Conserver l'état de validation (décisions, historique des refus) : sans cela,
   // la première correction du REX après un refus effaçait data.validation.
   if (existingData && existingData.validation) out.validation = existingData.validation;
+  Object.defineProperty(out, '_fusion', { value: { version: fv.fusion, distantes: fv.distantes, meta: fm.fusion }, enumerable: false });
   return out;
 }
 
