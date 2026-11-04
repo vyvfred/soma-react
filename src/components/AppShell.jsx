@@ -18,6 +18,7 @@ import ToastHost from './Toast.jsx';
 import { useBudget } from '../context/BudgetContext.jsx';
 import { VERSION_LABELS, VERSION_COLORS } from '../domain/versions.js';
 import { collecterAnomalies } from '../domain/anomalies.js';
+import { STRUCTURES, LIB_STRUCTURES } from '../domain/calculations.js';
 import { toast } from './Toast.jsx';
 
 // Sauvegarde manuelle (port de « 💾 Sauvegarder maintenant »)
@@ -33,6 +34,7 @@ function SaveButton() {
 // Centre d'attention (port de updateAttentionCenter / toggleAttentionPanel)
 function AttentionCenter({ onNavigate }) {
   const { agency, agenceNom } = useBudget();
+  const { profile } = useAuth();
   const [ouvert, setOuvert] = useState(false);
   useEffect(() => {
     if (!ouvert) return undefined;
@@ -41,7 +43,7 @@ function AttentionCenter({ onNavigate }) {
     return () => document.removeEventListener('click', f);
   }, [ouvert]);
   if (!agency || !agenceNom) return null;
-  const l = collecterAnomalies(agency);
+  const l = collecterAnomalies(agency, profile.role);
   return (
     <span data-attention style={{ position: 'relative', marginLeft: 12 }}>
       <button data-testid="attention" className={'somAttention ' + (l.length ? 'alert' : 'calm')} onClick={() => setOuvert(!ouvert)}>
@@ -194,7 +196,12 @@ export default function AppShell() {
               <select value={activeAgence || ''} onChange={(e) => setCgAgence(e.target.value || null)} style={{ minWidth: 200 }}>
                 <option value="">— Choisir une agence —</option>
                 {agencesOps().map((ag) => <option key={ag.nom} value={ag.nom}>{ag.nom}</option>)}
-                {activeAgence && !agencesOps().some((ag) => ag.nom === activeAgence) ? <option value={activeAgence}>{activeAgence} (hors référentiel)</option> : null}
+                {['cg', 'admin'].includes(profile.role) ? (
+                  <optgroup label="Structures">
+                    {STRUCTURES.map((n) => <option key={n} value={n}>{LIB_STRUCTURES[n]} ({n})</option>)}
+                  </optgroup>
+                ) : null}
+                {activeAgence && !agencesOps().some((ag) => ag.nom === activeAgence) && STRUCTURES.indexOf(activeAgence) < 0 ? <option value={activeAgence}>{activeAgence} (hors référentiel)</option> : null}
               </select>
               {['cg', 'admin'].includes(profile.role) ? (
                 <button className="secondary" data-testid="hors-ref" style={{ width: 'auto', margin: 0, fontSize: 12, padding: '6px 12px' }}

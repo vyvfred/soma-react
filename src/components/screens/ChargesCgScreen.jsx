@@ -1,11 +1,16 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { prefillCharges } from '../../domain/prefillCharges.js';
+import { estStructure, estSiege, LIGNES_SIEGE } from '../../domain/calculations.js';
 import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH } from '../../domain/calculations.js';
 import { chargesInsight } from '../../domain/chargesInsight.js';
 import { euro } from '../../domain/format.js';
 
 // Lignes de charges éditables (on exclut CA, charges de personnel et les sous-totaux).
-const CHARGE_LINES = T.filter((r) => r.type !== 'subtotal' && r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel');
+// Lignes saisissables : les structures saisissent aussi leur CA et leurs charges de personnel ;
+// l'IS et la participation n'existent que pour le Siège.
+const lignesSaisie = (a) => T.filter((r) => r.type !== 'subtotal'
+  && (estStructure(a) || (r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel'))
+  && (estSiege(a) || LIGNES_SIEGE.indexOf(r.label) < 0));
 
 function Kpi({ label, value, note }) {
   return <div className="kpi"><div className="label">{label}</div><div className="value">{value}</div><div className="note">{note || ''}</div></div>;
@@ -73,6 +78,13 @@ export default function ChargesCgScreen() {
     <div className="card">
       <h2 style={{ marginBottom: 14 }}>Charges — {a.name}</h2>
 
+      {estStructure(a) ? (
+        <div data-testid="structure-note" style={{ marginBottom: 14, padding: '10px 14px', background: 'rgba(74,158,255,.08)', border: '1px solid var(--blue2)', fontSize: 13, color: 'var(--blue2)' }}>
+          ℹ <b>{a.name}</b> est une structure hors agence : vous saisissez tout son compte de résultat ligne par ligne, <b>chiffre d'affaires et charges de personnel compris</b> (pas de calendrier ni d'équipe).
+          {estSiege(a) ? <> Le Siège porte aussi l'<b>impôt sur les sociétés</b> et la <b>participation aux bénéfices</b> : résultat net = résultat courant avant impôt + résultat exceptionnel − IS − participation.</> : null}
+        </div>
+      ) : null}
+
       <div className="kpis" style={{ marginBottom: 16 }}>
         {insight.kpis.map((k, i) => <Kpi key={i} {...k} />)}
       </div>
@@ -119,7 +131,7 @@ export default function ChargesCgScreen() {
             </tr>
           </thead>
           <tbody>
-            {CHARGE_LINES.map((r) => {
+            {lignesSaisie(a).map((r) => {
               const x = a.rex[r.label] || {};
               const chargeType = x.chargeType || (r.type === 'charge' ? 'variable' : 'fixe');
               const mode = x.mode || 'month';
@@ -140,7 +152,7 @@ export default function ChargesCgScreen() {
                     <select value={mode} disabled={!editable} onChange={(e) => patchLine(r.label, { mode: e.target.value })}>
                       <option value="month">saisie mensuelle</option>
                       <option value="annual">montant annuel</option>
-                      <option value="pct">% CA mensuel</option>
+                      {r.label !== "Chiffre d'affaires" ? <option value="pct">% CA mensuel</option> : null}
                     </select>
                   </td>
                   <td style={cellStyle}>

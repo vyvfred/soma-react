@@ -45,7 +45,7 @@ export default function SyntheseScreen() {
   const s = syntheseBudget(a, profile && profile.role);
   const choix = coutChoix(a);
   const env = bilanEnveloppesCP(a);
-  const ind = indicateursDetailles(a);
+  const ind = indicateursDetailles(a, profile && profile.role);
   const maxMois = Math.max(1, ...ind.caMensuel.map((x) => x.value));
   const coulVerdict = s.verdict.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)';
 

@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { consolideReseau, feuilleConsolide } from '../../domain/consolideSIG.js';
+import { T, STRUCTURES, LIB_STRUCTURES } from '../../domain/calculations.js';
+import { pct } from '../../domain/format.js';
 import { loadNetworkBudgets } from '../../lib/budgetApi.js';
 import { agencesOps } from '../../config/agences.js';
 import { statutLabel } from '../../config/statut.js';
@@ -31,12 +34,19 @@ export default function ConsolidationScreen() {
       .catch((err) => { if (active) setState({ loading: false, error: err.message || 'Erreur de chargement', map: null }); });
     return () => { active = false; };
   }, [k]);
+  // Compte de résultat consolidé : agences + 4 structures (calculé une fois par chargement)
+  const conso = useMemo(() => {
+    if (!state.map) return null;
+    try { return consolideReseau(state.map, agencesOps()); } catch (e) { return { erreur: e.message }; }
+  }, [state.map]);
 
   if (state.loading) return <div className="card"><h2>Consolidation</h2><p className="hint">Chargement des budgets du réseau…</p></div>;
   if (state.error) return <div className="card"><h2>Consolidation</h2><p className="hint">Erreur : {state.error}</p></div>;
 
   const ops = agencesOps();
-  const c = computeConsolidation(state.map || {}, ops);
+  // Les structures (Siège, Formation…) ne comptent pas dans l'avancement des agences
+  const mapAgences = Object.fromEntries(Object.entries(state.map || {}).filter(([nom]) => ops.some((o) => o.nom === nom)));
+  const c = computeConsolidation(mapAgences, ops);
 
   let insight = '<b>' + c.deposes + ' agence' + (c.deposes > 1 ? 's' : '') + ' sur ' + c.total + '</b> ont déposé leur budget';
   if (c.valides > 0) insight += ', dont <b>' + c.valides + '</b> validé' + (c.valides > 1 ? 's' : '') + ' définitivement';
@@ -57,7 +67,7 @@ export default function ConsolidationScreen() {
         <div style={{ display: 'flex', gap: 8 }}><button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button><button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
           onClick={async () => {
             setExportEtat('cours');
-            try { await telechargerClasseur(feuillesConsolidation(state.map || {}, ops), nomFichierConsolidation()); setExportEtat('ok'); }
+            try { await telechargerClasseur(feuillesConsolidation(mapAgences, ops).concat(conso && !conso.erreur ? [feuilleConsolide(conso)] : []), nomFichierConsolidation()); setExportEtat('ok'); }
             catch (e) { setExportEtat('erreur'); }
           }}
           style={{ width: 'auto', margin: 0, fontSize: 12, padding: '7px 14px', background: 'linear-gradient(135deg,var(--green),#45c87a)', color: '#fff', border: 'none', fontWeight: 700 }}>
@@ -118,6 +128,51 @@ export default function ConsolidationScreen() {
           </tbody>
         </table>
       </div>
+      {conso ? (
+        <details open data-testid="conso-sig" style={{ border: '1px solid var(--border)', marginTop: 18 }}>
+          <summary style={{ cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fontSize: 14 }}>Compte de résultat consolidé 2027</summary>
+          <div style={{ padding: '4px 14px 14px' }}>
+            {conso.erreur ? <p className="hint">Compte de résultat consolidé indisponible : {conso.erreur}</p> : (
+              <>
+                <p className="hint" style={{ margin: '0 0 10px', fontSize: 12 }}>
+                  Somme des <b>{conso.nbAgences} agences</b> budgétées et des 4 structures (version soumise, sinon version active).
+                  Le résultat net = résultat courant avant impôt + résultat exceptionnel − impôt sur les sociétés − participation aux bénéfices (portés par le Siège).
+                </p>
+                {STRUCTURES.some((n) => !conso.structures[n].present) ? (
+                  <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', marginBottom: 10 }}>⚠ Structures pas encore saisies : {STRUCTURES.filter((n) => !conso.structures[n].present).map((n) => LIB_STRUCTURES[n]).join(', ')}.</div>
+                ) : null}
+                {conso.erreurs.length ? <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', marginBottom: 10 }}>⚠ Calcul impossible pour : {conso.erreurs.join(', ')}.</div> : null}
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="prev-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }} data-testid="conso-sig-table">
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Rubrique</th><th>Agences</th>
+                        {STRUCTURES.map((n) => <th key={n}>{LIB_STRUCTURES[n]}</th>)}
+                        <th>Consolidé</th><th>% CA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {T.map((r) => {
+                        const caT = conso.total["Chiffre d'affaires"];
+                        const z = (v) => (!v ? ' zeroVal' : '');
+                        return (
+                          <tr key={r.label} className={r.type === 'subtotal' ? 'subtotal' : ''}>
+                            <td><b>{r.label}</b></td>
+                            <td className={'num' + z(conso.agences[r.label])}>{euro(conso.agences[r.label])}</td>
+                            {STRUCTURES.map((n) => <td key={n} className={'num' + z(conso.structures[n].s[r.label])}>{euro(conso.structures[n].s[r.label])}</td>)}
+                            <td className="num"><b>{euro(conso.total[r.label])}</b></td>
+                            <td className="num">{caT ? pct((conso.total[r.label] / caT) * 100) : '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

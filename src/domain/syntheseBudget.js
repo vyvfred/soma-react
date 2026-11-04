@@ -1,13 +1,14 @@
 // Synthèse du budget — fonctions PURES, port de renderSynthese, renderCoutChoix,
 // renderEnveloppesCP et renderDashboard (graphiques et ratios).
-import { ann, hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M } from './calculations.js';
+import { ann, hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, resultatAffiche, vueExploitation } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const VALIDEURS = ['dr', 'df', 'dg', 'pdg'];
 
 export function syntheseBudget(a, role = 'rex') {
   const ca = ann(a, "Chiffre d'affaires");
-  const net = ann(a, 'RESULTAT NET');
+  const res = resultatAffiche(a, role);
+  const net = res.val;
   const ms = ann(a, 'Charges de personnel');
   const caObj = +a.targetCA || 0;
   const ecart = ca - caObj;
@@ -16,14 +17,14 @@ export function syntheseBudget(a, role = 'rex') {
 
   const kpis = [
     { label: 'CA budgété', value: euro(ca), note: '' },
-    { label: 'Résultat net', value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
+    { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
     { label: 'Masse salariale / CA', value: pct(tauxMS), note: tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
     { label: 'Écart à l\'objectif', value: (ecart >= 0 ? '+' : '') + euro(ecart), note: caObj ? (ecart >= 0 ? 'objectif atteint' : 'sous l\'objectif') : '' }
   ];
 
   const estValideur = VALIDEURS.includes(role);
   const problemes = [];
-  if (net < 0) problemes.push('résultat déficitaire');
+  if (net < 0) problemes.push(res.libMin + ' déficitaire');
   if (tauxMS > 85) problemes.push('masse salariale élevée');
   if (caObj && ecart < -caObj * 0.03) problemes.push('objectif de CA non atteint');
   const verdict = problemes.length === 0
@@ -35,8 +36,8 @@ export function syntheseBudget(a, role = 'rex') {
   let lecture = '';
   if (ca) {
     if (caObj) lecture += ecart >= -caObj * 0.03 ? 'Ce budget atteint l\'objectif de chiffre d\'affaires (' + euro(ca) + '). ' : 'Ce budget est en retrait de ' + euro(Math.abs(ecart)) + ' par rapport à l\'objectif. ';
-    if (net > 0) lecture += 'Il dégage un résultat positif de <b>' + euro(net) + '</b>. ';
-    else if (net < 0) lecture += 'Il présente un résultat déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
+    if (net > 0) lecture += 'Il dégage un ' + res.libMin + ' positif de <b>' + euro(net) + '</b>. ';
+    else if (net < 0) lecture += 'Il présente un ' + res.libMin + ' déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
     if (tauxMS > 85) lecture += 'La masse salariale (' + pct(tauxMS) + ' du CA) est élevée. ';
     else if (tauxMS > 0) lecture += 'La masse salariale (' + pct(tauxMS) + ' du CA) est dans la norme. ';
     lecture += nbCritiques > 0 ? nbCritiques + ' semaine' + (nbCritiques > 1 ? 's' : '') + ' de tension à surveiller.' : 'Aucune semaine en tension critique.';
@@ -76,7 +77,8 @@ export function bilanEnveloppesCP(a) {
 }
 
 // Graphiques et tous les indicateurs (port de renderDashboard + renderFinance)
-export function indicateursDetailles(a) {
+export function indicateursDetailles(a, role) {
+  const expl = vueExploitation(a, role);
   const ca2026 = +a.histCA || 0;
   const caObj = +a.targetCA || 0;
   const caBudget = ann(a, "Chiffre d'affaires");
@@ -99,17 +101,17 @@ export function indicateursDetailles(a) {
       { label: 'CA calendrier', value: euro(caBudget) },
       { label: 'Charges personnel', value: euro(ms), note: 'présence + HS' },
       { label: 'REX', value: euro(rex), note: pct(r(rex)) },
-      { label: 'Résultat net', value: euro(net), note: pct(r(net)) },
+      ...(expl ? [] : [{ label: 'Résultat net', value: euro(net), note: pct(r(net)) }]),
       { label: 'MS / CA', value: pct(r(ms)) },
       { label: 'HS', value: t.hs.toFixed(0) + ' h' }
     ],
     barresCA: [{ label: '2026', value: ca2026, cls: 'b2026' }, { label: 'Obj 27', value: caObj, cls: 'obj' }, { label: 'Bud 27', value: caBudget, cls: 'budget' }],
-    barresResultat: [{ label: 'REX', value: rex, cls: 'budget' }, { label: 'Net', value: net, cls: 'budget' }],
+    barresResultat: expl ? [{ label: 'REX', value: rex, cls: 'budget' }] : [{ label: 'REX', value: rex, cls: 'budget' }, { label: 'Net', value: net, cls: 'budget' }],
     caMensuel: M.map((m, i) => ({ mois: m, value: monthCA(a, i) })),
     ratios: [
       { label: 'Masse salariale / CA', value: r(ms) },
       { label: 'REX / CA', value: r(rex) },
-      { label: 'Résultat net / CA', value: r(net) },
+      ...(expl ? [] : [{ label: 'Résultat net / CA', value: r(net) }]),
       { label: 'Coût HS / CA', value: r(hsCost) }
     ]
   };

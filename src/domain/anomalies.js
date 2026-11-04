@@ -1,15 +1,15 @@
 // Centre d'attention — port fidèle de collectAnomalies : les points du budget ouvert
 // qui demandent l'attention du REX ou du CG, chacun relié à l'écran où agir.
-import { ann, isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M } from './calculations.js';
+import { ann, isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, resultatAffiche, vueExploitation } from './calculations.js';
 import { euro, pct } from './format.js';
 
-export function collecterAnomalies(a) {
+export function collecterAnomalies(a, role) {
   const out = [];
   if (!a) return out;
   const ca = ann(a, "Chiffre d'affaires");
   const caObj = +a.targetCA || 0;
   const txr = +a.targetTXR || 0;
-  const net = ann(a, 'RESULTAT NET');
+  const net = resultatAffiche(a, role).val;
   const ms = ann(a, 'Charges de personnel');
   const tauxMS = ca ? (ms / ca) * 100 : 0;
   const nbRoulants = (a.employees || []).filter((e) => isRoulant(e.qual)).length;
@@ -33,7 +33,7 @@ export function collecterAnomalies(a) {
     if (Math.abs(rest) > (refAgenceSeuils(a).toleranceCP || 3)) out.push({ panel: 'rh', level: 'warn', text: Math.abs(rest).toFixed(0) + ' jours de congés ' + (rest > 0 ? 'à placer' : 'en excès') });
   }
   if (ca > 0) {
-    if (net < 0) out.push({ panel: 'previsionnel', level: 'warn', text: 'Budget déficitaire (' + euro(net) + ')' });
+    if (net < 0) out.push({ panel: 'previsionnel', level: 'warn', text: (vueExploitation(a, role) ? 'Résultat d\'exploitation déficitaire (' : 'Budget déficitaire (') + euro(net) + ')' });
     if (tauxMS > 85) out.push({ panel: 'previsionnel', level: 'warn', text: 'Masse salariale élevée (' + pct(tauxMS) + ' du CA)' });
   }
   return out;

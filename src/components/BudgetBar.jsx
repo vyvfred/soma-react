@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBudget } from '../context/BudgetContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { vueExploitation } from '../domain/calculations.js';
 import { statutLabel } from '../config/statut.js';
 import { VALIDATOR_LABELS } from '../domain/validationEngine.js';
 import { VERSIONS, VERSION_LABELS, refusAAfficher, ecartAbsenteisme } from '../domain/versions.js';
@@ -13,20 +14,22 @@ import { toast } from './Toast.jsx';
 
 const btn = { width: 'auto', margin: 0, fontSize: 12, padding: '7px 12px' };
 
-function CompareModal({ cols, nom, onClose }) {
-  const lignes = [
+function CompareModal({ cols, nom, onClose, expl }) {
+  const toutes = [
     ['Chiffre d\'affaires', (c) => euro(c.ca)],
     ['Charges de personnel', (c) => euro(c.ms)],
     ['MS / CA', (c) => pct(c.msRatio)],
     ['Résultat d\'exploitation', (c) => euro(c.rexpl)],
-    ['Résultat net', (c) => euro(c.net)],
-    ['Résultat net / CA', (c) => pct(c.netRatio)],
+    ['Résultat net', (c) => euro(c.net), true],
+    ['Résultat net / CA', (c) => pct(c.netRatio), true],
     ['Effectif (ETP)', (c) => c.etp.toFixed(1)],
     ['Nombre de salariés', (c) => c.nbSal],
     ['Heures supplémentaires', (c) => Math.round(c.hs) + ' h'],
     ['CP générés', (c) => c.cpG.toFixed(0) + ' J'],
     ['CP planifiés', (c) => c.cpP.toFixed(0) + ' J']
   ];
+  // Le REX d'une agence ne voit pas les lignes sous le résultat d'exploitation
+  const lignes = expl ? toutes.filter((l) => !l[2]) : toutes;
   return (
     <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{ padding: 20 }}>
       <div className="modalCard" style={{ width: '100%', maxWidth: 800, maxHeight: '88vh', overflow: 'auto' }}>
@@ -149,7 +152,7 @@ export default function BudgetBar() {
         {!editable ? <span style={{ fontSize: 12, color: 'var(--blue2)' }}>🔒 En validation — lecture seule</span> : null}
       </div>
 
-      {cols ? <CompareModal cols={cols} nom={agenceNom} onClose={() => setCols(null)} /> : null}
+      {cols ? <CompareModal cols={cols} nom={agenceNom} expl={vueExploitation(a, profile.role)} onClose={() => setCols(null)} /> : null}
     </div>
   );
 }

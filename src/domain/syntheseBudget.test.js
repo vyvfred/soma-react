@@ -11,10 +11,11 @@ describe('Synthèse du budget', () => {
     const a = base();
     const rex = syntheseBudget(a, 'rex');
     const dr = syntheseBudget(a, 'dr');
-    expect(rex.kpis.map((k) => k.label)).toEqual(['CA budgété', 'Résultat net', 'Masse salariale / CA', 'Écart à l\'objectif']);
-    expect(rex.verdict.titre).toBe(dr.verdict.titre);
+    expect(rex.kpis.map((k) => k.label)).toEqual(['CA budgété', 'Résultat d\'exploitation', 'Masse salariale / CA', 'Écart à l\'objectif']);
+    expect(dr.kpis[1].label).toBe('Résultat net');
+    
     expect(rex.verdict.detail).not.toBe(dr.verdict.detail);
-    if (rex.net < 0) expect(rex.verdict.titre).toMatch(/résultat déficitaire/);
+    if (dr.net < 0) expect(dr.verdict.titre).toMatch(/résultat déficitaire/);
   });
 
   it('objectif non atteint au-delà de 3 %', () => {

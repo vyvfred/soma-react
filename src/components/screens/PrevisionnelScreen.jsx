@@ -1,12 +1,13 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { ann, amount, isRoulant, T, M } from '../../domain/calculations.js';
+import { ann, amount, isRoulant, M, lignesSIG, resultatAffiche } from '../../domain/calculations.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { euro, pct } from '../../domain/format.js';
 
 // Écran Prévisionnel — port fidèle de renderPrevisionnel() : 4 KPI décisifs,
 // interprétation, et tableau complet du compte de résultat mois par mois (lecture seule).
 
 // Texte d'interprétation — port fidèle de renderPrevInsight() (mêmes seuils, mêmes messages).
-function previsionnelInsight(a, ca, net, tauxMS) {
+function previsionnelInsight(a, ca, net, tauxMS, libMin = 'résultat') {
   if (!ca) {
     const nbRoulants = a.employees ? a.employees.filter((e) => isRoulant(e.qual)).length : 0;
     if (nbRoulants === 0) {
@@ -18,8 +19,8 @@ function previsionnelInsight(a, ca, net, tauxMS) {
     return 'Les charges ne sont pas encore saisies. Le contrôleur de gestion renseigne les charges de chaque poste ; le résultat prévisionnel se complètera au fur et à mesure.';
   }
   let phrase;
-  if (net > 0) phrase = 'Votre budget dégage un résultat positif de <b>' + euro(net) + '</b>. ';
-  else if (net < 0) phrase = 'Votre budget présente un résultat déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
+  if (net > 0) phrase = 'Votre budget dégage un ' + libMin + ' positif de <b>' + euro(net) + '</b>. ';
+  else if (net < 0) phrase = 'Votre budget présente un ' + libMin + ' déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
   else phrase = 'Votre budget est à l\u2019équilibre. ';
 
   if (tauxMS > 85) {
@@ -45,6 +46,8 @@ function KpiCard({ label, value, note }) {
 
 export default function PrevisionnelScreen({ vueCG = false }) {
   const { loading, error, agency: a, agenceNom } = useBudget();
+  const { profile } = useAuth();
+  const role = vueCG ? 'cg' : profile.role;
 
   if (!agenceNom) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Chargement du budget…</p></div>;
@@ -52,7 +55,8 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   if (!a) return <div className="card"><h2>Prévisionnel — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const ca = ann(a, "Chiffre d'affaires");
-  const net = ann(a, 'RESULTAT NET');
+  const res = resultatAffiche(a, role);
+  const net = vueCG ? ann(a, 'RESULTAT NET') : res.val;
   const ms = ann(a, 'Charges de personnel');
   const ebe = ann(a, "EXCEDENT BRUT D'EXPLOITATION");
   const tauxMS = ca ? (ms / ca) * 100 : 0;
@@ -68,7 +72,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
     { label: 'Résultat net', value: euro(net), note: pct(ca ? (net / ca) * 100 : 0) }
   ] : [
     { label: 'CA budgété', value: euro(ca) },
-    { label: 'Résultat net', value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
+    { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
     { label: 'Masse salariale / CA', value: pct(tauxMS), note: tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
     { label: 'EBE', value: euro(ebe), note: ca ? pct((ebe / ca) * 100) : '' }
   ];
@@ -84,7 +88,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
 
       <div
         style={{ marginBottom: 16, padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)' }}
-        dangerouslySetInnerHTML={{ __html: previsionnelInsight(a, ca, net, tauxMS) }}
+        dangerouslySetInnerHTML={{ __html: previsionnelInsight(a, ca, net, tauxMS, res.libMin) }}
       />
 
       {a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length ? (
@@ -104,7 +108,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
             </tr>
           </thead>
           <tbody>
-            {T.map((r) => {
+            {lignesSIG(a, role).map((r) => {
               const total = ann(a, r.label);
               const pctCA = ca ? pct((total / ca) * 100) : '—';
               const zero = (v) => (!v || v === 0 ? ' zeroVal' : '');
