@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { agencesOps } from '../../config/agences.js';
 import { statutLabel } from '../../config/statut.js';
 import { computeConsolidation } from '../../domain/consolidation.js';
+import { detailAvancement } from '../../domain/avancement.js';
 import { euro } from '../../domain/format.js';
 import { feuillesConsolidation, nomFichierConsolidation } from '../../domain/exportConsolidation.js';
 import { telechargerClasseur } from '../../lib/importExcel.js';
@@ -17,6 +18,23 @@ function Kpi({ label, value, note }) {
       <div className="label">{label}</div>
       <div className="value">{value}</div>
       <div className="note">{note || ''}</div>
+    </div>
+  );
+}
+
+// Barre d'avancement de la construction d'un budget (survol : détail des jalons)
+function Avancement({ av, statut }) {
+  const fini = statut && statut !== 'brouillon';
+  const p = fini ? 100 : av.pct;
+  const col = p >= 90 ? 'var(--green, #2e7d6f)' : p >= 50 ? '#FF8F00' : 'var(--orange, #c45300)';
+  return (
+    <div title={detailAvancement(av)} data-testid="avancement" style={{ minWidth: 160 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ flex: 1, height: 6, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden' }}><div style={{ width: p + '%', height: '100%', background: col }} /></div>
+        <b style={{ fontSize: 11, color: col }}>{fini ? 'soumis' : p + ' %'}</b>
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--ink65)' }}>{av.moisValides}/12 mois validés · charges {av.chargesPct} %</div>
+      {!fini && av.joursSansModif !== null && av.joursSansModif >= 7 ? <div style={{ fontSize: 10, color: 'var(--orange, #c45300)' }}>sans modification depuis {av.joursSansModif} j</div> : null}
     </div>
   );
 }
@@ -61,6 +79,9 @@ export default function ConsolidationScreen() {
   let insight = '<b>' + c.deposes + ' agence' + (c.deposes > 1 ? 's' : '') + ' sur ' + c.total + '</b> ont déposé leur budget';
   if (c.valides > 0) insight += ', dont <b>' + c.valides + '</b> validé' + (c.valides > 1 ? 's' : '') + ' définitivement';
   insight += '. ';
+  if (c.avancementMoyen !== null) insight += 'Les <b>' + c.brouillons + ' budget' + (c.brouillons > 1 ? 's' : '') + ' en brouillon</b> sont construits à <b>' + c.avancementMoyen + ' %</b> en moyenne. ';
+  if (c.nonDeposes > 0) insight += '<b>' + c.nonDeposes + '</b> agence' + (c.nonDeposes > 1 ? 's n\'ont' : ' n\'a') + ' pas encore commencé. ';
+  if (c.aRelancer.length) insight += '<span style="color:var(--orange)">Sans modification depuis une semaine ou plus : <b>' + c.aRelancer.join(', ') + '</b>.</span> ';
   if (c.caReseauTotal > 0) insight += 'Le CA réseau consolidé atteint <b>' + euro(c.caReseauTotal) + '</b>. ';
   if (c.agencesAtypiques.length > 0) {
     insight += '<b>' + c.agencesAtypiques.length + ' agence' + (c.agencesAtypiques.length > 1 ? 's' : '') + '</b> présente' + (c.agencesAtypiques.length > 1 ? 'nt' : '') + ' un taux de charge élevé (objectif au-dessus de la capacité) : ' + c.agencesAtypiques.slice(0, 3).join(', ') + (c.agencesAtypiques.length > 3 ? '…' : '') + '.';
@@ -101,8 +122,8 @@ export default function ConsolidationScreen() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
-              {['Agence', 'Statut', 'CA budgété', 'Capacité max', 'Taux charge', 'HS estimées', 'CP à répartir', 'Alertes', 'Mis à jour'].map((h, i) => (
-                <th key={i} style={{ textAlign: i >= 2 && i <= 6 ? 'right' : 'left', padding: '6px 8px' }}>{h}</th>
+              {['Agence', 'Statut', 'Avancement', 'CA budgété', 'Capacité max', 'Taux charge', 'HS estimées', 'CP à répartir', 'Alertes', 'Mis à jour'].map((h, i) => (
+                <th key={i} title={h === 'Avancement' ? 'Construction du budget par le REX : objectif, références CA, équipe, absentéisme, mois validés. Survolez pour le détail.' : undefined} style={{ textAlign: i >= 3 && i <= 7 ? 'right' : 'left', padding: '6px 8px' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -113,6 +134,7 @@ export default function ConsolidationScreen() {
                   <tr key={r.nom}>
                     <td style={{ padding: '4px 8px' }}><b>{r.nom}</b></td>
                     <td style={{ padding: '4px 8px' }}><span className="statut brouillon">Non commencé</span></td>
+                    <td style={{ padding: '4px 8px' }}><b style={{ fontSize: 11, color: 'var(--orange, #c45300)' }}>0 %</b></td>
                     <td colSpan={7} style={{ color: 'var(--ink30)', fontSize: 12, padding: '4px 8px' }}>Aucune donnée</td>
                   </tr>
                 );
@@ -121,6 +143,7 @@ export default function ConsolidationScreen() {
                 <tr key={r.nom}>
                   <td style={{ padding: '4px 8px' }}><b>{r.nom}</b><br /><span style={{ fontSize: 10, color: 'var(--ink65)' }}>Zone {r.zone}</span></td>
                   <td style={{ padding: '4px 8px' }}><span className={'statut ' + r.statut}>{statutLabel(r.statut)}</span></td>
+                  <td style={{ padding: '4px 8px' }}><Avancement av={r.av} statut={r.statut} /></td>
                   <td className="num" style={{ padding: '4px 8px' }}>{r.caB > 0 ? euro(r.caB) : '—'}</td>
                   <td className="num" style={{ padding: '4px 8px' }}>{r.caMax > 0 ? euro(r.caMax) : '—'}</td>
                   <td className="num" style={{ color: txChargeColor(r.txCharge), fontWeight: 700, padding: '4px 8px' }}>{r.txCharge > 0 ? r.txCharge + '%' : '—'}</td>

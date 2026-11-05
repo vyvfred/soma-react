@@ -27,8 +27,8 @@ describe('FAQ — intégrité des données', () => {
 
   it('effectifs de questions attendus par profil', () => {
     expect(FAQ.rex).toHaveLength(30); // parcours des profils (nov. 2026) : + versions, autres absences, calendrier, résultat d'exploitation, charges, masse salariale
-    expect(FAQ.cg).toHaveLength(31); // + réimport du registre, calendrier scolaire, structures, IS et participation
-    expect(FAQ.valideur).toHaveLength(16); // + consolidation, agences non rattachées, résultat net, écrans du DF
+    expect(FAQ.cg).toHaveLength(32); // + réimport du registre, calendrier scolaire, structures, IS et participation
+    expect(FAQ.valideur).toHaveLength(17); // + consolidation, agences non rattachées, résultat net, écrans du DF
     expect(FAQ.admin).toHaveLength(7);
     expect(FAQ.commun).toHaveLength(3); // mot de passe, statuts, contacts
   });

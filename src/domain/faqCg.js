@@ -145,6 +145,10 @@ export const FAQ_CG_SECTIONS = [
       [
         "À quoi servent les graphiques ?",
         "Ils donnent une vision d'ensemble : l'évolution du CA par agence (réalisé 2025 et 2026, budgété 2027) pour repérer les trajectoires atypiques, et un nuage qui situe chaque agence selon son taux de charge. Utile pour préparer une présentation à la direction."
+      ],
+      [
+        "Comment savoir où en sont les budgets en préparation ?",
+        "L'écran Consolidation affiche, pour chaque agence, une colonne « Avancement » : la construction du budget par le REX, sur cinq jalons à parts égales (objectif fixé, références CA, équipe, absentéisme mensuel, mois validés). Survolez la barre pour le détail ; le nombre de mois validés et la part des charges saisies par le contrôle de gestion sont rappelés dessous. Un brouillon sans modification depuis une semaine ou plus est signalé en orange, et le commentaire en haut de l'écran donne l'avancement moyen des brouillons et la liste des agences à relancer. Un directeur régional voit ses agences ; la direction, tout le réseau. L'export Excel reprend ces colonnes."
       ]
     ]
   },

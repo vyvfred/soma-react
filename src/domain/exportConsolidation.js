@@ -1,6 +1,7 @@
 // Export Excel de la consolidation réseau — port fidèle d'exportConsolidation.
 // Fonction PURE : renvoie les feuilles (tableaux de lignes) ; l'écriture du fichier est dans lib/.
 import { statutLabel } from '../config/statut.js';
+import { avancementBudget } from './avancement.js';
 import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles } from './calculations.js';
 import { entiteDepuisBudget } from './consolideSIG.js';
 
@@ -33,7 +34,7 @@ export function feuillesConsolidation(map, ops) {
     'Agence', 'Zone', 'Statut', 'Mis à jour', 'CA 2025', 'CA 2026', 'TXR 2026 (€/h)',
     'Absentéisme cible %', 'Taux brut (€/h)', 'Charges pat. %', 'Coût horaire (€/h)',
     'CA budgété', 'Capacité max', 'Taux charge %', 'HS estimées (h)', 'ETP roulant',
-    'CP générés (J)', 'CP planifiés (J)', 'Nbre salariés roulants'
+    'CP générés (J)', 'CP planifiés (J)', 'Nbre salariés roulants', 'Avancement %', 'Mois validés', 'Jours sans modification'
   ]];
   const statuts = [['Agence', 'Zone', 'Statut', 'Date dépôt']];
   const comp = [['Agence', 'Zone', 'TXR 2026 (€/h)', 'Absentéisme %', 'Coût horaire (€/h)', 'ETP roulant', 'Taux HS/CA %']];
@@ -45,12 +46,15 @@ export function feuillesConsolidation(map, ops) {
     const i = indicateurs(d, ag.nom);
     conso.push([ag.nom, ag.zone, st, date, d.histCA2025 || '', d.histCA || '', d.histTXR2026 || '',
       d.targetAbsRate || '', d.tauxHoraireBrut || '', d.tauxChargePatronal || '', d.costHour || '',
-      i.caB || '', i.caMax || '', i.txCharge || '', i.hs || '', i.etp || '', i.cpGen || '', i.cpPlan || '', i.nbRoulants || '']);
+      i.caB || '', i.caMax || '', i.txCharge || '', i.hs || '', i.etp || '', i.cpGen || '', i.cpPlan || '', i.nbRoulants || '',
+      b ? (b.statut && b.statut !== 'brouillon' ? 100 : avancementBudget(d, b.updatedAt).pct) : 0,
+      b ? avancementBudget(d, b.updatedAt).moisValides : 0,
+      b && b.updatedAt ? avancementBudget(d, b.updatedAt).joursSansModif : '']);
     statuts.push([ag.nom, ag.zone, st, date]);
     comp.push([ag.nom, ag.zone, d.histTXR2026 || '', d.targetAbsRate || '', d.costHour || '', i.etp || '', i.tauxHS !== null ? i.tauxHS : '']);
   });
   return [
-    { nom: 'Consolidation', lignes: conso, largeurs: [26, 6, 18, 12, 14, 14, 12, 14, 12, 12, 14, 14, 14, 12, 14, 10, 12, 12, 14] },
+    { nom: 'Consolidation', lignes: conso, largeurs: [26, 6, 18, 12, 14, 14, 12, 14, 12, 12, 14, 14, 14, 12, 14, 10, 12, 12, 14, 12, 12, 14] },
     { nom: 'Statuts', lignes: statuts, largeurs: [26, 6, 22, 12] },
     { nom: 'Indicateurs', lignes: comp, largeurs: [26, 6, 14, 14, 16, 12, 12] }
   ];

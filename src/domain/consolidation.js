@@ -5,6 +5,7 @@
 
 import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles } from './calculations.js';
 import { entiteDepuisBudget } from './consolideSIG.js';
+import { avancementBudget } from './avancement.js';
 
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
 
@@ -20,6 +21,7 @@ export function computeConsolidation(map, ops) {
 
   let caReseauTotal = 0;
   const agencesAtypiques = [];
+  const avBrouillons = [], aRelancer = [];
 
   const rows = ops.map((ag) => {
     const b = map[ag.nom];
@@ -27,6 +29,8 @@ export function computeConsolidation(map, ops) {
 
     const d = b.data || {};
     const statut = b.statut || 'brouillon';
+    const av = avancementBudget(d, b.updatedAt);
+    if (statut === 'brouillon') { avBrouillons.push(av.pct); if (av.joursSansModif !== null && av.joursSansModif >= 7) aRelancer.push(ag.nom); }
 
     const caB = d.cal && d.cal.length ? d.cal.reduce((s, day) => s + (day.total || 0), 0) : 0;
 
@@ -60,8 +64,9 @@ export function computeConsolidation(map, ops) {
 
     const dateStr = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—';
 
-    return { nom: ag.nom, zone: ag.zone, present: true, statut, caB, caMax, txCharge, hsAnn, cpGen, cpEcart, alertes, dateStr };
+    return { nom: ag.nom, zone: ag.zone, present: true, statut, av, caB, caMax, txCharge, hsAnn, cpGen, cpEcart, alertes, dateStr };
   });
 
-  return { total, budgetsCount, deposes, valides, brouillons, nonDeposes, enCours, caReseauTotal, agencesAtypiques, rows };
+  const avancementMoyen = avBrouillons.length ? Math.round(avBrouillons.reduce((x, y) => x + y, 0) / avBrouillons.length) : null;
+  return { total, budgetsCount, deposes, valides, brouillons, nonDeposes, enCours, caReseauTotal, agencesAtypiques, avancementMoyen, aRelancer, rows };
 }
