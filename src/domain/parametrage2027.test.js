@@ -166,3 +166,21 @@ describe('Lissage de la 5e semaine de variables (règle du CG)', () => {
     expect(buildPeriodesPaie().map(nbSemPeriode)).toEqual([5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4]);
   });
 });
+
+import { baseDec2026 } from './calculations.js';
+describe('Salaire de base du 7 au 31 décembre 2026 sur la paie de janvier', () => {
+  const mini = () => ({ ...base(), periodesPaie: buildPeriodesPaie(), costHour: 30, sick: [10, ...Array(11).fill(0)], ratioMaintien: 50,
+    employees: [
+      { nom: 'A', qual: 'DEA', contract: 'CDI', hours: 35, pctRoulant: 100 },
+      { nom: 'B', qual: 'AA', contract: 'CDD', hours: 35, pctRoulant: 100 },
+      { nom: 'C', qual: 'AA', contract: 'CDI', hours: 35, pctRoulant: 100, dateEntree: '2027-03-01' },
+      { nom: 'R', qual: 'REGULATEUR', contract: 'CDI', hours: 35, pctRoulant: 0 }
+    ] });
+  it('70 h × 25 j / 7 × 30 € × (1 − 10 % × 50 %) × (1 + 10 % × ½ CDD)', () => {
+    expect(baseDec2026(mini())).toBeCloseTo(70 * 25 / 7 * 30 * 0.95 * 1.05, 6);
+  });
+  it('nul si la période de janvier commence en 2027', () => {
+    const a = mini(); a.periodesPaie = a.periodesPaie.map((p, i) => (i === 0 ? { ...p, debut: '2027-01-01' } : p));
+    expect(baseDec2026(a)).toBe(0);
+  });
+});

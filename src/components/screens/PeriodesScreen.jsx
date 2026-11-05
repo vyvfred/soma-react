@@ -1,5 +1,5 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { buildPeriodesPaie, payrollPayMonth, varDec2026Total, chargesReport2028, lissage5eSemaine, nbSemPeriode } from '../../domain/calculations.js';
+import { buildPeriodesPaie, payrollPayMonth, varDec2026Total, chargesReport2028, lissage5eSemaine, nbSemPeriode, baseDec2026 } from '../../domain/calculations.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { euro } from '../../domain/format.js';
 
@@ -37,7 +37,7 @@ export default function PeriodesScreen() {
       <h2 style={{ marginBottom: 12 }}>Périodes de paie 2027 — {a.name}</h2>
 
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}>
-        Le calendrier de paie 2027 compte <b>{nb5sem} mois à 5 semaines</b> : leurs heures travaillées restent plus nombreuses, mais les heures supplémentaires de la 5e semaine sont lissées sur le trimestre.{' '}
+        Le calendrier de paie 2027 compte <b>{nb5sem} mois à 5 semaines</b> : leurs heures travaillées restent plus nombreuses, mais les heures supplémentaires de la 5e semaine sont lissées sur le trimestre. La paie de janvier comprend aussi le salaire de base des roulants pour les jours de décembre 2026 de sa période.{' '}
         {hasDec ? 'Les variables de décembre 2026 sont renseignées.' : 'Pensez à saisir les variables de décembre 2026 incluses dans la paie de janvier.'}
       </div>
 
@@ -66,6 +66,7 @@ export default function PeriodesScreen() {
               <th style={{ padding: '6px 8px' }}>Nb semaines</th>
               <th style={{ textAlign: 'right', padding: '6px 8px' }}>MS calculée</th>
               <th style={{ textAlign: 'right', padding: '6px 8px' }}>dont var. déc. 2026</th>
+              <th style={{ textAlign: 'right', padding: '6px 8px' }} title="Salaire de base des roulants pour les jours de décembre 2026 compris dans la période de paie de janvier">dont base déc. 2026</th>
               <th style={{ textAlign: 'right', padding: '6px 8px' }} title="4 semaines de variables par mois : la 5e semaine de HS est lissée sur le trimestre">dont lissage 5e semaine</th>
             </tr>
           </thead>
@@ -73,6 +74,7 @@ export default function PeriodesScreen() {
             {periodes.map((p, i) => {
               const ms = msReady ? euro(Math.round(payrollPayMonth(a, i))) : '—';
               const dec = i === 0 && hasDec ? euro(Math.round(totalDec)) : '';
+              const bd = i === 0 && msReady ? baseDec2026(a) : 0;
               const t5 = nbSemPeriode(p) === 5;
               const lis = msReady ? lissage5eSemaine(a, i) : 0;
               return (
@@ -83,6 +85,7 @@ export default function PeriodesScreen() {
                   <td style={{ textAlign: 'center', fontFamily: 'DM Mono, monospace', padding: '4px 8px' }}>{nbSemPeriode(p)}</td>
                   <td className="num" style={{ padding: '4px 8px' }}><b>{ms}</b></td>
                   <td className="num" style={{ color: 'var(--blue2, #3d6fd6)', padding: '4px 8px' }}>{dec}</td>
+                  <td className="num" data-testid={'basedec-' + i} style={{ color: 'var(--blue2, #3d6fd6)', padding: '4px 8px' }}>{bd > 0 ? euro(Math.round(bd)) : ''}</td>
                   <td className="num" data-testid={'lissage-' + i} style={{ color: lis < 0 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)', padding: '4px 8px' }}>{Math.abs(lis) >= 0.5 ? (lis > 0 ? '+' : '') + euro(Math.round(lis)) : ''}</td>
                 </tr>
               );
@@ -93,7 +96,7 @@ export default function PeriodesScreen() {
               <tr style={{ background: 'var(--bg2)' }}>
                 <td colSpan={4} style={{ padding: '6px 8px' }}><b>Total masse salariale 2027 (selon périodes de paie)</b></td>
                 <td className="num" style={{ padding: '6px 8px' }}><b style={{ color: 'var(--violet2, var(--violet))' }}>{euro(Math.round(totalMS))}</b></td>
-                <td></td><td></td>
+                <td></td><td></td><td></td>
               </tr>
             </tfoot>
           ) : null}

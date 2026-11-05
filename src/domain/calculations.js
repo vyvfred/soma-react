@@ -277,7 +277,8 @@ function payrollPayMonth(a, moisIdx) {
 
   // Heures roulantes disponibles sur cette période
   // Pour janvier : ajouter le montant décembre 2026 si saisi
-  let msJan2026 = moisIdx === 0 ? varDec2026Total(a) : 0;
+  // + le salaire de base des roulants pour les jours de décembre 2026 inclus dans la période
+  let msJan2026 = moisIdx === 0 ? varDec2026Total(a) + baseDec2026(a) : 0;
 
   // Agréger les semaines ISO dont la majorité des jours tombe dans la période
   let hsR = hsRows(a);
@@ -395,6 +396,27 @@ function coutHSPeriodePaie(a, moisIdx){
     if(det) total += ((+det.hs25||0) + (+det.hs50||0)) * (1 + (+a.tauxChargePatronal||0)/100);
   }
   return total;
+}
+// Salaire de base des roulants pour les jours de 2026 de la période de paie de janvier
+// (ex. 7 au 31 décembre 2026) : le calendrier 2027 ne les contient pas. Les variables
+// de décembre (HS, primes…) sont à part (« Variables déc. 2026 »).
+// Heures hebdo des roulants présents au 31/12/2026 × jours / 7 × coût horaire de janvier,
+// maladie de janvier au ratio de maintien, précarité des CDD.
+function baseDec2026(a){
+  let periodes = a.periodesPaie || buildPeriodesPaie();
+  let p = periodes[0];
+  if(!p || !p.debut || p.debut >= '2027-01-01') return 0;
+  let jours = Math.round((new Date('2027-01-01') - new Date(p.debut)) / 86400000);
+  if(jours <= 0) return 0;
+  let h = 0, hCDD = 0;
+  (a.employees || []).forEach(function(e){
+    if(!isRoulant(e.qual) || !empPresent(e, '2026-12-31')) return;
+    let x = (+e.hours||0) * (+e.pctRoulant||100) / 100;
+    h += x; if(e.contract === 'CDD') hCDD += x;
+  });
+  if(!h) return 0;
+  let mal = a.sick && a.sick[0] !== null && a.sick[0] !== undefined ? (+a.sick[0]||0) / 100 : 0;
+  return h * jours / 7 * chMois(a, 0) * (1 - mal * (1 - ratioMaintien(a))) * (1 + TAUX_PRECARITE_CDD * hCDD / h);
 }
 function lissage5eSemaine(a, moisIdx){
   let periodes = a.periodesPaie || buildPeriodesPaie();
@@ -701,6 +723,6 @@ function chargesReport2028(a){
 }
 
 export {
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

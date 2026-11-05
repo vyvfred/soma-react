@@ -56,7 +56,7 @@ export const FAQ_CG_SECTIONS = [
     "items": [
       [
         "Comment fonctionnent les périodes de paie ?",
-        "Chaque mois de paie collecte les variables d'une période qui ne coïncide pas avec le mois civil (par défaut, la paie de janvier couvre du 7 décembre 2026 au 10 janvier 2027). SOMA rattache le coût des heures et des variables à la bonne période. Chaque trimestre compte un mois de paie à 5 semaines (janvier, avril, juillet, octobre). On ne garde que 4 semaines de variables par mois : les heures supplémentaires de la 5e semaine sont lissées sur le trimestre (le mois à 5 semaines est diminué des 2/3 de cette semaine, chacun des deux mois suivants en reçoit 1/3)."
+        "Chaque mois de paie collecte les variables d'une période qui ne coïncide pas avec le mois civil (par défaut, la paie de janvier couvre du 7 décembre 2026 au 10 janvier 2027). SOMA rattache le coût des heures et des variables à la bonne période. La paie de janvier comprend donc le salaire de base des roulants du 7 au 31 décembre 2026 (calculé avec l'équipe présente fin 2026 et le coût horaire de janvier) en plus des variables de décembre saisies. Chaque trimestre compte un mois de paie à 5 semaines (janvier, avril, juillet, octobre). On ne garde que 4 semaines de variables par mois : les heures supplémentaires de la 5e semaine sont lissées sur le trimestre (le mois à 5 semaines est diminué des 2/3 de cette semaine, chacun des deux mois suivants en reçoit 1/3)."
       ],
       [
         "Les dates s'appliquent-elles à toutes les agences ?",
