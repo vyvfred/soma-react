@@ -139,7 +139,7 @@ export default function VariablesDecScreen() {
       </p>
 
       <div style={{ overflowX: 'auto' }}>
-        <table id="varDecTable" style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+        <table id="varDecTable" className="tableColFixe" style={{ borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '6px 8px' }}>Agence</th>

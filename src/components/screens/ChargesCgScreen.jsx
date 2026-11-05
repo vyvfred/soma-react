@@ -119,7 +119,7 @@ export default function ChargesCgScreen() {
       ) : null}
 
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
+        <table className="tableColFixe" style={{ borderCollapse: 'collapse', fontSize: 11 }}>
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '4px 8px' }}>Poste officiel</th>

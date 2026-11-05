@@ -181,7 +181,7 @@ export default function RefAgencesScreen() {
       </div>
 
       <div style={{ overflowX: 'auto', marginBottom: 14 }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+        <table className="tableColFixe" style={{ borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '6px 8px' }}>Agence</th>

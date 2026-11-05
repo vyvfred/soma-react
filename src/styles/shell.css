@@ -145,3 +145,9 @@
 .somaConfetti{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;opacity:.9;animation:somaConfettiChute 1.8s ease-in forwards}
 @keyframes somaConfettiChute{to{transform:translateY(105vh) rotate(540deg);opacity:0}}
 @media (prefers-reduced-motion: reduce){.somaConfetti{display:none}}
+
+/* Grands tableaux : la première colonne (agence, rubrique) reste visible quand on fait défiler à droite */
+.tableColFixe td:first-child, .prev-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card); }
+.tableColFixe th:first-child, .prev-table th:first-child { position: sticky; left: 0; z-index: 3; background: var(--bg2); }
+.prev-table td:first-child { min-width: 210px; }
+.prev-table tr.subtotal td:first-child { background: linear-gradient(rgba(71,38,131,.15), rgba(71,38,131,.15)), var(--card) !important; }

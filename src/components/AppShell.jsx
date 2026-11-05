@@ -20,6 +20,8 @@ import { VERSION_LABELS, VERSION_COLORS } from '../domain/versions.js';
 import { collecterAnomalies } from '../domain/anomalies.js';
 import { STRUCTURES, LIB_STRUCTURES } from '../domain/calculations.js';
 import { toast } from './Toast.jsx';
+import { loadBudgetsForValidation } from '../lib/budgetApi.js';
+import { enAttenteDe, ensureValidation } from '../domain/validationEngine.js';
 
 // Sauvegarde manuelle (port de « 💾 Sauvegarder maintenant »)
 function SaveButton() {
@@ -121,6 +123,18 @@ export default function AppShell() {
   const activeAgence = consult || profile.agence || cgAgence;
   const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex'].includes(profile.role);
 
+  // Pastille du menu « Budgets à valider » : nombre de budgets qui attendent la décision de l'utilisateur
+  const [nbAValider, setNbAValider] = useState(0);
+  useEffect(() => {
+    if (!['dr', 'cg', 'df', 'dg', 'pdg'].includes(profile.role)) { setNbAValider(0); return undefined; }
+    let actif = true;
+    loadBudgetsForValidation(profile).then(({ budgets }) => {
+      if (!actif) return;
+      setNbAValider(budgets.filter((b) => b.data && b.data.validation && enAttenteDe(ensureValidation(b.data.validation), profile.role)).length);
+    }).catch(() => {});
+    return () => { actif = false; };
+  }, [profile, active]);
+
   const activeLabel = (panels.find((p) => p[0] === active) || [active, active])[1];
   const Screen = screenFor(active);
   const showPicker = !consult && needsPicker && PER_AGENCY_PANELS.has(active);
@@ -181,6 +195,7 @@ export default function AppShell() {
               onClick={() => setActive(id)}
             >
               {label}
+              {id === 'validation' && nbAValider > 0 ? <span className="navBadge" data-testid="badge-validation">{nbAValider}</span> : null}
             </button>
           ))}
           <button className="soma-navbtn" data-testid="lien-vision" onClick={() => setVision('demande')} style={{ marginTop: 18, fontSize: 12, color: 'var(--ink65)', fontStyle: 'italic' }}>La vision de SOMA</button>
