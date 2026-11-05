@@ -69,6 +69,19 @@ describe('Import du registre RH', () => {
     expect(r.ecartes).toBe(2);
   });
 
+  it('registre réel : agences accentuées, structures écartées, horaire à 0 remplacé par l\'ETP', () => {
+    const H2 = [...H, 'Date_Calcul', 'ETP'];
+    const R = (ag, nom, horaire, etp) => [ag, '', '1', nom, 'X', '01/01/2020', '', '', 'C.D.I.', "AMBULANCIER DIPLOME D'ETAT", '', '', horaire, '05/11/2026', etp];
+    const r2 = parseRegistre([H2,
+      R('Angoulême', 'A1', 152, 1), R('Chambéry', 'C1', '151,67', 1), R('Châtellerault', 'T1', 0, 0.5),
+      R('', 'T2', 0, 0), R('Siège', 'S1', 152, 1)], decoder);
+    expect(r2.parAgence.ANGOULEME[0].hours).toBe(35.1);
+    expect(r2.parAgence.CHAMBERY[0].hours).toBe(35);
+    expect(r2.parAgence.CHATELLERAULT.map((e) => e.hours)).toEqual([17.5]);
+    expect(r2.parAgence.SIEGE).toBeUndefined();
+    expect(r2.ecartes).toBe(2);
+  });
+
   it('lit les dates Excel (nombres) et les dates texte', () => {
     expect(dateImport('30/09/2027')).toBe('2027-09-30');
     expect(dateImport('2027-06-01')).toBe('2027-06-01');

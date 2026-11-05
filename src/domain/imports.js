@@ -1,3 +1,4 @@
+import { STRUCTURES } from './calculations.js';
 // Imports Excel du contrôleur de gestion — fonctions PURES (port de la version mono-fichier,
 // avec les corrections de novembre 2026). Elles reçoivent les lignes déjà lues du
 // classeur (tableau de tableaux, en-tête compris) et rendent des données prêtes à
@@ -150,7 +151,8 @@ export function parseRegistre(rows, decoderSerie) {
     sortie: h.findIndex((x) => x.includes('sortie')),
     contrat: h.findIndex((x) => x.includes('contrat')),
     emploi: h.findIndex((x) => x.includes('libelle')),
-    horaire: h.findIndex((x) => x.includes('horaire'))
+    horaire: h.findIndex((x) => x.includes('horaire')),
+    etp: h.findIndex((x) => x === 'etp')
   };
   const parAgence = {};
   let derniere = null, ecartes = 0;
@@ -161,15 +163,21 @@ export function parseRegistre(rows, decoderSerie) {
     if (!derniere || derniere.toLowerCase().includes('total')) continue;
     const nom = String(row[col.nom] ?? '').trim();
     if (!nom || nom.toLowerCase() === 'total') continue;
-    const agSoma = AGENCE_MAP[derniere.toUpperCase()];
-    if (!agSoma) { ecartes++; continue; }
+    // Accents ignorés (Angoulême, Chambéry, Châtellerault…) ; structures (Siège) saisies directement par le CG
+    const agSoma = AGENCE_MAP[sansAccents(derniere).toUpperCase()];
+    if (!agSoma || STRUCTURES.indexOf(agSoma) >= 0) { ecartes++; continue; }
     const sortie = col.sortie >= 0 ? dateImport(row[col.sortie], decoderSerie) : '';
     if (sortie === null || (sortie && sortie < '2027-01-01')) { ecartes++; continue; }
     const entree = col.entree >= 0 ? dateImport(row[col.entree], decoderSerie) : '';
     if (entree && entree > '2027-12-31') { ecartes++; continue; }
     const m = mapEmploi(row[col.emploi]);
     if (!QUALS_BUDGETEES.includes(m.qual)) { ecartes++; continue; }
-    const horaireMensuel = nombre(row[col.horaire]) || 152;
+    // Horaire mensuel ; à 0 : ETP du registre ; sans heures ni ETP : salarié écarté
+    let horaireMensuel = nombre(row[col.horaire]);
+    if (!(horaireMensuel > 0)) {
+      const etp = col.etp >= 0 ? nombre(row[col.etp]) : 0;
+      if (etp > 0) horaireMensuel = etp * 151.67; else { ecartes++; continue; }
+    }
     const prenom = String(row[col.prenom] ?? '').trim();
     (parAgence[agSoma] = parAgence[agSoma] || []).push({
       nom: (nom + ' ' + prenom).trim(),
