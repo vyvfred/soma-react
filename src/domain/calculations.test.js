@@ -72,8 +72,9 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   const a = agenceReference();
 
   it('CA annuel et CA de janvier', () => {
-    expect(Math.round(annualCA(a))).toBe(949600);
-    expect(Math.round(monthCA(a, 0))).toBe(81400);
+    // Calendrier scolaire officiel (nov. 2026) : jour de reprise hors vacances, 1er sept. et Noël 2027 en vacances → −4 200 €
+    expect(Math.round(annualCA(a))).toBe(945400);
+    expect(Math.round(monthCA(a, 0))).toBe(82000); // lundi 4 janvier : jour de reprise (+600 €)
   });
 
   it('capacité roulante (baseH)', () => {
@@ -99,15 +100,15 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('compte de résultat de janvier — résultat net', () => {
-    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(65126);
+    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(65726);
   });
 
   it('agrégats annuels du compte de résultat (KPI Synthèse)', () => {
-    expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(949600);
+    expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(945400);
     // Semaines partielles au prorata : −4/7 (1er-3 janv.) − 2/7 (27-31 déc.) d'une semaine à 2 679 € = −2 296 €
     expect(Math.round(ann(a, 'Charges de personnel'))).toBe(194501);
-    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(755099);
-    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(755099);
+    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(750899);
+    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(750899);
     expect(Math.round(hsTot(a).hs)).toBe(0);
   });
 });

@@ -48,6 +48,14 @@ export const FAQ_CG_SECTIONS = [
       [
         "Peut-on importer les données ou les équipes depuis Excel ?",
         "Pas encore dans cette version de SOMA : les imports Excel (données agences, registre RH) existent dans la version actuelle et seront ajoutés ici. En attendant, saisissez ou ajustez les valeurs directement dans le tableau des Données agences ; les équipes se saisissent sur l'écran Équipe de chaque agence."
+      ],
+      [
+        "Les équipes ont été importées : que se passe-t-il si je réimporte le registre ?",
+        "Les équipes de toutes les agences ont été chargées à partir du registre du personnel. Un nouvel import ne remplace jamais une équipe déjà construite : seules les versions de budget dont l'équipe est vide sont remplies, et SOMA vous liste les agences non remplacées. Les REX gardent la main pour ajouter ou retirer des salariés."
+      ],
+      [
+        "Quel calendrier scolaire SOMA utilise-t-il ?",
+        "Le calendrier officiel de l'Éducation nationale (2026-2027 puis 2027-2028), selon la zone de l'agence (A, B ou C) : fin des vacances de Noël le 3 janvier, vacances d'hiver et de printemps selon la zone, été du 3 juillet au 1er septembre, Toussaint du 23 octobre au 7 novembre, Noël à partir du 18 décembre 2027. Les jours de reprise des cours sont des jours de semaine normaux. Les 11 jours fériés de 2027 sont appliqués."
       ]
     ]
   },
@@ -108,6 +116,14 @@ export const FAQ_CG_SECTIONS = [
       [
         "À quoi sert l'écran Contrôles ?",
         "Sur l'agence ouverte, il récapitule charges fixes, charges variables, charges de personnel, heures supplémentaires et résultat, et liste les contrôles de cohérence. Ces contrôles ne bloquent rien. Il signale aussi le paramétrage salarial incomplet : ligne non-roulante absente, ratio de maintien vide, taux de juin absent."
+      ],
+      [
+        "Comment saisir Formation, Exceptionnel, Réseau adhérent et Siège ?",
+        "Ces quatre structures se gèrent comme une agence que vous complétez entièrement : ouvrez-la avec « Ouvrir une agence » (elles sont en fin de liste), puis saisissez dans « Charges CG » tout son compte de résultat, chiffre d'affaires et charges de personnel compris, mois par mois ou en montant annuel. Elles n'ont ni équipe, ni calendrier, ni REX. Elles entrent dans le compte de résultat consolidé du réseau (écran Consolidation)."
+      ],
+      [
+        "Où saisir l'impôt sur les sociétés et la participation ?",
+        "Sur le Siège uniquement : ouvrez SIEGE, écran « Charges CG », lignes « Impôt sur les sociétés » et « Participation aux bénéfices ». Le résultat net = résultat courant avant impôt + résultat exceptionnel − impôt sur les sociétés − participation. Ces lignes n'existent pas pour les agences et apparaissent dans le consolidé réseau."
       ]
     ]
   },

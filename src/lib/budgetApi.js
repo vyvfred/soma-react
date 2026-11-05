@@ -118,6 +118,14 @@ export async function saveAgencyBudget({ budgetId, activeVersion, meta, agency, 
 // Charge tous les budgets du réseau (vue CG/direction) et renvoie une map
 // indexée par nom d'agence : { agence: { statut, data } } où data est la version
 // affichée. Reproduit le chargement de renderCgDash.
+// Agences de la région d'un DR (noms)
+export async function loadAgencesRegion(regionId) {
+  if (!regionId) return [];
+  const { data, error } = await sb.from('agences').select('nom').eq('region_id', regionId);
+  if (error) throw error;
+  return (data || []).map((a) => a.nom);
+}
+
 export async function loadNetworkBudgets() {
   const { data, error } = await sb
     .from('budgets')

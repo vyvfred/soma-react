@@ -24,7 +24,7 @@ export default function ControleScreen() {
     ['Charges variables', euro(s.variable), pct(ca ? s.variable / ca * 100 : 0)],
     ['Charges personnel', euro(s.payroll), pct(ca ? s.payroll / ca * 100 : 0)],
     ['HS annuelles', s.hs.toFixed(0) + ' h', ''],
-    ['REX', euro(rex), pct(ca ? rex / ca * 100 : 0)],
+    ['Résultat d\'exploitation', euro(rex), pct(ca ? rex / ca * 100 : 0)],
     ['Résultat net', euro(net), pct(ca ? net / ca * 100 : 0)]
   ];
   const alerts = auditAlerts(a).concat(alertesParametrage(a).map((x) => [x.t === 'warn' ? 'warning' : x.t, 'Paramétrage salarial', x.m]));

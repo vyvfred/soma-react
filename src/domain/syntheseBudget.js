@@ -18,7 +18,7 @@ export function syntheseBudget(a, role = 'rex') {
   const kpis = [
     { label: 'CA budgété', value: euro(ca), note: '' },
     { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
-    { label: 'Masse salariale / CA', value: pct(tauxMS), note: tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
+    { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
     { label: 'Écart à l\'objectif', value: (ecart >= 0 ? '+' : '') + euro(ecart), note: caObj ? (ecart >= 0 ? 'objectif atteint' : 'sous l\'objectif') : '' }
   ];
 
@@ -94,23 +94,23 @@ export function indicateursDetailles(a, role) {
       { label: 'Objectif CA 2027', value: euro(caObj), note: 'saisi REX' },
       { label: 'Budget CA 2027', value: euro(caBudget), note: 'calendrier' },
       { label: 'Écart objectif', value: euro(caBudget - caObj), note: 'budget - objectif' },
-      { label: 'REX 2027', value: euro(rex), note: pct(r(rex)) },
+      { label: 'Résultat d\'exploitation 2027', value: euro(rex), note: pct(r(rex)) },
       { label: 'HS estimées', value: t.hs.toFixed(0) + ' h', note: 'moteur RH' }
     ],
     fin: [
       { label: 'CA calendrier', value: euro(caBudget) },
       { label: 'Charges personnel', value: euro(ms), note: 'présence + HS' },
-      { label: 'REX', value: euro(rex), note: pct(r(rex)) },
+      { label: 'Résultat d\'exploitation', value: euro(rex), note: pct(r(rex)) },
       ...(expl ? [] : [{ label: 'Résultat net', value: euro(net), note: pct(r(net)) }]),
-      { label: 'MS / CA', value: pct(r(ms)) },
+      { label: 'MS / CA', value: caBudget ? pct(r(ms)) : '—' },
       { label: 'HS', value: t.hs.toFixed(0) + ' h' }
     ],
     barresCA: [{ label: '2026', value: ca2026, cls: 'b2026' }, { label: 'Obj 27', value: caObj, cls: 'obj' }, { label: 'Bud 27', value: caBudget, cls: 'budget' }],
-    barresResultat: expl ? [{ label: 'REX', value: rex, cls: 'budget' }] : [{ label: 'REX', value: rex, cls: 'budget' }, { label: 'Net', value: net, cls: 'budget' }],
+    barresResultat: expl ? [{ label: 'Rés. expl.', value: rex, cls: 'budget' }] : [{ label: 'Rés. expl.', value: rex, cls: 'budget' }, { label: 'Net', value: net, cls: 'budget' }],
     caMensuel: M.map((m, i) => ({ mois: m, value: monthCA(a, i) })),
     ratios: [
       { label: 'Masse salariale / CA', value: r(ms) },
-      { label: 'REX / CA', value: r(rex) },
+      { label: 'Résultat d\'exploitation / CA', value: r(rex) },
       ...(expl ? [] : [{ label: 'Résultat net / CA', value: r(net) }]),
       { label: 'Coût HS / CA', value: r(hsCost) }
     ]

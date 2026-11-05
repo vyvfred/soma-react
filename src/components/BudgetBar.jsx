@@ -7,6 +7,7 @@ import { VALIDATOR_LABELS } from '../domain/validationEngine.js';
 import { VERSIONS, VERSION_LABELS, refusAAfficher, ecartAbsenteisme } from '../domain/versions.js';
 import { euro, pct } from '../domain/format.js';
 import { toast } from './Toast.jsx';
+import { soumettreAvecConfirmations } from './soumission.js';
 
 // Barre de version et de statut du budget (écran Objectif) — port de renderVersionBar,
 // updateStatutBar et renderRefusREX : onglets V1/V2/V3, description, dupliquer, comparer,
@@ -89,13 +90,7 @@ export default function BudgetBar() {
     setCols(c);
   });
   const onChoose = run(async () => { await chooseSubmittedVersion(); toast('Version ' + VERSION_LABELS[activeVersion] + ' choisie pour la soumission', 'success'); });
-  const onSubmit = run(async () => {
-    const ecart = ecartAbsenteisme(a);
-    if (ecart && !window.confirm('Attention : votre taux d\'absentéisme moyen (' + pct(ecart.moyenne) + ') s\'écarte de la référence du contrôle de gestion (' + pct(ecart.cible) + ').\n\nVous pouvez le rééquilibrer avant de soumettre (bouton « Rééquilibrer automatiquement » de l\'écran Présence).\n\nSoumettre quand même ?')) return;
-    if (!window.confirm('Soumettre la version ' + VERSION_LABELS[activeVersion] + ' au Directeur Régional ?\n\nCette version deviendra le budget officiel. Vous ne pourrez plus le modifier tant qu\'il est en validation.')) return;
-    const r = await submit(profile.nom);
-    toast(r.message, r.ok ? 'success' : 'warn');
-  });
+  const onSubmit = run(() => soumettreAvecConfirmations({ a, agenceNom, activeVersion, submit, parNom: profile.nom }));
 
   const refus = profile.role === 'rex' && statut === 'brouillon' ? refusAAfficher(validation) : null;
   const peutSoumettre = (profile.role === 'rex' || profile.role === 'cg') && editable;

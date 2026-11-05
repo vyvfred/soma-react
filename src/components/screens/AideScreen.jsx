@@ -8,9 +8,12 @@ import { FAQ, FAQ_CG_SECTIONS, faqKeyForRole, FAQ_ROLE_LABEL, prendreAideCible }
 export default function AideScreen() {
   const { profile } = useAuth();
   const key = faqKeyForRole(profile.role);
-  const sections = key === 'cg'
+  const sections = (key === 'cg'
     ? FAQ_CG_SECTIONS.map((s) => ({ titre: s.t, items: s.items }))
-    : [{ titre: null, items: FAQ[key] || [] }];
+    : [{ titre: null, items: FAQ[key] || [] }])
+    // Le DF utilise aussi les écrans de suivi du contrôle de gestion
+    .concat(profile.role === 'df' ? FAQ_CG_SECTIONS.filter((s) => s.t.indexOf('Suivre le réseau') >= 0).map((s) => ({ titre: 'Écrans de suivi du réseau', items: s.items })) : [])
+    .concat(FAQ.commun && FAQ.commun.length ? [{ titre: 'Questions générales', items: FAQ.commun }] : []);
   const [open, setOpen] = useState(() => new Set());
   const refs = useRef({});
 

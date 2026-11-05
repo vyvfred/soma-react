@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { consolideReseau, feuilleConsolide } from '../../domain/consolideSIG.js';
 import { T, STRUCTURES, LIB_STRUCTURES } from '../../domain/calculations.js';
 import { pct } from '../../domain/format.js';
-import { loadNetworkBudgets } from '../../lib/budgetApi.js';
+import { loadNetworkBudgets, loadAgencesRegion } from '../../lib/budgetApi.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { agencesOps } from '../../config/agences.js';
 import { statutLabel } from '../../config/statut.js';
 import { computeConsolidation } from '../../domain/consolidation.js';
@@ -26,24 +27,33 @@ export default function ConsolidationScreen() {
   const [state, setState] = useState({ loading: true, error: null, map: null });
   const [k, setK] = useState(0);
   const [exportEtat, setExportEtat] = useState('');
+  const { profile } = useAuth();
+  // DR : périmètre limité aux agences de sa région, sans les structures du siège
+  const estDR = !!(profile && profile.role === 'dr');
 
   useEffect(() => {
     let active = true;
-    loadNetworkBudgets()
-      .then((map) => { if (active) setState({ loading: false, error: null, map }); })
+    Promise.all([loadNetworkBudgets(), estDR ? loadAgencesRegion(profile.region_id) : Promise.resolve(null)])
+      .then(([map, region]) => { if (active) setState({ loading: false, error: null, map, region }); })
       .catch((err) => { if (active) setState({ loading: false, error: err.message || 'Erreur de chargement', map: null }); });
     return () => { active = false; };
   }, [k]);
   // Compte de résultat consolidé : agences + 4 structures (calculé une fois par chargement)
   const conso = useMemo(() => {
     if (!state.map) return null;
-    try { return consolideReseau(state.map, agencesOps()); } catch (e) { return { erreur: e.message }; }
-  }, [state.map]);
+    const opsC = state.region ? agencesOps().filter((o) => state.region.includes(o.nom)) : agencesOps();
+    try { return consolideReseau(state.map, opsC, !!state.region); } catch (e) { return { erreur: e.message }; }
+  }, [state.map, state.region]);
 
   if (state.loading) return <div className="card"><h2>Consolidation</h2><p className="hint">Chargement des budgets du réseau…</p></div>;
   if (state.error) return <div className="card"><h2>Consolidation</h2><p className="hint">Erreur : {state.error}</p></div>;
 
-  const ops = agencesOps();
+  const ops = state.region ? agencesOps().filter((o) => state.region.includes(o.nom)) : agencesOps();
+  if (state.region && !ops.length) {
+    return <div className="card"><h2>Consolidation de ma région</h2><p className="hint" data-testid="conso-region-vide">Aucune agence n'est encore rattachée à votre région. Le contrôleur de gestion fait l'affectation dans l'écran « Affectation DR » ; vos agences apparaîtront ici ensuite.</p></div>;
+  }
+  const region = !!state.region;
+  const cols = region ? [] : STRUCTURES;
   // Les structures (Siège, Formation…) ne comptent pas dans l'avancement des agences
   const mapAgences = Object.fromEntries(Object.entries(state.map || {}).filter(([nom]) => ops.some((o) => o.nom === nom)));
   const c = computeConsolidation(mapAgences, ops);
@@ -63,11 +73,11 @@ export default function ConsolidationScreen() {
   return (
     <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-        <h2 style={{ margin: 0 }}>Consolidation réseau</h2>
+        <h2 style={{ margin: 0 }}>{region ? 'Consolidation de ma région' : 'Consolidation réseau'}</h2>
         <div style={{ display: 'flex', gap: 8 }}><button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button><button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
           onClick={async () => {
             setExportEtat('cours');
-            try { await telechargerClasseur(feuillesConsolidation(mapAgences, ops).concat(conso && !conso.erreur ? [feuilleConsolide(conso)] : []), nomFichierConsolidation()); setExportEtat('ok'); }
+            try { await telechargerClasseur(feuillesConsolidation(mapAgences, ops).concat(conso && !conso.erreur ? [feuilleConsolide(conso, region)] : []), nomFichierConsolidation()); setExportEtat('ok'); }
             catch (e) { setExportEtat('erreur'); }
           }}
           style={{ width: 'auto', margin: 0, fontSize: 12, padding: '7px 14px', background: 'linear-gradient(135deg,var(--green),#45c87a)', color: '#fff', border: 'none', fontWeight: 700 }}>
@@ -76,7 +86,7 @@ export default function ConsolidationScreen() {
       </div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
-        <Kpi label="Agences réseau" value={c.total} />
+        <Kpi label={region ? 'Agences de la région' : 'Agences réseau'} value={c.total} />
         <Kpi label="Budgets déposés" value={c.deposes} note={Math.round((c.deposes / c.total) * 100) + '%'} />
         <Kpi label="En brouillon" value={c.brouillons} />
         <Kpi label="Non commencés" value={c.nonDeposes} />
@@ -91,7 +101,7 @@ export default function ConsolidationScreen() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
-              {['Agence', 'Statut', 'CA budgété', 'Capacité max', 'Taux charge', 'HS estimées', 'CP équilibre', 'Alertes', 'Mis à jour'].map((h, i) => (
+              {['Agence', 'Statut', 'CA budgété', 'Capacité max', 'Taux charge', 'HS estimées', 'CP à répartir', 'Alertes', 'Mis à jour'].map((h, i) => (
                 <th key={i} style={{ textAlign: i >= 2 && i <= 6 ? 'right' : 'left', padding: '6px 8px' }}>{h}</th>
               ))}
             </tr>
@@ -130,15 +140,21 @@ export default function ConsolidationScreen() {
       </div>
       {conso ? (
         <details open data-testid="conso-sig" style={{ border: '1px solid var(--border)', marginTop: 18 }}>
-          <summary style={{ cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fontSize: 14 }}>Compte de résultat consolidé 2027</summary>
+          <summary style={{ cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fontSize: 14 }}>{region ? 'Compte de résultat consolidé de la région 2027' : 'Compte de résultat consolidé 2027'}</summary>
           <div style={{ padding: '4px 14px 14px' }}>
             {conso.erreur ? <p className="hint">Compte de résultat consolidé indisponible : {conso.erreur}</p> : (
               <>
+                {region ? (
+                  <p className="hint" style={{ margin: '0 0 10px', fontSize: 12 }}>
+                    Somme des <b>{conso.nbAgences} agence{conso.nbAgences > 1 ? 's' : ''}</b> budgétée{conso.nbAgences > 1 ? 's' : ''} de votre région (version soumise, sinon version active). Les structures du siège (Formation, Exceptionnel, Réseau adhérent, Siège) sont consolidées au niveau du réseau.
+                  </p>
+                ) : (
                 <p className="hint" style={{ margin: '0 0 10px', fontSize: 12 }}>
                   Somme des <b>{conso.nbAgences} agences</b> budgétées et des 4 structures (version soumise, sinon version active).
                   Le résultat net = résultat courant avant impôt + résultat exceptionnel − impôt sur les sociétés − participation aux bénéfices (portés par le Siège).
                 </p>
-                {STRUCTURES.some((n) => !conso.structures[n].present) ? (
+                )}
+                {!region && STRUCTURES.some((n) => !conso.structures[n].present) ? (
                   <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', marginBottom: 10 }}>⚠ Structures pas encore saisies : {STRUCTURES.filter((n) => !conso.structures[n].present).map((n) => LIB_STRUCTURES[n]).join(', ')}.</div>
                 ) : null}
                 {conso.erreurs.length ? <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', marginBottom: 10 }}>⚠ Calcul impossible pour : {conso.erreurs.join(', ')}.</div> : null}
@@ -146,9 +162,9 @@ export default function ConsolidationScreen() {
                   <table className="prev-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }} data-testid="conso-sig-table">
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left' }}>Rubrique</th><th>Agences</th>
-                        {STRUCTURES.map((n) => <th key={n}>{LIB_STRUCTURES[n]}</th>)}
-                        <th>Consolidé</th><th>% CA</th>
+                        <th style={{ textAlign: 'left' }}>Rubrique</th><th>{region ? 'Région' : 'Agences'}</th>
+                        {cols.map((n) => <th key={n}>{LIB_STRUCTURES[n]}</th>)}
+                        {region ? null : <th>Consolidé</th>}<th>% CA</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -159,8 +175,8 @@ export default function ConsolidationScreen() {
                           <tr key={r.label} className={r.type === 'subtotal' ? 'subtotal' : ''}>
                             <td><b>{r.label}</b></td>
                             <td className={'num' + z(conso.agences[r.label])}>{euro(conso.agences[r.label])}</td>
-                            {STRUCTURES.map((n) => <td key={n} className={'num' + z(conso.structures[n].s[r.label])}>{euro(conso.structures[n].s[r.label])}</td>)}
-                            <td className="num"><b>{euro(conso.total[r.label])}</b></td>
+                            {cols.map((n) => <td key={n} className={'num' + z(conso.structures[n].s[r.label])}>{euro(conso.structures[n].s[r.label])}</td>)}
+                            {region ? null : <td className="num"><b>{euro(conso.total[r.label])}</b></td>}
                             <td className="num">{caT ? pct((conso.total[r.label] / caT) * 100) : '—'}</td>
                           </tr>
                         );

@@ -62,7 +62,7 @@ export default function CalScreen() {
                 {st ? <span style={{ background: st.badgeBg, color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', textTransform: 'uppercase' }}>{st.badge}</span> : null}
               </div>
               <div style={{ color: 'var(--ink65)', fontSize: 9, marginBottom: 3 }}>S{d.week}</div>
-              <div style={{ fontSize: 10 }}>San {euro(d.ca.san)}</div>
+              <div style={{ fontSize: 10 }} title={'San = sanitaire' + (a.actSai ? ', Sais = saisonnier' : '') + (a.actTP ? ', TP = transport de personnes' : '')}>San {euro(d.ca.san)}</div>
               {a.actSai ? <div style={{ fontSize: 10 }}>Sais {euro(d.ca.sai)}</div> : null}
               {a.actTP ? <div style={{ fontSize: 10 }}>TP {euro(d.ca.tp)}</div> : null}
               <div style={{ fontWeight: 700, marginTop: 2, fontFamily: 'DM Mono, monospace' }}>{euro(d.total)}</div>

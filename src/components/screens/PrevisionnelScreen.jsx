@@ -68,12 +68,12 @@ export default function PrevisionnelScreen({ vueCG = false }) {
     { label: 'Charges personnel', value: euro(ms), note: pct(tauxMS) },
     { label: 'VA', value: euro(ann(a, 'VALEUR AJOUTEE')) },
     { label: 'EBE', value: euro(ebe) },
-    { label: 'REX', value: euro(rexR), note: pct(ca ? (rexR / ca) * 100 : 0) },
+    { label: 'Résultat d\'exploitation', value: euro(rexR), note: pct(ca ? (rexR / ca) * 100 : 0) },
     { label: 'Résultat net', value: euro(net), note: pct(ca ? (net / ca) * 100 : 0) }
   ] : [
     { label: 'CA budgété', value: euro(ca) },
     { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
-    { label: 'Masse salariale / CA', value: pct(tauxMS), note: tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
+    { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
     { label: 'EBE', value: euro(ebe), note: ca ? pct((ebe / ca) * 100) : '' }
   ];
 

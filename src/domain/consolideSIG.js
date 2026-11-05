@@ -31,7 +31,8 @@ export function entiteDepuisBudget(nom, raw) {
 const zero = () => { const o = {}; T.forEach((r) => { o[r.label] = 0; }); return o; };
 
 // map : { agence: { statut, data } } ; ops : agences opérationnelles [{ nom }]
-export function consolideReseau(map, ops) {
+// sansStructures : vue d'un DR, limitée aux agences de sa région
+export function consolideReseau(map, ops, sansStructures = false) {
   const agences = zero(), structures = {}, erreurs = [];
   let nbAgences = 0;
   ops.forEach((ag) => {
@@ -41,18 +42,23 @@ export function consolideReseau(map, ops) {
       const s = sigAnnuelEntite(a); T.forEach((r) => { agences[r.label] += s[r.label]; }); nbAgences++;
     } catch (e) { erreurs.push(ag.nom); }
   });
-  STRUCTURES.forEach((nom) => {
+  (sansStructures ? [] : STRUCTURES).forEach((nom) => {
     const b = map[nom]; let s = zero();
     if (b) { try { const a = entiteDepuisBudget(nom, b.data); if (a) s = sigAnnuelEntite(a); } catch (e) { erreurs.push(nom); } }
     structures[nom] = { s, present: !!b, statut: b ? b.statut : null, lib: LIB_STRUCTURES[nom] };
   });
   const total = zero();
-  T.forEach((r) => { total[r.label] = agences[r.label] + STRUCTURES.reduce((x, n) => x + structures[n].s[r.label], 0); });
+  T.forEach((r) => { total[r.label] = agences[r.label] + Object.keys(structures).reduce((x, n) => x + structures[n].s[r.label], 0); });
   return { agences, nbAgences, structures, total, erreurs };
 }
 
 // Feuille Excel « Compte de résultat »
-export function feuilleConsolide(c) {
+export function feuilleConsolide(c, region = false) {
+  if (region) {
+    const lr = [['Rubrique', 'Région']];
+    T.forEach((r) => lr.push([r.label, Math.round(c.agences[r.label])]));
+    return { nom: 'Compte de résultat', lignes: lr, largeurs: [46, 14] };
+  }
   const lignes = [['Rubrique', 'Agences'].concat(STRUCTURES.map((n) => LIB_STRUCTURES[n])).concat(['Consolidé'])];
   T.forEach((r) => lignes.push([r.label, Math.round(c.agences[r.label])].concat(STRUCTURES.map((n) => Math.round(c.structures[n].s[r.label]))).concat([Math.round(c.total[r.label])])));
   return { nom: 'Compte de résultat', lignes, largeurs: [46, 14, 14, 14, 16, 14, 14] };

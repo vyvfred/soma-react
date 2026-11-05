@@ -3,6 +3,9 @@ import { useBudget } from '../context/BudgetContext.jsx';
 import { PANELS_REX } from '../config/panels.js';
 import { recapBudget } from '../domain/versions.js';
 import { euro } from '../domain/format.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { VERSION_LABELS } from '../domain/versions.js';
+import { soumettreAvecConfirmations } from './soumission.js';
 
 // Navigation séquentielle des 7 étapes de construction (port de renderStepNav) et
 // récapitulatif de fin de parcours (port de showBudgetRecap).
@@ -21,6 +24,9 @@ function Confettis() {
 
 function RecapModal({ a, onClose, onSynthese }) {
   const r = recapBudget(a);
+  const { profile } = useAuth();
+  const { agenceNom, activeVersion, statut, budgetId, submit } = useBudget();
+  const peutSoumettre = profile && profile.role === 'rex' && budgetId && statut === 'brouillon';
   const carte = (label, valeur, couleur) => (
     <div style={{ padding: '14px 16px', border: '1px solid var(--border)', background: 'var(--bg2)' }}>
       <div style={{ fontSize: 11, color: 'var(--ink65)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>{label}</div>
@@ -40,9 +46,16 @@ function RecapModal({ a, onClose, onSynthese }) {
           {carte('Semaines calées', r.semaines + ' sem.', 'var(--green)')}
           {carte('Heures supp. prévues', r.hs + ' h', 'var(--orange)')}
         </div>
+        <p data-testid="recap-texte" style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', margin: '0 0 16px' }}>
+          {peutSoumettre
+            ? <>Votre travail est enregistré. Quand votre budget est prêt, soumettez-le à votre directeur régional : la version <b>{VERSION_LABELS[activeVersion] || 'V1'}</b> deviendra le budget officiel et ne sera plus modifiable pendant la validation.</>
+            : 'Votre travail est enregistré.'}
+        </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, margin: 0, background: 'transparent', color: 'var(--ink65)', border: '1px solid var(--border)', padding: 12 }}>Continuer à modifier</button>
-          <button onClick={onSynthese} style={{ flex: 1, margin: 0, background: 'linear-gradient(135deg,var(--violet),var(--violet2))', color: '#fff', border: 'none', padding: 12, fontWeight: 700 }}>Voir la synthèse</button>
+          {peutSoumettre
+            ? <button data-testid="recap-soumettre" onClick={async () => { onClose(); await soumettreAvecConfirmations({ a, agenceNom, activeVersion, submit, parNom: profile.nom }); }} style={{ flex: 1, margin: 0, background: 'linear-gradient(135deg,var(--green),#45c87a)', color: '#fff', border: 'none', padding: 12, fontWeight: 700 }}>Soumettre au DR</button>
+            : <button onClick={onSynthese} style={{ flex: 1, margin: 0, background: 'linear-gradient(135deg,var(--violet),var(--violet2))', color: '#fff', border: 'none', padding: 12, fontWeight: 700 }}>Voir la synthèse</button>}
         </div>
       </div>
     </div>

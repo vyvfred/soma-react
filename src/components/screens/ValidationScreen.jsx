@@ -118,7 +118,7 @@ export default function ValidationScreen() {
     <div className="card">
       <h2 style={{ marginBottom: 4 }}>Validation des budgets</h2>
       <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--ink65)' }}>
-        Vous validez à l'étape : {monEtage ? monEtage.label : '—'} ({VALIDATOR_LABELS[profile.role] || profile.role})
+        Vous validez à l'étape : {monEtage ? monEtage.label : '—'}{VALIDATOR_LABELS[profile.role] && (!monEtage || VALIDATOR_LABELS[profile.role] !== monEtage.label) ? ' (' + VALIDATOR_LABELS[profile.role] + ')' : ''}
       </p>
       <div className="kpis" style={{ marginBottom: 16 }} data-testid="val-kpis">
         {[['À valider', state.aValider.length, state.aValider.length ? 'en attente de vous' : '✓ rien'], ['Validés par vous', nbValides, ''], ['Refusés par vous', nbRefuses, '']].map(([l, v, n]) => (
@@ -126,7 +126,7 @@ export default function ValidationScreen() {
         ))}
       </div>
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--ink65)', marginBottom: 16 }}>
-        💬 {state.aValider.length ? <><b>{state.aValider.length} budget{state.aValider.length > 1 ? 's' : ''}</b> attend{state.aValider.length > 1 ? 'ent' : ''} votre décision.</> : 'Aucun budget n\'attend votre décision pour le moment.'}
+        💬 {state.aValider.length ? <><b>{state.aValider.length} budget{state.aValider.length > 1 ? 's' : ''}</b> attend{state.aValider.length > 1 ? 'ent' : ''} votre décision.</> : 'Aucun budget n\'attend votre décision pour le moment. ' + (profile.role === 'dr' ? 'Les budgets de vos agences arrivent ici dès que leur responsable d\'exploitation les soumet. Suivez leur avancement dans « Consolidation région ».' : 'Un budget arrive ici quand l\'étape précédente du circuit l\'a validé. Suivez l\'avancement des agences dans « Consolidation ».')}
       </div>
 
       {state.aValider.map((it) => (

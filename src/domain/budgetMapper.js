@@ -9,7 +9,7 @@ import { fusionnerVersion } from './fusion.js';
 // où `data` (jsonb) est soit versionné { meta, versions:{v1,v2,v3}, validation },
 // soit « plat » (ancien format) = les champs de l'agence directement.
 
-import { agency, refs, buildPeriodesPaie, T } from './calculations.js';
+import { agency, refs, buildPeriodesPaie, T, genCal } from './calculations.js';
 import { pickRefCG, appliquerRefCG } from './refCG.js';
 
 const DEFAULT_META = () => ({
@@ -111,6 +111,9 @@ export function migrateAgency(a) {
     });
   });
   if (!Array.isArray(a.cal)) a.cal = [];
+  // Calendrier scolaire officiel 2027 corrigé (nov. 2026) : un calendrier construit avant est régénéré
+  if (a.cal.length && a.calScolaire !== 2) genCal(a);
+  a.calScolaire = 2;
   if (!Array.isArray(a.hs50)) a.hs50 = Array(12).fill(null);
   if (a.drCostAnnual === undefined) a.drCostAnnual = 0;
   if (a.tauxHoraireBrut === undefined) a.tauxHoraireBrut = null;

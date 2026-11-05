@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FAQ, faqKeyForRole } from './faq.js';
+import { FAQ, FAQ_CG_SECTIONS, AIDE_ONGLET_Q, faqKeyForRole } from './faq.js';
 
 describe('FAQ — mapping des rôles', () => {
   it('associe chaque rôle à la bonne clé FAQ', () => {
@@ -26,9 +26,19 @@ describe('FAQ — intégrité des données', () => {
   });
 
   it('effectifs de questions attendus par profil', () => {
-    expect(FAQ.rex).toHaveLength(24); // + coût d'une HS, taux de juin, arrêts maladie, CDD
-    expect(FAQ.cg).toHaveLength(27); // FAQ CG par étapes du parcours
-    expect(FAQ.valideur).toHaveLength(12);
+    expect(FAQ.rex).toHaveLength(30); // parcours des profils (nov. 2026) : + versions, autres absences, calendrier, résultat d'exploitation, charges, masse salariale
+    expect(FAQ.cg).toHaveLength(31); // + réimport du registre, calendrier scolaire, structures, IS et participation
+    expect(FAQ.valideur).toHaveLength(16); // + consolidation, agences non rattachées, résultat net, écrans du DF
     expect(FAQ.admin).toHaveLength(7);
+    expect(FAQ.commun).toHaveLength(3); // mot de passe, statuts, contacts
+  });
+
+  it('chaque pastille « ? » mène à une question existante', () => {
+    for (const [cle, map] of Object.entries(AIDE_ONGLET_Q)) {
+      const questions = (cle === 'valideur' ? FAQ.valideur.concat(FAQ_CG_SECTIONS.find((s) => s.t.includes('Suivre le réseau')).items) : FAQ[cle]).map((qa) => qa[0]);
+      for (const [onglet, texte] of Object.entries(map)) {
+        expect(questions.some((q) => q.includes(texte)), cle + ' / ' + onglet + ' → ' + texte).toBe(true);
+      }
+    }
   });
 });

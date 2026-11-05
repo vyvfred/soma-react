@@ -50,8 +50,13 @@ export const PANELS_ADMIN = [
   ['admin', 'Utilisateurs & Budgets'],
   ['consolidation', 'Consolidation réseau'],
   ['affectation', 'Affectation DR'],
-  ['objectif', 'Modifier un budget']
+  ['objectif', 'Modifier un budget'],
+  ['aide', 'Aide']
 ];
+
+// Directeur financier : écrans de suivi et de validation du CG, sans la préparation des données
+const PREPARATION_CG = ['refagences', 'periodes', 'variablesdec', 'affectation', 'cg'];
+export const PANELS_DF = PANELS_CG.filter((p) => !PREPARATION_CG.includes(p[0]));
 
 // Rôle -> panneaux + écran d'atterrissage (repris de setupUI()).
 export function navForRole(role) {
@@ -59,9 +64,10 @@ export function navForRole(role) {
     case 'rex':
       return { panels: PANELS_REX, landing: 'objectif', group: 'REX exploitation' };
     case 'cg':
-    case 'df':
-      // CG et DF partagent la même interface complète.
       return { panels: PANELS_CG, landing: 'cgdash', group: 'Contrôleur de gestion' };
+    case 'df':
+      // Le DF partage l'interface du CG (suivi, consultation des agences, validation) ; la préparation reste au CG.
+      return { panels: PANELS_DF, landing: 'cgdash', group: 'Direction financière' };
     case 'dr':
       return { panels: PANELS_DR, landing: 'validation', group: 'Directeur Régional' };
     case 'dg':
