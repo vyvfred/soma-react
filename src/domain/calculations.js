@@ -435,12 +435,15 @@ function pres(a,w){
   let p=a.presence[w]||{cp:0,other:0};
   let m=mainMonth(a,w);
   let rate=a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
-  // CP et autres exprimés en jours (1J = 7H)
+  // CP et autres absences exprimés en jours (1J = 7H).
+  // Autres absences (décision nov. 2026) : « payées » (formation, événements familiaux,
+  // récupération…) coûtées au taux horaire comme les congés ; « non payées » (sans solde) non coûtées.
   let cpH=(+p.cp||0)*7;
   let otherH=(+p.other||0)*7;
+  let otherPaidH=(+p.otherPaid||0)*7;
   let mal=base*rate/100;
-  let av=Math.max(0,base-cpH-mal-otherH);
-  return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,m,rate,mal,av,etp:av/35};
+  let av=Math.max(0,base-cpH-mal-otherH-otherPaidH);
+  return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,m,rate,mal,av,etp:av/35};
 }
 
 function refAgenceSeuils(a) {
@@ -650,7 +653,8 @@ function coutRoulantSemaine(a, r, mTaux){
   let m = mainMonth(a, r.week);
   let ch = chMois(a, mTaux===undefined ? m : mTaux);
   // Heures travaillées + heures supplémentaires + maintien sur arrêts + indemnité de congés payés (salaire maintenu)
-  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a,m)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch);
+  // + absences payées (formation, événements familiaux, récupération…) au taux horaire comme les congés
+  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a,m)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch);
   return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
 }
 

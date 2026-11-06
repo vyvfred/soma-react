@@ -104,7 +104,8 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
               <th style={{ ...cell, textAlign: 'left' }}>Semaine</th>
               <th style={cell}>Base (h)</th>
               <th style={cell}>CP (J)</th>
-              <th style={cell}>Autres abs. (J)</th>
+              <th style={cell} title="Absences payées en jours — formation, événements familiaux, récupération… Coûtées au taux horaire comme les congés.">Abs. payées (J)</th>
+              <th style={cell} title="Absences non payées en jours — congé sans solde… Retirées de la capacité, sans coût salarial.">Abs. non payées (J)</th>
               <th style={cell}>Maladie (h)</th>
               <th style={cell}>Dispo (h)</th>
               <th style={cell}>Besoin (h)</th>
@@ -120,7 +121,8 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
                 <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b></td>
                 <td style={cell}>{Math.round(s.base)}</td>
                 <td style={cell}><input data-testid={'cp-' + s.week} type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).cp || ''} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value)} style={{ width: 56 }} /></td>
-                <td style={cell}><input type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).other || ''} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value)} style={{ width: 56 }} /></td>
+                <td style={cell}><input type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).otherPaid || ''} placeholder="0" title="Absences payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value)} style={{ width: 56 }} /></td>
+                <td style={cell}><input type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).other || ''} placeholder="0" title="Absences non payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value)} style={{ width: 56 }} /></td>
                 <td style={cell}>{Math.round(s.mal)}</td>
                 <td style={cell}>{Math.round(s.av)}</td>
                 <td style={cell}>{Math.round(s.besoin)}</td>
@@ -297,7 +299,7 @@ export default function PresenceScreen() {
         <span>CP restants à répartir sur les mois libres : <b>{fmt1(prog.cpLibres)} J</b></span>
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
-        💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les autres absences, puis <b>validez-le</b> : il passe en lecture seule
+        💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les absences payées ou non payées, puis <b>validez-le</b> : il passe en lecture seule
         et SOMA répartit à nouveau les congés restants sur les mois encore libres. <Pourquoi k="conges" />
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>

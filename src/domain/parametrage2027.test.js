@@ -184,3 +184,23 @@ describe('Salaire de base du 7 au 31 décembre 2026 sur la paie de janvier', () 
     expect(baseDec2026(a)).toBe(0);
   });
 });
+
+import { pres, coutRoulantSemaine, needWeeks } from './calculations.js';
+describe('Absences payées et non payées (décision nov. 2026)', () => {
+  const sem = (a) => needWeeks(a)[10].week;
+  it('les deux réduisent la capacité ; seules les payées sont coûtées au taux horaire', () => {
+    const a = base(); a.costHour = 30; const w = sem(a);
+    const ref = pres(a, w);
+    a.presence[w] = { cp: 0, other: 1, otherPaid: 0 };
+    const np = pres(a, w);
+    expect(ref.av - np.av).toBeCloseTo(7, 6);
+    a.presence[w] = { cp: 0, other: 0, otherPaid: 1 };
+    const pp = pres(a, w);
+    expect(ref.av - pp.av).toBeCloseTo(7, 6);
+    // Même capacité, même HS : l'écart de coût est exactement 7 h × coût horaire (× précarité CDD)
+    const r = (p) => ({ ...p, week: w, hs: 0 });
+    const ecart = coutRoulantSemaine(a, r(pp)) - coutRoulantSemaine(a, r(np));
+    expect(ecart).toBeGreaterThanOrEqual(7 * 30 - 1e-6);
+    expect(ecart).toBeLessThanOrEqual(7 * 30 * 1.1 + 1e-6);
+  });
+});
