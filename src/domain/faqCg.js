@@ -102,6 +102,10 @@ export const FAQ_CG_SECTIONS = [
     "t": "Étape 5 — Charges par agence",
     "items": [
       [
+        "Comment préparer les charges de tout le réseau en une fois ?",
+        "Écran « Charges CG », carte « Classeur des charges du réseau ». « Télécharger le classeur » produit un fichier Excel pré-rempli avec ce qui est déjà saisi dans SOMA. Feuille « Réseau » : une ligne par poste, une colonne par agence et par structure. Saisissez un montant annuel (réparti « ÷ 12 » ou « prorata CA » selon la colonne Répartition de la ligne) ou un pourcentage du CA (« 3,2 % »). Une case vide ne change rien ; 0 met le poste à zéro. Feuille « Mensuel », facultative : un poste d'une agence saisi mois par mois. « Importer le classeur » affiche ensuite, par agence, le nombre de postes modifiés et les cases ignorées (agence ou poste inconnus, valeur illisible) ; rien n'est enregistré avant votre confirmation. Les charges s'appliquent à toutes les versions du budget de chaque agence ; SOMA vous demande une confirmation de plus si des budgets sont déjà en validation. Le reste des budgets (équipe, présence, références) n'est jamais modifié."
+      ],
+      [
         "Comment saisir les charges d'une agence ?",
         "Choisissez l'agence dans le sélecteur « Agence ouverte ». En haut de l'écran Charges CG, le bloc « Paramétrage salarial » reprend les taux horaires et la ligne non-roulante des Données agences ; vous pouvez les ajuster ici. Puis, pour chaque poste, choisissez le <b>mode</b> : saisie par mois, montant annuel (réparti en douze mois égaux ou au prorata du CA mensuel, selon la clé), ou pourcentage du CA ; et le <b>type</b>, fixe ou variable. La saisie est enregistrée automatiquement. Les lignes CA et Charges de personnel sont calculées par SOMA."
       ],

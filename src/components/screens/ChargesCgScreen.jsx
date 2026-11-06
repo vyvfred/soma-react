@@ -4,6 +4,7 @@ import { estStructure, estSiege, LIGNES_SIEGE } from '../../domain/calculations.
 import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH } from '../../domain/calculations.js';
 import { chargesInsight } from '../../domain/chargesInsight.js';
 import { euro } from '../../domain/format.js';
+import ClasseurChargesCard from '../ClasseurChargesCard.jsx';
 
 // Lignes de charges éditables (on exclut CA, charges de personnel et les sous-totaux).
 // Lignes saisissables : les structures saisissent aussi leur CA et leurs charges de personnel ;
@@ -17,6 +18,18 @@ function Kpi({ label, value, note }) {
 }
 
 export default function ChargesCgScreen() {
+  const { agenceNom, recharger } = useBudget();
+  return (
+    <>
+      <ClasseurChargesCard agenceOuverte={agenceNom} onImporte={recharger} />
+      {agenceNom
+        ? <ChargesAgence />
+        : <div className="card hint" data-testid="cg-sans-agence">Pour saisir ou corriger les charges d'une seule agence poste par poste, ouvrez-la avec « Ouvrir une agence ».</div>}
+    </>
+  );
+}
+
+function ChargesAgence() {
   const { agency: a, loading, error, editable, update, agenceNom } = useBudget();
 
   if (!agenceNom) return <div className="card"><h2>Charges CG</h2><p className="hint">Ouvrez une agence pour saisir ses charges.</p></div>;

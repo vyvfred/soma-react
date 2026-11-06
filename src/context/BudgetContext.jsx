@@ -100,6 +100,10 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     if (a) await persist(a);
   }, [persist]);
 
+  // Rechargement demandé (ex. charges importées par le classeur réseau)
+  const [jetonChargement, setJetonChargement] = useState(0);
+  const recharger = useCallback(() => setJetonChargement((n) => n + 1), []);
+
   // Chargement initial (et rechargement au changement d'agence).
   useEffect(() => {
     let active = true;
@@ -144,7 +148,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
         if (pendingRef.current) persist(pendingRef.current);
       }
     };
-  }, [agenceNom, persist, lectureSeule]);
+  }, [agenceNom, jetonChargement, persist, lectureSeule]);
 
   // Un budget n'est modifiable qu'en brouillon, refusé ou complément demandé
   const editable = !lectureSeule && estModifiable(statut);
@@ -261,7 +265,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
   const value = {
     agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal,
     budgetId, activeVersion, meta, versionsRemplies, validation,
-    switchVersion, duplicateVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush
+    switchVersion, duplicateVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush, recharger
   };
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
 }

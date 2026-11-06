@@ -265,3 +265,26 @@ export async function affecterDR(agence, drUserId) {
   const { error } = await sb.rpc('affecter_dr', { p_agence: agence, p_dr: drUserId || null });
   if (error) throw error;
 }
+
+// Budgets 2027 bruts (id, agence, statut, data tel que stocké) — classeur des charges
+export async function loadBudgetsBruts() {
+  const { data, error } = await sb.from('budgets').select('id,agence,statut,data').eq('annee', ANNEE);
+  if (error) throw error;
+  return data || [];
+}
+
+// Écrit les charges importées : relecture de chaque budget juste avant l'écriture,
+// seules les lignes de charges changent ; création d'un brouillon si le budget n'existe pas.
+export async function ecrireChargesImportees(noms, lignes, appliquer) {
+  const ok = [], ko = [];
+  for (const nom of noms) {
+    try {
+      const { data: b, error } = await sb.from('budgets').select('id,data').eq('agence', nom).eq('annee', ANNEE).maybeSingle();
+      if (error) throw error;
+      if (b) await ecrire(sb.from('budgets').update({ data: appliquer(b.data, lignes[nom]).data, updated_at: new Date().toISOString() }).eq('id', b.id));
+      else await ecrire(sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: appliquer({}, lignes[nom]).data, statut: 'brouillon' }));
+      ok.push(nom);
+    } catch (e) { ko.push(nom + ' (' + (e.message || e) + ')'); }
+  }
+  return { ok, ko };
+}

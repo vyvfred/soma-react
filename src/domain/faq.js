@@ -97,7 +97,7 @@ export const AIDE_ONGLET_Q = {
   cg: {
     cgdash: 'Dans quel ordre', objectif: 'Dans quel ordre', refagences: 'bien préparer les références',
     periodes: 'Les dates s\'appliquent', variablesdec: 'variables de paie de décembre',
-    affectation: 'affectation des DR', cg: 'saisir les charges d\'une agence', controle: 'écran Contrôles',
+    affectation: 'affectation des DR', cg: 'tout le réseau en une fois', controle: 'écran Contrôles',
     consolidation: 'où en sont les budgets', comparative: 'vue comparative', graphiques: 'graphiques',
     validation: 'valider ou refuser', rex: 'masse salariale du prévisionnel', finance: 'masse salariale du prévisionnel'
   },

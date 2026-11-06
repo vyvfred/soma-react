@@ -227,7 +227,7 @@ export default function AppShell() {
 
           {!consult && (profile.role === 'cg' || profile.role === 'df') ? <CgGuide panel={active} cle={activeAgence} /> : null}
 
-          {showPicker && !activeAgence
+          {showPicker && !activeAgence && active !== 'cg'
             ? <div className="card"><p className="hint">Sélectionnez une agence ci-dessus pour ouvrir son budget.</p></div>
             : Screen ? <Screen /> : <PlaceholderPanel id={active} label={activeLabel} />}
           {(consult || ['rex', 'cg', 'admin'].includes(profile.role)) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
