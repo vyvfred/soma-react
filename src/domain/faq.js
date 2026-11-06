@@ -102,5 +102,5 @@ export const AIDE_ONGLET_Q = {
     validation: 'valider ou refuser', rex: 'masse salariale du prévisionnel', finance: 'masse salariale du prévisionnel'
   },
   valideur: { validation: 'Quels budgets dois-je valider', consolidation: 'Que contient ma consolidation', cgdash: 'suivre l\'avancement', comparative: 'vue comparative', graphiques: 'graphiques', objectif: 'Directeur financier', rex: 'Directeur financier', finance: 'Directeur financier', controle: 'Directeur financier' },
-  admin: { admin: 'Comment créer un compte', affectation: 'affectation des DR', objectif: 'modifier un budget à la place' }
+  admin: { admin: 'Comment créer un compte', affectation: 'affectation des DR', objectif: 'modifier un budget à la place', cg: 'tout le réseau en une fois' }
 };

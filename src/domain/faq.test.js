@@ -35,7 +35,8 @@ describe('FAQ — intégrité des données', () => {
 
   it('chaque pastille « ? » mène à une question existante', () => {
     for (const [cle, map] of Object.entries(AIDE_ONGLET_Q)) {
-      const questions = (cle === 'valideur' ? FAQ.valideur.concat(FAQ_CG_SECTIONS.find((s) => s.t.includes('Suivre le réseau')).items) : FAQ[cle]).map((qa) => qa[0]);
+      const extra = cle === 'valideur' ? FAQ_CG_SECTIONS.find((s) => s.t.includes('Suivre le réseau')).items : cle === 'admin' ? FAQ_CG_SECTIONS.find((s) => s.t.includes('Charges par agence')).items.slice(0, 1) : [];
+      const questions = FAQ[cle].concat(extra).map((qa) => qa[0]);
       for (const [onglet, texte] of Object.entries(map)) {
         expect(questions.some((q) => q.includes(texte)), cle + ' / ' + onglet + ' → ' + texte).toBe(true);
       }

@@ -50,6 +50,7 @@ export const PANELS_ADMIN = [
   ['admin', 'Utilisateurs & Budgets'],
   ['consolidation', 'Consolidation réseau'],
   ['affectation', 'Affectation DR'],
+  ['cg', 'Charges du réseau'],
   ['objectif', 'Modifier un budget'],
   ['aide', 'Aide']
 ];
