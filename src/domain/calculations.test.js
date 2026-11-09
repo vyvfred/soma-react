@@ -52,8 +52,8 @@ describe('fonctions feuilles — valeurs calculées à la main', () => {
       ],
       cal: []
     };
-    expect(baseHWeek(a)).toBeCloseTo(94, 10);
-    expect(baseH(a)).toBeCloseTo(94, 10);
+    expect(baseHWeek(a)).toBeCloseTo(104.5, 10); // nov. 2026 : la part roulante du régulateur (30 % × 35 h = 10,5 h) compte désormais
+    expect(baseH(a)).toBeCloseTo(104.5, 10);
   });
 
   it('baseHWeek : pctRoulant partiel pris en compte', () => {
@@ -78,7 +78,7 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('capacité roulante (baseH)', () => {
-    expect(+baseH(a).toFixed(1)).toBe(94);
+    expect(+baseH(a).toFixed(1)).toBe(104.5); // nov. 2026 : la part roulante du régulateur (30 % × 35 h = 10,5 h) compte désormais
   });
 
   it('coût des heures supplémentaires (aucune HS à 50 % → coef 1,25)', () => {
@@ -87,12 +87,12 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
 
   it('congés payés générés sur l’année', () => {
     // Audit nov. 2026 : 25 j ouvrés par an, roulants seulement, au prorata des heures = 25 × (35 + 35 + 24) / 35
-    expect(+cpGeneres(a).toFixed(1)).toBe(67.1);
+    expect(+cpGeneres(a).toFixed(1)).toBe(74.6);
   });
 
   it('masse salariale de janvier', () => {
     // 1er-3 janvier (semaine 53) : 3/7 d'une semaine au lieu d'une semaine entière (−4/7 × 2 679 €)
-    expect(Math.round(payrollMonth(a, 0))).toBe(16274);
+    expect(Math.round(payrollMonth(a, 0))).toBe(17599);
   });
 
   it('découpage en semaines ISO 2027', () => {
@@ -100,15 +100,15 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('compte de résultat de janvier — résultat net', () => {
-    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(65726);
+    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(64401);
   });
 
   it('agrégats annuels du compte de résultat (KPI Synthèse)', () => {
     expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(945400);
     // Semaines partielles au prorata : −4/7 (1er-3 janv.) − 2/7 (27-31 déc.) d'une semaine à 2 679 € = −2 296 €
-    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(194501);
-    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(750899);
-    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(750899);
+    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(210104);
+    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(735296);
+    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(735296);
     expect(Math.round(hsTot(a).hs)).toBe(0);
   });
 });

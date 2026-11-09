@@ -1,4 +1,4 @@
-import { partRoulant } from '../../domain/calculations.js';
+import { partRoulant, estRoulantPart } from '../../domain/calculations.js';
 import { useRef, useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { teamInsight, etpParMois } from '../../domain/teamInsight.js';
@@ -17,7 +17,7 @@ const td = { padding: '4px 8px', borderBottom: '1px solid var(--border)' };
 const AIDE_COLONNES = {
   'Qualif.': 'DEA = ambulancier diplômé, AA = auxiliaire, TAXI = chauffeur taxi, TPMR = transport PMR. Ces qualifications sont roulantes. REGULATEUR et REX sont non-roulants.',
   'H. base': 'Heures travaillées par semaine. Ex : 35h pour un temps plein, 17,5h pour un mi-temps.',
-  '% roul.': 'Part du temps passée en roulant (sur la route). 100% pour un ambulancier à temps plein roulant. Pour un salarié partagé, indiquez sa part roulante : par exemple 50% pour une personne mi-roulant, mi-régulation. Le reste est compté comme improductif.',
+  '% roul.': 'Part du temps passée en roulant (sur la route). 100% pour un ambulancier à temps plein roulant. Pour un salarié partagé, indiquez sa part roulante : par exemple 50% pour une personne mi-roulant, mi-régulation. Le reste est compté comme improductif. Vaut aussi pour un régulateur ou un REX qui roule une partie de son temps (0 % = ne roule pas) : sa part roulante compte dans les heures et les ETP roulants.',
   'Entrée 2027': 'Date d\'arrivée en 2027. Laissez vide si la personne est déjà présente au 1er janvier.',
   'Sortie 2027': 'Date de départ en 2027 (fin de CDD, retraite...). Laissez vide si la personne reste toute l\'année.',
   'ETP': 'Équivalent temps plein : heures ÷ 35. Un temps plein = 1 ETP.'
@@ -59,7 +59,10 @@ export default function EquipeScreen() {
     update((draft) => {
       const emps = draft.employees.slice();
       const e = { ...emps[i] };
+      const avantRoulant = isRoulant(e.qual);
       e[field] = NUM_FIELDS.includes(field) ? +value : value;
+      // Changement de famille de qualification : % roulant remis à sa valeur par défaut (100 % roulant, 0 % sinon)
+      if (field === 'qual' && isRoulant(value) !== avantRoulant) e.pctRoulant = isRoulant(value) ? 100 : 0;
       if (field === 'name') e.nom = value;
       if (field === 'contract') e.contrat = value;
       if ((field === 'dateEntree' || field === 'dateSortie') && e.dateEntree && e.dateSortie && e.dateSortie < e.dateEntree) {
@@ -118,7 +121,7 @@ export default function EquipeScreen() {
             {a.employees.map((e, i) => {
               const nom = e.name || e.nom || '';
               const contrat = e.contract || e.contrat || 'CDI';
-              const roul = isRoulant(e.qual);
+              const roul = isRoulant(e.qual) || estRoulantPart(e);
               const etp = roul ? ((+e.hours || 0) * partRoulant(e) / 35).toFixed(2) : '—';
               const isCddSais = contrat === 'CDD' && (e.dateEntree || e.dateSortie);
               return (

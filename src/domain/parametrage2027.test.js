@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  payrollMonthCivil, payrollPayMonth, costHourJuin, chMois, ratioMaintien, partCDDSemaine, hsRows,
+  partRoulant, payrollMonthCivil, payrollPayMonth, costHourJuin, chMois, ratioMaintien, partCDDSemaine, hsRows,
   mainMonth, msNRMensuel, msNRMois, tauxAbsMois, coutHoraireImproductif, varDecCalc, varDec2026Total,
   chargesCGSaisies, cpGeneres, isRoulant, buildPeriodesPaie, coutRoulantSemaine
 } from './calculations.js';
@@ -44,7 +44,7 @@ describe('prime de précarité CDD (10 %)', () => {
     const a = base(), sans = civil(a);
     a.employees[0].contract = 'CDD';
     const part = partCDDSemaine(a, hsRows(a)[10].week);
-    expect(part).toBeCloseTo(35 / 94, 9); // 35 h CDD sur 35 + 35 + 24 h roulantes
+    expect(part).toBeCloseTo(35 / 104.5, 9); // 35 h CDD sur 35 + 35 + 24 + 10,5 h roulantes (30 % du régulateur)
     const avec = civil(a);
     const roul = roulantMois(a, 6, (r) => coutRoulantSemaine(a, r, 6));
     expect(avec[6] - sans[6]).toBeCloseTo(roul - roul / (1 + 0.1 * part), 4);
@@ -86,7 +86,7 @@ describe('ligne unique de masse salariale non-roulante', () => {
   });
   it('coût horaire improductif = coût mensuel ÷ heures mensuelles des non-roulants', () => {
     const a = base(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42;
-    expect(coutHoraireImproductif(a)).toBeCloseTo(9656 / (35 * 52 / 12), 6);
+    expect(coutHoraireImproductif(a)).toBeCloseTo(9656 / (35 * 0.7 * 52 / 12), 6); // heures non roulantes : 70 % du régulateur
   });
   it('en paie par période : un salaire mensuel par mois de paie, sans quote-part DR', () => {
     const a = base(); a.periodesPaie = buildPeriodesPaie(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42; a.drCostAnnual = 90000; a.drPct = 20;
@@ -102,7 +102,7 @@ describe('ligne unique de masse salariale non-roulante', () => {
 describe('absentéisme unique roulants / improductifs', () => {
   it('les CP générés (roulants seulement, prorata heures et part roulante) suivent le taux mensuel d\'absentéisme', () => {
     const a = base(); a.tauxAbsImproductif = 2;
-    const etp = a.employees.filter((e) => ['DEA', 'AA', 'TAXI', 'TPMR'].includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) / 35 * (+e.pctRoulant || 100) / 100, 0);
+    const etp = a.employees.reduce((s, e) => s + (+e.hours || 0) / 35 * partRoulant(e), 0);
     const attendu = Math.round(etp * 25 * (1 - 0.08) * 10) / 10;
     expect(cpGeneres(a)).toBe(attendu);
   });

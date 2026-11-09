@@ -35,7 +35,7 @@ export const FAQ_CG_SECTIONS = [
       ],
       [
         "Comment saisir la masse salariale non-roulante ?",
-        "Une seule ligne par agence : le salaire brut mensuel total des non-roulants (régulateurs, responsables, administratifs et quote-part du DR) et leur taux de charges. SOMA en déduit le coût mensuel chargé. Cette ligne unique évite qu'un REX puisse déduire le salaire de son DR en consultant le budget. Elle se saisit dans Données agences ou sur l'écran Charges CG de l'agence. Sur les paies par période, elle compte pour un salaire mensuel par mois de paie, diminué de la part non maintenue des absences."
+        "Une seule ligne par agence : le salaire brut mensuel total des non-roulants (régulateurs, responsables, administratifs et quote-part du DR) et leur taux de charges. SOMA en déduit le coût mensuel chargé. Cette ligne unique évite qu'un REX puisse déduire le salaire de son DR en consultant le budget. Elle se saisit dans Données agences ou sur l'écran Charges CG de l'agence. Sur les paies par période, elle compte pour un salaire mensuel par mois de paie, diminué de la part non maintenue des absences. Si un régulateur ou un responsable a une part roulante dans l'écran Équipe (par exemple 30 %), cette part est déjà comptée dans la masse salariale roulante : retirez-la de la ligne non-roulants pour ne pas la compter deux fois."
       ],
       [
         "Où régler le ratio de maintien de salaire ?",

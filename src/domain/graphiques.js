@@ -1,5 +1,5 @@
 // Préparation des données des graphiques réseau — pur, extrait de renderGraphiques().
-import { heuresDispoAnnuelles, partRoulant } from './calculations.js';
+import { heuresDispoAnnuelles, partRoulant, estRoulantPart } from './calculations.js';
 import { entiteDepuisBudget } from './consolideSIG.js';
 
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
@@ -17,7 +17,7 @@ export function computeGraphiquesRows(map, ops) {
     const caB2027 = d.cal && d.cal.length ? d.cal.reduce((s, day) => s + (day.total || 0), 0) : 0;
     const txr = +d.histTXR2026 || +d.targetTXR || 0;
     const baseHebdo = d.employees
-      ? d.employees.filter((e) => ROULANTS.includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) *partRoulant(e), 0)
+      ? d.employees.filter(estRoulantPart).reduce((s, e) => s + (+e.hours || 0) *partRoulant(e), 0)
       : 0;
     const caMax = baseHebdo > 0 ? capaciteHorsHS(ag.nom, d, txr) : 0;
     const txCharge = caMax > 0 ? Math.round(caB2027 / caMax * 100) : 0;

@@ -7,9 +7,9 @@ describe('teamInsight — KPI et interprétation', () => {
     const a = agenceReference(); // 3 roulants (35+35+24 h) + 1 régulateur
     const r = teamInsight(a);
     expect(r.nbSal).toBe(4); // aucun FACTURIERE dans la référence
-    // ETP roulant = (35+35+24)/35 = 2.685…
-    expect(r.etpTotal).toBeCloseTo((35 + 35 + 24) / 35, 5);
-    expect(r.capaciteAn).toBe(Math.round(94 * 52));
+    // ETP roulant = (35+35+24 + 30 % × 35 du régulateur)/35 = 2.985…
+    expect(r.etpTotal).toBeCloseTo((35 + 35 + 24 + 10.5) / 35, 5);
+    expect(r.capaciteAn).toBe(Math.round(104.5 * 52));
   });
 
   it('sans salarié : invite à saisir l’équipe', () => {

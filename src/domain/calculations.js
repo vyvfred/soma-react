@@ -44,17 +44,17 @@ function baseH(a){
   // Moyenne sur toutes les semaines si dates présentes, sinon calcul simple
   let hasMovements = a.employees.some(e=>e.dateEntree||e.dateSortie);
   if(!hasMovements || !a.cal || !a.cal.length){
-    return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*partRoulant(e),0);
+    return a.employees.filter(estRoulantPart).reduce((s,e)=>s+(+e.hours||0)*partRoulant(e),0);
   }
   let weeks=needWeeks(a);
-  if(!weeks.length) return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*partRoulant(e),0);
+  if(!weeks.length) return a.employees.filter(estRoulantPart).reduce((s,e)=>s+(+e.hours||0)*partRoulant(e),0);
   let total=weeks.reduce((s,w)=>s+baseHWeek(a,w.week),0);
   return total/weeks.length;
 }
 
 function baseHWeek(a, week){
   let dateRef = week!==undefined ? weekRefDate(a, week) : null;
-  return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>{
+  return a.employees.filter(estRoulantPart).reduce((s,e)=>{
     if(dateRef && !empPresent(e, dateRef)) return s;
     return s+(+e.hours||0)*partRoulant(e);
   },0);
@@ -115,7 +115,7 @@ function coutHSTotal(a){
 function coutHoraireImproductif(a){
   let cm = msNRMensuel(a);
   if(cm!==null){
-    let hHebdo = a.employees.filter(e=>!isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0),0);
+    let hHebdo = a.employees.filter(e=>!isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*(1-partRoulant(e)),0);
     return hHebdo>0 ? cm/(hHebdo*52/12) : (+a.costHour||0);
   }
   let imp = a.employees.filter(e=>!isRoulant(e.qual)&&e.qual!=='FACTURIERE'&&(+e.coutJour||0)>0);
@@ -130,7 +130,7 @@ function cpGeneres(a) {
   // CP générés, en jours de 7 h retirés de la présence ROULANTE (audit nov. 2026) :
   // 25/12 j par mois de présence hors maladie, au prorata du temps de travail (heures / 35) et de la part roulante.
   // Les non-roulants n'entrent pas : leurs congés n'enlèvent pas de capacité de production.
-  let salaries = a.employees.filter(e => isRoulant(e.qual));
+  let salaries = a.employees.filter(estRoulantPart);
   if (!salaries.length) return 0;
   let totalJ = 0;
   M.forEach(function(_, m) {
@@ -197,7 +197,11 @@ function impactCPSemaine(a, week, deltaCPjours) {
 
 // Part roulante d'un salarié (clé roulant / non-roulant). 0 % = non roulant ; seul un champ vide vaut 100 %.
 // (Avant nov. 2026 : « +e.pctRoulant||100 » comptait un salarié saisi à 0 % comme roulant à 100 %.)
-function partRoulant(e){let p=e&&e.pctRoulant;if(p===null||p===undefined||p==='')return 1;p=+p;return isNaN(p)?1:Math.max(0,Math.min(100,p))/100}
+// Toutes qualifications (nov. 2026) : un régulateur, un REX… peut avoir une part roulante. Champ vide : 100 % pour
+// DEA/AA/TAXI/TPMR, 0 % pour les autres. Facturière jamais roulante. La part roulante est comptée en capacité et en
+// masse salariale roulante (au coût horaire de l'agence) : le CG la retire de la ligne non-roulants.
+function partRoulant(e){if(!e||String(e.qual||'').toUpperCase()==='FACTURIERE')return 0;let d=isRoulant(e.qual)?1:0,p=e.pctRoulant;if(p===null||p===undefined||p==='')return d;p=+p;return isNaN(p)?d:Math.max(0,Math.min(100,p))/100}
+function estRoulantPart(e){return partRoulant(e)>0}
 function isRoulant(qual){return ['DEA','AA','TAXI','TPMR'].includes((qual||'').toUpperCase())}
 
 function isVac(iso,z){return (vac[z]||vac.B).some(x=>between(iso,x[0],x[1]))}
@@ -417,7 +421,7 @@ function baseDec2026(a){
   if(jours <= 0) return 0;
   let h = 0, hCDD = 0;
   (a.employees || []).forEach(function(e){
-    if(!isRoulant(e.qual) || !empPresent(e, '2026-12-31')) return;
+    if(!estRoulantPart(e) || !empPresent(e, '2026-12-31')) return;
     let x = (+e.hours||0) *partRoulant(e);
     h += x; if(e.contract === 'CDD') hCDD += x;
   });
@@ -648,7 +652,7 @@ function partCDDSemaine(a, week){
   let dateRef = weekRefDate(a, week);
   let tot=0, cdd=0;
   a.employees.forEach(function(e){
-    if(!isRoulant(e.qual)) return;
+    if(!estRoulantPart(e)) return;
     if(dateRef && !empPresent(e, dateRef)) return;
     let h=(+e.hours||0)*partRoulant(e);
     tot+=h; if(isCDD(e)) cdd+=h;
@@ -734,6 +738,6 @@ function chargesReport2028(a){
 }
 
 export {
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, partRoulant, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
