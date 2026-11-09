@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agency, baseH, partRoulant, genCal, hsTot } from './calculations.js';
+import { agency, baseH, partRoulant, genCal, hsTot, transfertRoulantNR, msNRMois } from './calculations.js';
 import { teamInsight } from './teamInsight.js';
 
 // Signalement nov. 2026 : la clé roulant / non-roulant ne s'appliquait pas aux ETP, et un salarié saisi
@@ -46,5 +46,19 @@ describe('Part roulante des autres qualifications (régulateur, REX…)', () => 
     const r30 = avec({ name: 'R', qual: 'REGULATEUR', hours: 35, pctRoulant: 30 });
     [base, r30].forEach((a) => { a.costHour = 30; a.targetTXR = 95; a.refs.san.forEach((m) => { m.semaine = 3000; m.vacances = 3000; m.samedi = 1000; m.dimanche = 1000; m.ferie = 1000; }); genCal(a); });
     expect(hsTot(r30).hs).toBeLessThan(hsTot(base).hs);
+  });
+});
+
+describe('Retrait automatique de la part roulante sur la ligne non-roulants', () => {
+  const ag = (pct) => { const a = agency('NANTES'); a.costHour = 30; a.msNRBrutMensuel = 5000; a.msNRTauxCharges = 40;
+    a.employees = [{ name: 'A', qual: 'DEA', hours: 35, pctRoulant: 100 }, { name: 'R', qual: 'REGULATEUR', hours: 35, pctRoulant: pct }]; return a; };
+  it('le CG saisit la ligne complète ; SOMA retire heures roulantes × coût horaire', () => {
+    expect(transfertRoulantNR(ag(0), 0)).toBe(0);
+    expect(transfertRoulantNR(ag(30), 0)).toBeCloseTo(10.5 * 52 / 12 * 30, 6);
+    expect(msNRMois(ag(0), 0) - msNRMois(ag(30), 0)).toBeCloseTo(10.5 * 52 / 12 * 30, 6);
+  });
+  it('jamais négatif', () => {
+    const a = ag(100); a.msNRBrutMensuel = 100;
+    expect(msNRMois(a, 0)).toBe(0);
   });
 });

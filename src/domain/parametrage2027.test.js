@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  partRoulant, payrollMonthCivil, payrollPayMonth, costHourJuin, chMois, ratioMaintien, partCDDSemaine, hsRows,
+  partRoulant, transfertRoulantNR, payrollMonthCivil, payrollPayMonth, costHourJuin, chMois, ratioMaintien, partCDDSemaine, hsRows,
   mainMonth, msNRMensuel, msNRMois, tauxAbsMois, coutHoraireImproductif, varDecCalc, varDec2026Total,
   chargesCGSaisies, cpGeneres, isRoulant, buildPeriodesPaie, coutRoulantSemaine
 } from './calculations.js';
@@ -74,26 +74,28 @@ describe('ligne unique de masse salariale non-roulante', () => {
   it('coût mensuel = brut × (1 + charges) × (1 − absentéisme × part non maintenue)', () => {
     const a = base(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42; a.ratioMaintien = 50;
     expect(msNRMensuel(a)).toBeCloseTo(9656, 6);
-    expect(msNRMois(a, 0)).toBeCloseTo(9656 * (1 - 0.08 * 0.5), 6);
+    // part roulante du régulateur (30 % × 35 h) retirée automatiquement au coût horaire de janvier (28,5 €)
+    expect(transfertRoulantNR(a, 0)).toBeCloseTo(10.5 * 52 / 12 * 28.5, 6);
+    expect(msNRMois(a, 0)).toBeCloseTo((9656 - 10.5 * 52 / 12 * 28.5) * (1 - 0.08 * 0.5), 6);
   });
   it('remplace le coût par jour des non-roulants et la quote-part DR', () => {
     const a = base(); a.drCostAnnual = 90000; a.drPct = 20; a.hsImproductif = {};
     const ancien = payrollMonthCivil(a, 0);
     a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42;
     const jours = a.cal.filter((d) => d.month === 0 && [1, 2, 3, 4, 5].includes(new Date(2027, d.month, d.day).getDay())).length;
-    const ancienNR = 210 * Math.round(jours * 5 / 5) + 90000 * 0.2 / 12;
+    const ancienNR = 210 * 0.7 * Math.round(jours * 5 / 5) + 90000 * 0.2 / 12; // 70 % non roulant
     expect(payrollMonthCivil(a, 0) - ancien).toBeCloseTo(msNRMois(a, 0) - ancienNR, 4);
   });
   it('coût horaire improductif = coût mensuel ÷ heures mensuelles des non-roulants', () => {
     const a = base(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42;
-    expect(coutHoraireImproductif(a)).toBeCloseTo(9656 / (35 * 0.7 * 52 / 12), 6); // heures non roulantes : 70 % du régulateur
+    expect(coutHoraireImproductif(a)).toBeCloseTo((9656 - 10.5 * 52 / 12 * 28.5) / (35 * 0.7 * 52 / 12), 6); // 70 % du régulateur, coût de sa part roulante retiré
   });
   it('en paie par période : un salaire mensuel par mois de paie, sans quote-part DR', () => {
     const a = base(); a.periodesPaie = buildPeriodesPaie(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42; a.drCostAnnual = 90000; a.drPct = 20;
     const avec = payrollPayMonth(a, 1);
     a.msNRBrutMensuel = null;
     const coutJour = a.employees.filter((e) => !['DEA', 'AA', 'TAXI', 'TPMR', 'FACTURIERE'].includes(e.qual))
-      .reduce((s, e) => s + (+e.coutJour || 0) * (28 * (+e.joursSem || 5) / 7), 0);
+      .reduce((s, e) => s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (28 * (+e.joursSem || 5) / 7), 0);
     const sans = payrollPayMonth(a, 1);
     expect(avec - sans).toBeCloseTo(msNRMois({ ...a, msNRBrutMensuel: 6800 }, 1) - coutJour - 90000 * 0.2 * 28 / 365, 4);
   });

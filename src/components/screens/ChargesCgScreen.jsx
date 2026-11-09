@@ -1,7 +1,7 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { prefillCharges } from '../../domain/prefillCharges.js';
 import { estStructure, estSiege, LIGNES_SIEGE, LIGNES_QUOTE_PART } from '../../domain/calculations.js';
-import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH } from '../../domain/calculations.js';
+import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH, heuresRoulantesNR, transfertRoulantNR } from '../../domain/calculations.js';
 import { chargesInsight } from '../../domain/chargesInsight.js';
 import { euro } from '../../domain/format.js';
 import ClasseurChargesCard from '../ClasseurChargesCard.jsx';
@@ -78,6 +78,7 @@ function ChargesAgence() {
   }
   const juin = costHourJuin(a);
   const nr = msNRMensuel(a);
+  const tr = transfertRoulantNR(a);
   const PARAMS = [
     ['tauxHoraireBrut', 'Taux horaire brut au 1er janvier (€/h)'],
     ['tauxHoraireBrutJuin', 'Taux horaire brut au 1er juin (€/h)'],
@@ -122,6 +123,7 @@ function ChargesAgence() {
         <p className="hint" style={{ fontSize: 12, margin: '10px 0 0' }}>
           Coût horaire chargé : <b>{a.costHour ? fmtCoutH(a.costHour) : '—'}</b> en janvier{juin ? <>, <b>{fmtCoutH(juin)}</b> à partir de juin</> : ' (pas de taux au 1er juin : celui de janvier s\'applique toute l\'année)'}.
           {' '}Masse salariale non-roulante : <b>{nr !== null ? euro(Math.round(nr)) + ' / mois' : 'non saisie'}</b>.
+          {nr !== null && tr > 0 ? <>{' '}Part roulante des non-roulants (écran Équipe, {heuresRoulantesNR(a).toLocaleString('fr-FR')} h/sem.) : <b>{euro(Math.round(tr))} / mois</b> déduits automatiquement, déjà comptés en roulant.</> : null}
           {' '}Ratio de maintien de salaire : <b>{Math.round(ratioMaintien(a) * 100)} %</b> (paramètre réseau, Données agences).
         </p>
       </div>

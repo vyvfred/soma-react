@@ -116,6 +116,7 @@ function coutHoraireImproductif(a){
   let cm = msNRMensuel(a);
   if(cm!==null){
     let hHebdo = a.employees.filter(e=>!isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*(1-partRoulant(e)),0);
+    cm=Math.max(0, cm-transfertRoulantNR(a));
     return hHebdo>0 ? cm/(hHebdo*52/12) : (+a.costHour||0);
   }
   let imp = a.employees.filter(e=>!isRoulant(e.qual)&&e.qual!=='FACTURIERE'&&(+e.coutJour||0)>0);
@@ -245,7 +246,7 @@ function payrollMonthCivil(a,m){
       let daysMonth=a.cal.filter(d=>d.month===m&&[1,2,3,4,5].includes(new Date(2027,d.month,d.day).getDay())).length;
       let joursHebdo=+e.joursSem||5;
       let joursActifs=Math.round(daysMonth*joursHebdo/5);
-      return s+(+e.coutJour||0)*joursActifs;
+      return s+(+e.coutJour||0)*joursActifs*(1-partRoulant(e));
     },0);
   // HS improductives : total hebdo saisi par le REX, valorisé au coût horaire improductif x majoration
   let msHSImproductif = 0;
@@ -327,7 +328,7 @@ function payrollPayMonth(a, moisIdx) {
     ? a.employees.filter(function(e) {
         return !['DEA','AA','TAXI','TPMR','FACTURIERE'].includes(e.qual);
       }).reduce(function(s, e) {
-        return s + (+e.coutJour || 0) * (nbJoursPeriode * (+e.joursSem || 5) / 7);
+        return s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (nbJoursPeriode * (+e.joursSem || 5) / 7);
       }, 0)
     : 0;
 
@@ -675,9 +676,15 @@ function msNRMensuel(a){
   return brut*(1+(+a.msNRTauxCharges||0)/100);
 }
 
+// Part roulante des non-roulants (régulateur, REX… avec un % roulant) : déjà comptée en masse salariale roulante,
+// elle est retirée AUTOMATIQUEMENT de la ligne non-roulants du CG (heures roulantes × coût horaire chargé du mois),
+// pour qu'elle ne soit pas comptée deux fois. Le CG saisit la ligne non-roulants complète, sans rien déduire.
+function heuresRoulantesNR(a,m){let ref=m===undefined?null:'2027-'+String(m+1).padStart(2,'0')+'-15';return (a.employees||[]).reduce(function(s,e){if(isRoulant(e.qual)||!estRoulantPart(e))return s;if(ref&&!empPresent(e,ref))return s;return s+(+e.hours||0)*partRoulant(e);},0)}
+function transfertRoulantNR(a,m){return heuresRoulantesNR(a,m)*52/12*chMois(a,m===undefined?0:m)}
 function msNRMois(a, m){
   let cm=msNRMensuel(a);
   if(cm===null) return 0;
+  cm=Math.max(0, cm-transfertRoulantNR(a,m));
   return cm*(1 - tauxAbsMois(a,m)*(1-ratioMaintien(a)));
 }
 
@@ -732,12 +739,12 @@ function chargesReport2028(a){
   });
   if(msNRMensuel(a) === null) ms += (a.employees || [])
     .filter(function(e){ return !['DEA','AA','TAXI','TPMR','FACTURIERE'].includes(e.qual); })
-    .reduce(function(s, e){ return s + (+e.coutJour || 0) * nbJours * (+e.joursSem || 5) / 7; }, 0);
+    .reduce(function(s, e){ return s + (+e.coutJour || 0) * (1 - partRoulant(e)) * nbJours * (+e.joursSem || 5) / 7; }, 0);
   if(msNRMensuel(a) === null) ms += (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJours / 365);
   return Math.round(ms);
 }
 
 export {
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
-  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
