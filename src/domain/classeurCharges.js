@@ -43,6 +43,14 @@ function construireClasseurCharges(entites){
       var x = e.data && e.data.rex && e.data.rex[poste];
       if(!x){ ligne.push(''); return; }
       if(x.mode === 'pct'){ ligne.push(+x.pct ? fmtPctClasseur(x.pct) : ''); return; }
+      if(x.mode === 'pctMois'){
+        var ps = (x.pcts || []).map(function(v){ return v === null || v === undefined || v === '' ? '' : +v; });
+        if(ps.some(function(v){ return v !== '' && v !== 0; })){
+          ligne.push('mensuel');
+          mensuel.push([e.nom, poste].concat(CLASSEUR_MOIS.map(function(_, m){ return ps[m] === '' || ps[m] === undefined ? '' : fmtPctClasseur(ps[m]); })));
+        } else ligne.push('');
+        return;
+      }
       if(x.mode === 'annual'){
         var cle = x.allocationKey === 'ca' ? 'ca' : 'monthly12';
         if(!+x.annual){ ligne.push(''); return; }
@@ -68,6 +76,7 @@ function construireClasseurCharges(entites){
     ['• « mensuel » : le poste est saisi mois par mois dans la feuille « Mensuel ».'],
     [''],
     ['Feuille « Mensuel » (facultative) : une ligne Agence + Poste avec ses 12 montants. Elle prime sur la feuille Réseau pour ce poste.'],
+    ['Dans « Mensuel », vous pouvez aussi écrire un % du CA différent chaque mois (par exemple « 2,1 % » en janvier, « 3 % » en juillet) : le montant suit le CA de chaque mois. Une même ligne contient soit des montants, soit des %.'],
     [''],
     ['Import : écran Charges CG, « Importer le classeur ». SOMA affiche les changements par agence avant d\'enregistrer.'],
     ['Les charges importées s\'appliquent à toutes les versions (V1, V2, V3) du budget de chaque agence.']
@@ -130,15 +139,25 @@ function lireClasseurCharges(reseau, mensuel, nomsConnus){
     if(!nom){ erreurs.push(lig + ' : agence « ' + row[0] + ' » inconnue.'); return; }
     if(!poste){ erreurs.push(lig + ' : poste « ' + row[1] + ' » inconnu.'); return; }
     if(!posteAutorise(nom, poste)){ erreurs.push(lig + ' : ' + poste + ' non applicable pour ' + nom + '.'); return; }
-    var vals = [], ko = false;
+    var vals = [], ko = false, nbPct = 0, nbMontant = 0;
     for(var m = 0; m < 12; m++){
       var v = row[2 + m], t = String(v === null || v === undefined ? '' : v).trim();
       if(t === ''){ vals.push(null); continue; }
-      var n = typeof v === 'number' ? v : nombreClasseur(t);
+      var estPct = /%\s*$/.test(t);
+      var n = typeof v === 'number' ? v : nombreClasseur(estPct ? t.replace('%', '') : t);
       if(isNaN(n)){ erreurs.push(lig + ' : ' + CLASSEUR_MOIS[m] + ' « ' + t + ' » illisible.'); ko = true; break; }
+      if(estPct) nbPct++; else nbMontant++;
       vals.push(n);
     }
-    if(!ko) poser(nom, poste, { mode: 'month', values: vals });
+    if(ko) return;
+    if(nbPct && nbMontant){ erreurs.push(lig + ' : ' + nom + ' / ' + poste + ' mélange des montants et des % ; écrivez soit 12 montants, soit 12 %.'); return; }
+    if(nbPct){
+      if(poste === "Chiffre d'affaires"){ erreurs.push(lig + ' : le CA d\'une structure ne peut pas être un % du CA.'); return; }
+      var maxP = Math.max.apply(null, vals.map(function(p){ return +p || 0; }));
+      if(maxP > 30) avert.push(nom + ' / ' + poste + ' : jusqu\'à ' + fmtPctClasseur(maxP) + ' du CA sur un mois, vérifiez.');
+      poser(nom, poste, { mode: 'pctMois', pcts: vals }); return;
+    }
+    poser(nom, poste, { mode: 'month', values: vals });
   });
   return { lignes: lignes, erreurs: erreurs, avertissements: avert };
 }
@@ -148,10 +167,11 @@ function appliquerLignesRex(rex, lignesEntite){
   var n = 0;
   Object.keys(lignesEntite).forEach(function(poste){
     var nv = lignesEntite[poste], x = rex[poste] || { values: Array(12).fill(null), chargeType: 'variable', allocationKey: 'monthly12', pct: 0, annual: 0, mode: 'month' };
-    var avant = JSON.stringify([x.mode, x.annual, x.allocationKey, x.pct, x.values]);
+    var avant = JSON.stringify([x.mode, x.annual, x.allocationKey, x.pct, x.values, x.mode === 'pctMois' ? x.pcts : null]);
     var y = Object.assign({}, x, nv);
     if(nv.mode === 'month') y.values = nv.values.slice();
-    if(JSON.stringify([y.mode, y.annual, y.allocationKey, y.pct, y.values]) !== avant) n++;
+    if(nv.mode === 'pctMois') y.pcts = nv.pcts.slice();
+    if(JSON.stringify([y.mode, y.annual, y.allocationKey, y.pct, y.values, y.mode === 'pctMois' ? y.pcts : null]) !== avant) n++;
     rex[poste] = y;
   });
   return n;

@@ -23,7 +23,7 @@ export function avancementBudget(d, updatedAt, maintenant = Date.now()) {
   const cgLignes = T.filter((r) => r.type !== 'subtotal' && r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel' && LIGNES_SIEGE.indexOf(r.label) < 0 && r.label !== 'Quote-part régulation mutualisée');
   const cgOk = cgLignes.filter((r) => {
     const x = d.rex && d.rex[r.label]; if (!x) return false;
-    return x.mode === 'annual' ? rempli(x.annual) && +x.annual !== 0 : x.mode === 'pct' ? rempli(x.pct) && +x.pct !== 0 : (x.values || []).some((v) => rempli(v) && +v !== 0);
+    return x.mode === 'annual' ? rempli(x.annual) && +x.annual !== 0 : x.mode === 'pct' ? rempli(x.pct) && +x.pct !== 0 : x.mode === 'pctMois' ? (x.pcts || []).some((v) => rempli(v) && +v !== 0) : (x.values || []).some((v) => rempli(v) && +v !== 0);
   }).length;
   const pct = Math.round(((objectif ? 1 : 0) + refsPct / 100 + (nbSalaries ? 1 : 0) + absSaisis / 12 + moisValides / 12) / 5 * 100);
   const joursSansModif = updatedAt ? Math.floor((maintenant - new Date(updatedAt).getTime()) / 86400000) : null;

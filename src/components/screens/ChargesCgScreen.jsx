@@ -49,6 +49,28 @@ function ChargesAgence() {
       return draft;
     });
   }
+  function setMode(label, mode) {
+    update((draft) => {
+      const rex = { ...draft.rex };
+      const line = { ...rex[label], mode };
+      if (mode === 'pctMois' && !Array.isArray(line.pcts)) line.pcts = Array(12).fill(rex[label] && rex[label].mode === 'pct' && +rex[label].pct ? +rex[label].pct : null);
+      rex[label] = line;
+      draft.rex = rex;
+      return draft;
+    });
+  }
+  function setPctMois(label, m, value) {
+    update((draft) => {
+      const rex = { ...draft.rex };
+      const line = { ...rex[label] };
+      const pcts = (Array.isArray(line.pcts) ? line.pcts : Array(12).fill(null)).slice();
+      pcts[m] = value === '' ? null : +String(value).replace(',', '.');
+      line.pcts = pcts;
+      rex[label] = line;
+      draft.rex = rex;
+      return draft;
+    });
+  }
   function setVal(label, m, value) {
     update((draft) => {
       const rex = { ...draft.rex };
@@ -165,10 +187,11 @@ function ChargesAgence() {
                     </select>
                   </td>
                   <td style={cellStyle}>
-                    <select value={mode} disabled={!editable} onChange={(e) => patchLine(r.label, { mode: e.target.value })}>
+                    <select value={mode} disabled={!editable} onChange={(e) => setMode(r.label, e.target.value)}>
                       <option value="month">saisie mensuelle</option>
                       <option value="annual">montant annuel</option>
                       {r.label !== "Chiffre d'affaires" ? <option value="pct">% CA mensuel</option> : null}
+                      {r.label !== "Chiffre d'affaires" ? <option value="pctMois">% CA différent chaque mois</option> : null}
                     </select>
                   </td>
                   <td style={cellStyle}>
@@ -187,13 +210,17 @@ function ChargesAgence() {
                         <label style={{ fontSize: 9, display: 'block' }}>% CA mensuel</label>
                         <input type="number" value={x.pct || 0} disabled={!editable} onChange={(e) => setVal(r.label, 0, e.target.value)} style={{ width: 70 }} />
                       </div>
+                    ) : mode === 'pctMois' ? (
+                      <span className="hint" style={{ fontSize: 10 }}>% du CA saisi mois par mois</span>
                     ) : (
                       <span className="hint" style={{ fontSize: 10 }}>saisie par mois</span>
                     )}
                   </td>
                   {M.map((_, m) => (
                     <td key={m} style={cellStyle}>
-                      {mode === 'month'
+                      {mode === 'pctMois'
+                        ? <><input type="number" step="0.1" value={x.pcts && x.pcts[m] !== null && x.pcts[m] !== undefined ? x.pcts[m] : ''} disabled={!editable} onChange={(e) => setPctMois(r.label, m, e.target.value)} style={{ width: 52 }} /> %<div className="num locked" style={{ fontSize: 10 }}>{euro(manual(a, r.label, m))}</div></>
+                        : mode === 'month'
                         ? <input type="number" value={(x.values && x.values[m]) || 0} disabled={!editable} onChange={(e) => setVal(r.label, m, e.target.value)} style={{ width: 58 }} />
                         : <span className="num locked" style={{ fontSize: 10 }}>{euro(manual(a, r.label, m))}</span>}
                     </td>

@@ -211,7 +211,7 @@ function isoWeek(date){let d=new Date(Date.UTC(date.getFullYear(),date.getMonth(
 
 function mainMonth(a,w){let c={};a.cal.filter(d=>d.week==w).forEach(d=>c[d.month]=(c[d.month]||0)+1);return +(Object.entries(c).sort((x,y)=>y[1]-x[1])[0]?.[0]||0)}
 
-function manual(a,l,m){let x=a.rex[l];if(!x)return 0;if(x.mode==='pct')return monthCA(a,m)*(+x.pct||0)/100;if(x.mode==='annual'){let annual=+x.annual||0;if(x.allocationKey==='ca')return annual*annualCAWeight(a,m);return annual/12}return x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0}
+function manual(a,l,m){let x=a.rex[l];if(!x)return 0;if(x.mode==='pct')return monthCA(a,m)*(+x.pct||0)/100;if(x.mode==='pctMois')return monthCA(a,m)*(+(x.pcts&&x.pcts[m])||0)/100;if(x.mode==='annual'){let annual=+x.annual||0;if(x.allocationKey==='ca')return annual*annualCAWeight(a,m);return annual/12}return x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0}
 
 function monthCA(a,m){if(estStructure(a))return caStructure(a,m);if(!a.cal.length)genCal(a);return a.cal.filter(d=>d.month===m).reduce((s,d)=>s+d.total,0)}
 
@@ -603,6 +603,7 @@ function chargesSummary(a){
     if(r.type==='charge'){if(x.chargeType==='fixe')fixed+=total;if(x.chargeType==='variable')variable+=total;if(total===0)manualEmpty++;}
     if(x.mode==='annual'&&!x.allocationKey)annualNoKey++;
     if(x.mode==='pct'&&(+x.pct||0)>20)pctHigh++;
+    if(x.mode==='pctMois'&&(x.pcts||[]).some(p=>(+p||0)>20))pctHigh++;
     if(x.mode==='month'){let vals=x.values.map(v=>+v||0),avg=vals.reduce((s,v)=>s+v,0)/12;if(avg>0){let max=Math.max(...vals),min=Math.min(...vals);if((max-min)>avg*1.5)monthlyIrregular++;}}
   });
   let payroll=ann(a,"Charges de personnel"),hs=hsTot(a).hs;
@@ -717,6 +718,7 @@ function chargesCGSaisies(d){
     if(l === "Chiffre d'affaires" || l === 'Charges de personnel') return;
     let x = d.rex[l] || {};
     let saisi = x.mode === 'pct' ? (+x.pct > 0)
+      : x.mode === 'pctMois' ? (x.pcts || []).some(function(p){ return +p > 0; })
       : x.mode === 'annual' ? (+x.annual > 0)
       : (x.values || []).some(function(v){ return v !== null && v !== undefined && +v !== 0; });
     if(saisi) n++;

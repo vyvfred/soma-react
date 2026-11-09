@@ -132,6 +132,10 @@ export const FAQ_CG_SECTIONS = [
       [
         "Où saisir la quote-part MS siège et la régulation mutualisée ?",
         "Deux lignes, juste sous « Charges de personnel », sur chaque agence : « Quote-part MS siège » et « Quote-part régulation mutualisée ». Saisissez le montant annuel de l'agence obtenu avec votre clé de répartition : SOMA le lisse à l'identique sur les 12 mois (répartition ÷ 12) et le déduit de l'EBE. Mettez 0 pour une agence non concernée par la régulation mutualisée : la ligne reste en place si le périmètre évolue. Le plus rapide est le classeur « Charges du réseau » : une colonne par agence. Ces lignes n'existent pas pour les structures ; le Siège reste à 0 en charges de personnel puisque tout son coût est ventilé sur les agences. La ligne « Charges de personnel » reste la masse salariale propre de l'agence."
+      ],
+      [
+        "Comment saisir un poste en % du CA différent chaque mois (péages par exemple) ?",
+        "Dans « Charges CG » de l'agence, choisissez le mode « % CA différent chaque mois » sur la ligne : une case de % apparaît pour chaque mois, avec le montant calculé dessous (CA du mois × % du mois). Un mois laissé vide vaut 0. Pour tout le réseau d'un coup, utilisez la feuille « Mensuel » du classeur « Charges du réseau » : une ligne Agence + Poste avec 12 pourcentages (« 2,1 % », « 3 % »…), chaque agence ayant les siens. Une même ligne contient soit 12 montants, soit 12 % ; un mélange est signalé à l'import."
       ]
     ]
   },
