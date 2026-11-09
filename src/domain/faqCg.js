@@ -128,6 +128,10 @@ export const FAQ_CG_SECTIONS = [
       [
         "Où saisir l'impôt sur les sociétés et la participation ?",
         "Sur le Siège uniquement : ouvrez SIEGE, écran « Charges CG », lignes « Impôt sur les sociétés » et « Participation aux bénéfices ». Le résultat net = résultat courant avant impôt + résultat exceptionnel − impôt sur les sociétés − participation. Ces lignes n'existent pas pour les agences et apparaissent dans le consolidé réseau."
+      ],
+      [
+        "Où saisir la quote-part MS siège et la régulation mutualisée ?",
+        "Deux lignes, juste sous « Charges de personnel », sur chaque agence : « Quote-part MS siège » et « Quote-part régulation mutualisée ». Saisissez le montant annuel de l'agence obtenu avec votre clé de répartition : SOMA le lisse à l'identique sur les 12 mois (répartition ÷ 12) et le déduit de l'EBE. Mettez 0 pour une agence non concernée par la régulation mutualisée : la ligne reste en place si le périmètre évolue. Le plus rapide est le classeur « Charges du réseau » : une colonne par agence. Ces lignes n'existent pas pour les structures ; le Siège reste à 0 en charges de personnel puisque tout son coût est ventilé sur les agences. La ligne « Charges de personnel » reste la masse salariale propre de l'agence."
       ]
     ]
   },

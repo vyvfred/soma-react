@@ -1,6 +1,6 @@
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { prefillCharges } from '../../domain/prefillCharges.js';
-import { estStructure, estSiege, LIGNES_SIEGE } from '../../domain/calculations.js';
+import { estStructure, estSiege, LIGNES_SIEGE, LIGNES_QUOTE_PART } from '../../domain/calculations.js';
 import { manual, T, M, costHourJuin, msNRMensuel, ratioMaintien, fmtCoutH } from '../../domain/calculations.js';
 import { chargesInsight } from '../../domain/chargesInsight.js';
 import { euro } from '../../domain/format.js';
@@ -11,7 +11,8 @@ import ClasseurChargesCard from '../ClasseurChargesCard.jsx';
 // l'IS et la participation n'existent que pour le Siège.
 const lignesSaisie = (a) => T.filter((r) => r.type !== 'subtotal'
   && (estStructure(a) || (r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel'))
-  && (estSiege(a) || LIGNES_SIEGE.indexOf(r.label) < 0));
+  && (estSiege(a) || LIGNES_SIEGE.indexOf(r.label) < 0)
+  && (!estStructure(a) || LIGNES_QUOTE_PART.indexOf(r.label) < 0));
 
 function Kpi({ label, value, note }) {
   return <div className="kpi"><div className="label">{label}</div><div className="value">{value}</div><div className="note">{note || ''}</div></div>;

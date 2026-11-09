@@ -9,7 +9,7 @@ import { fusionnerVersion } from './fusion.js';
 // où `data` (jsonb) est soit versionné { meta, versions:{v1,v2,v3}, validation },
 // soit « plat » (ancien format) = les champs de l'agence directement.
 
-import { agency, refs, buildPeriodesPaie, T, genCal } from './calculations.js';
+import { agency, refs, buildPeriodesPaie, T, genCal, LIGNES_QUOTE_PART } from './calculations.js';
 import { pickRefCG, appliquerRefCG } from './refCG.js';
 
 const DEFAULT_META = () => ({
@@ -154,8 +154,8 @@ export function migrateAgency(a) {
     if (r.type !== 'subtotal' && !a.rex[r.label]) {
       a.rex[r.label] = {
         values: Array(12).fill(null),
-        mode: r.label === 'Carburant' ? 'annual' : 'month',
-        chargeType: r.type === 'charge' ? 'variable' : 'fixe',
+        mode: r.label === 'Carburant' || LIGNES_QUOTE_PART.indexOf(r.label) >= 0 ? 'annual' : 'month',
+        chargeType: LIGNES_QUOTE_PART.indexOf(r.label) >= 0 ? 'fixe' : r.type === 'charge' ? 'variable' : 'fixe',
         allocationKey: r.label === 'Carburant' ? 'ca' : 'monthly12',
         pct: r.label === 'Carburant' ? 5.2 : 0, annual: 0
       };

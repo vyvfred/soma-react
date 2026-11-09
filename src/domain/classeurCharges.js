@@ -1,5 +1,5 @@
 // Classeur des charges du réseau — fonctions PURES, identiques à la version mono-fichier.
-import { T, STRUCTURES, LIGNES_SIEGE } from './calculations.js';
+import { T, STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART } from './calculations.js';
 
 // ═══ Classeur des charges du réseau (CG) ═══
 // Une feuille « Réseau » : postes en lignes, agences et structures en colonnes, montant annuel
@@ -16,6 +16,7 @@ function posteAutorise(nom, poste){
   var structure = STRUCTURES.indexOf(nom) >= 0;
   if(poste === "Chiffre d'affaires" || poste === 'Charges de personnel') return structure;
   if(LIGNES_SIEGE.indexOf(poste) >= 0) return nom === 'SIEGE';
+  if(LIGNES_QUOTE_PART.indexOf(poste) >= 0) return !structure;
   return true;
 }
 function fmtPctClasseur(p){ return String(Math.round((+p||0)*100)/100).replace('.', ',') + ' %'; }

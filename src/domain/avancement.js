@@ -20,7 +20,7 @@ export function avancementBudget(d, updatedAt, maintenant = Date.now()) {
   const nbSalaries = (d.employees || []).length;
   const absSaisis = (d.sick || []).filter(rempli).length;
   const moisValides = (d.moisVerrouilles || []).length;
-  const cgLignes = T.filter((r) => r.type !== 'subtotal' && r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel' && LIGNES_SIEGE.indexOf(r.label) < 0);
+  const cgLignes = T.filter((r) => r.type !== 'subtotal' && r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel' && LIGNES_SIEGE.indexOf(r.label) < 0 && r.label !== 'Quote-part régulation mutualisée');
   const cgOk = cgLignes.filter((r) => {
     const x = d.rex && d.rex[r.label]; if (!x) return false;
     return x.mode === 'annual' ? rempli(x.annual) && +x.annual !== 0 : x.mode === 'pct' ? rempli(x.pct) && +x.pct !== 0 : (x.values || []).some((v) => rempli(v) && +v !== 0);
