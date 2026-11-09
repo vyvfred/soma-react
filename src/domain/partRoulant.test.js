@@ -35,10 +35,11 @@ describe('Part roulante des autres qualifications (régulateur, REX…)', () => 
     expect(baseH(avec({ name: 'R', qual: 'REGULATEUR', hours: 35, pctRoulant: 30 }))).toBe(45.5);
     expect(teamInsight(avec({ name: 'R', qual: 'REGULATEUR', hours: 35, pctRoulant: 30 })).etpTotal).toBe(1.3);
   });
-  it('champ vide : 0 % pour un non-roulant, la facturière n\'est jamais roulante', () => {
+  it('champ vide : 0 % pour un non-roulant ; la part roulante d\'une facturière compte', () => {
     expect(partRoulant({ qual: 'REGULATEUR' })).toBe(0);
     expect(partRoulant({ qual: 'REX', pctRoulant: 0 })).toBe(0);
-    expect(partRoulant({ qual: 'FACTURIERE', pctRoulant: 50 })).toBe(0);
+    expect(partRoulant({ qual: 'FACTURIERE', pctRoulant: 50 })).toBe(0.5);
+    expect(partRoulant({ qual: 'FACTURIERE' })).toBe(0);
     expect(partRoulant({ qual: 'dea' })).toBe(1);
   });
   it('la part roulante entre dans la capacité : moins d\'heures supplémentaires', () => {
@@ -56,6 +57,12 @@ describe('Retrait automatique de la part roulante sur la ligne non-roulants', ()
     expect(transfertRoulantNR(ag(0), 0)).toBe(0);
     expect(transfertRoulantNR(ag(30), 0)).toBeCloseTo(10.5 * 52 / 12 * 30, 6);
     expect(msNRMois(ag(0), 0) - msNRMois(ag(30), 0)).toBeCloseTo(10.5 * 52 / 12 * 30, 6);
+  });
+  it('facturière : part roulante comptée en roulant, rien déduit de la ligne non-roulants', () => {
+    const a = ag(0); a.employees.push({ name: 'F', qual: 'FACTURIERE', hours: 35, pctRoulant: 40 });
+    expect(baseH(a)).toBe(35 + 14);
+    expect(transfertRoulantNR(a, 0)).toBe(0);
+    expect(msNRMois(a, 0)).toBe(msNRMois(ag(0), 0));
   });
   it('jamais négatif', () => {
     const a = ag(100); a.msNRBrutMensuel = 100;

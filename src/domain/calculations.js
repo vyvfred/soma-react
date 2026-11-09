@@ -199,9 +199,9 @@ function impactCPSemaine(a, week, deltaCPjours) {
 // Part roulante d'un salarié (clé roulant / non-roulant). 0 % = non roulant ; seul un champ vide vaut 100 %.
 // (Avant nov. 2026 : « +e.pctRoulant||100 » comptait un salarié saisi à 0 % comme roulant à 100 %.)
 // Toutes qualifications (nov. 2026) : un régulateur, un REX… peut avoir une part roulante. Champ vide : 100 % pour
-// DEA/AA/TAXI/TPMR, 0 % pour les autres. Facturière jamais roulante. La part roulante est comptée en capacité et en
+// DEA/AA/TAXI/TPMR, 0 % pour les autres (facturière comprise). La part roulante est comptée en capacité et en
 // masse salariale roulante (au coût horaire de l'agence) : le CG la retire de la ligne non-roulants.
-function partRoulant(e){if(!e||String(e.qual||'').toUpperCase()==='FACTURIERE')return 0;let d=isRoulant(e.qual)?1:0,p=e.pctRoulant;if(p===null||p===undefined||p==='')return d;p=+p;return isNaN(p)?d:Math.max(0,Math.min(100,p))/100}
+function partRoulant(e){if(!e)return 0;let d=isRoulant(e.qual)?1:0,p=e.pctRoulant;if(p===null||p===undefined||p==='')return d;p=+p;return isNaN(p)?d:Math.max(0,Math.min(100,p))/100}
 function estRoulantPart(e){return partRoulant(e)>0}
 function isRoulant(qual){return ['DEA','AA','TAXI','TPMR'].includes((qual||'').toUpperCase())}
 
@@ -680,7 +680,8 @@ function msNRMensuel(a){
 // Part roulante des non-roulants (régulateur, REX… avec un % roulant) : déjà comptée en masse salariale roulante,
 // elle est retirée AUTOMATIQUEMENT de la ligne non-roulants du CG (heures roulantes × coût horaire chargé du mois),
 // pour qu'elle ne soit pas comptée deux fois. Le CG saisit la ligne non-roulants complète, sans rien déduire.
-function heuresRoulantesNR(a,m){let ref=m===undefined?null:'2027-'+String(m+1).padStart(2,'0')+'-15';return (a.employees||[]).reduce(function(s,e){if(isRoulant(e.qual)||!estRoulantPart(e))return s;if(ref&&!empPresent(e,ref))return s;return s+(+e.hours||0)*partRoulant(e);},0)}
+// Facturière : son coût n'est pas dans la ligne non-roulants (intégré à part) ; sa part roulante compte, rien n'est déduit.
+function heuresRoulantesNR(a,m){let ref=m===undefined?null:'2027-'+String(m+1).padStart(2,'0')+'-15';return (a.employees||[]).reduce(function(s,e){if(isRoulant(e.qual)||String(e.qual||'').toUpperCase()==='FACTURIERE'||!estRoulantPart(e))return s;if(ref&&!empPresent(e,ref))return s;return s+(+e.hours||0)*partRoulant(e);},0)}
 function transfertRoulantNR(a,m){return heuresRoulantesNR(a,m)*52/12*chMois(a,m===undefined?0:m)}
 function msNRMois(a, m){
   let cm=msNRMensuel(a);
