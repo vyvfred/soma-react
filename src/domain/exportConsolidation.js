@@ -2,7 +2,7 @@
 // Fonction PURE : renvoie les feuilles (tableaux de lignes) ; l'écriture du fichier est dans lib/.
 import { statutLabel } from '../config/statut.js';
 import { avancementBudget } from './avancement.js';
-import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles } from './calculations.js';
+import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles, partRoulant } from './calculations.js';
 import { entiteDepuisBudget } from './consolideSIG.js';
 
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
@@ -11,7 +11,7 @@ const dateFr = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'
 function indicateurs(d, nom) {
   let baseHebdo = 0, etp = 0, nbRoulants = 0;
   (d.employees || []).filter((e) => ROULANTS.includes(e.qual)).forEach((e) => {
-    const h = ((+e.hours || 0) * (+e.pctRoulant || 100)) / 100;
+    const h = (+e.hours || 0) * partRoulant(e);
     baseHebdo += h; etp += h / 35; nbRoulants++;
   });
   etp = Math.round(etp * 100) / 100;

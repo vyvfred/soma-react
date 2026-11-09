@@ -1,3 +1,4 @@
+import { partRoulant } from './calculations.js';
 // Aide à la décision pour la validation — logique pure extraite de renderValidation().
 // Prend les données affichées d'un budget (version active) et renvoie les indicateurs
 // de synthèse + les alertes qui aident un validateur à décider.
@@ -16,7 +17,7 @@ export function budgetDecisionSupport(d) {
   const hasMovements = d.employees ? d.employees.some((e) => e.dateEntree || e.dateSortie) : false;
 
   const baseHebdo = d.employees
-    ? d.employees.filter((e) => ROULANTS.includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) * (+e.pctRoulant || 100) / 100, 0)
+    ? d.employees.filter((e) => ROULANTS.includes(e.qual)).reduce((s, e) => s + (+e.hours || 0) *partRoulant(e), 0)
     : 0;
   const sickFilled = d.sick ? d.sick.filter((v) => v !== null) : [];
   const malMoy = sickFilled.length ? sickFilled.reduce((s, v) => s + (+v || 0), 0) / sickFilled.length : 8;

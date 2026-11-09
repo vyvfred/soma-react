@@ -44,10 +44,10 @@ function baseH(a){
   // Moyenne sur toutes les semaines si dates présentes, sinon calcul simple
   let hasMovements = a.employees.some(e=>e.dateEntree||e.dateSortie);
   if(!hasMovements || !a.cal || !a.cal.length){
-    return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*(+e.pctRoulant||100)/100,0);
+    return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*partRoulant(e),0);
   }
   let weeks=needWeeks(a);
-  if(!weeks.length) return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*(+e.pctRoulant||100)/100,0);
+  if(!weeks.length) return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*partRoulant(e),0);
   let total=weeks.reduce((s,w)=>s+baseHWeek(a,w.week),0);
   return total/weeks.length;
 }
@@ -56,7 +56,7 @@ function baseHWeek(a, week){
   let dateRef = week!==undefined ? weekRefDate(a, week) : null;
   return a.employees.filter(e=>isRoulant(e.qual)).reduce((s,e)=>{
     if(dateRef && !empPresent(e, dateRef)) return s;
-    return s+(+e.hours||0)*(+e.pctRoulant||100)/100;
+    return s+(+e.hours||0)*partRoulant(e);
   },0);
 }
 
@@ -138,7 +138,7 @@ function cpGeneres(a) {
     let dateRef = '2027-' + String(m+1).padStart(2,'0') + '-15';
     salaries.forEach(function(e){
       if(!empPresent(e, dateRef)) return;
-      totalJ += CP_JOURS_MOIS * (1 - tauxMal) * ((+e.hours||0) / 35) * ((+e.pctRoulant||100) / 100);
+      totalJ += CP_JOURS_MOIS * (1 - tauxMal) * ((+e.hours||0) / 35) * partRoulant(e);
     });
   });
   return Math.round(totalJ * 10) / 10;
@@ -195,6 +195,9 @@ function impactCPSemaine(a, week, deltaCPjours) {
   }
 }
 
+// Part roulante d'un salarié (clé roulant / non-roulant). 0 % = non roulant ; seul un champ vide vaut 100 %.
+// (Avant nov. 2026 : « +e.pctRoulant||100 » comptait un salarié saisi à 0 % comme roulant à 100 %.)
+function partRoulant(e){let p=e&&e.pctRoulant;if(p===null||p===undefined||p==='')return 1;p=+p;return isNaN(p)?1:Math.max(0,Math.min(100,p))/100}
 function isRoulant(qual){return ['DEA','AA','TAXI','TPMR'].includes((qual||'').toUpperCase())}
 
 function isVac(iso,z){return (vac[z]||vac.B).some(x=>between(iso,x[0],x[1]))}
@@ -415,7 +418,7 @@ function baseDec2026(a){
   let h = 0, hCDD = 0;
   (a.employees || []).forEach(function(e){
     if(!isRoulant(e.qual) || !empPresent(e, '2026-12-31')) return;
-    let x = (+e.hours||0) * (+e.pctRoulant||100) / 100;
+    let x = (+e.hours||0) *partRoulant(e);
     h += x; if(e.contract === 'CDD') hCDD += x;
   });
   if(!h) return 0;
@@ -647,7 +650,7 @@ function partCDDSemaine(a, week){
   a.employees.forEach(function(e){
     if(!isRoulant(e.qual)) return;
     if(dateRef && !empPresent(e, dateRef)) return;
-    let h=(+e.hours||0)*(+e.pctRoulant||100)/100;
+    let h=(+e.hours||0)*partRoulant(e);
     tot+=h; if(isCDD(e)) cdd+=h;
   });
   return tot>0 ? cdd/tot : 0;
@@ -731,6 +734,6 @@ function chargesReport2028(a){
 }
 
 export {
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, partRoulant, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

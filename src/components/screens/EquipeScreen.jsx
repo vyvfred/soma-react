@@ -1,3 +1,4 @@
+import { partRoulant } from '../../domain/calculations.js';
 import { useRef, useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { teamInsight, etpParMois } from '../../domain/teamInsight.js';
@@ -118,7 +119,7 @@ export default function EquipeScreen() {
               const nom = e.name || e.nom || '';
               const contrat = e.contract || e.contrat || 'CDI';
               const roul = isRoulant(e.qual);
-              const etp = roul ? ((+e.hours || 0) / 35).toFixed(2) : '—';
+              const etp = roul ? ((+e.hours || 0) * partRoulant(e) / 35).toFixed(2) : '—';
               const isCddSais = contrat === 'CDD' && (e.dateEntree || e.dateSortie);
               return (
                 <tr key={i}>
@@ -137,7 +138,7 @@ export default function EquipeScreen() {
                     </select>
                   </td>
                   <td style={td}><input type="number" value={e.hours || 0} disabled={!editable} onChange={(ev) => setEmp(i, 'hours', ev.target.value)} style={{ width: 60 }} /></td>
-                  <td style={td}><input type="number" value={e.pctRoulant || 0} min="0" max="100" disabled={!editable} onChange={(ev) => setEmp(i, 'pctRoulant', ev.target.value)} style={{ width: 55 }} />%</td>
+                  <td style={td}><input type="number" value={Math.round(partRoulant(e) * 100)} min="0" max="100" disabled={!editable} onChange={(ev) => setEmp(i, 'pctRoulant', ev.target.value)} style={{ width: 55 }} />%</td>
                   <td style={td}><input type="number" value={e.joursSem || 5} min="1" max="7" disabled={!editable} onChange={(ev) => setEmp(i, 'joursSem', ev.target.value)} style={{ width: 50 }} /></td>
                   <td style={td}><input type="date" value={e.dateEntree || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateEntree', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
                   <td style={td}><input type="date" value={e.dateSortie || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateSortie', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
