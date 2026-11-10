@@ -1,3 +1,4 @@
+import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
 import { useEffect, useMemo, useState } from 'react';
 import { consolideReseau, feuilleConsolide } from '../../domain/consolideSIG.js';
 import { T, STRUCTURES, LIB_STRUCTURES } from '../../domain/calculations.js';
@@ -196,7 +197,7 @@ export default function ConsolidationScreen() {
                         const z = (v) => (!v ? ' zeroVal' : '');
                         return (
                           <tr key={r.label} className={r.type === 'subtotal' ? 'subtotal' : ''}>
-                            <td><b>{r.label}</b></td>
+                            {estDetailSIG(r.label) ? <td style={{ paddingLeft: 18, fontStyle: 'italic' }}>{libLigneSIG(r.label)}</td> : <td><b>{r.label}</b></td>}
                             <td className={'num' + z(conso.agences[r.label])}>{euro(conso.agences[r.label])}</td>
                             {cols.map((n) => <td key={n} className={'num' + z(conso.structures[n].s[r.label])}>{euro(conso.structures[n].s[r.label])}</td>)}
                             {region ? null : <td className="num"><b>{euro(conso.total[r.label])}</b></td>}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agency, ann, amount, lignesSIG, LIGNES_QUOTE_PART } from './calculations.js';
+import { agency, ann, amount, lignesSIG, LIGNES_QUOTE_PART, libLigneSIG } from './calculations.js';
 import { posteAutorise, construireClasseurCharges } from './classeurCharges.js';
 import { sigAnnuelEntite } from './consolideSIG.js';
 import { agenceReference } from './__fixtures__/agenceReference.js';
@@ -14,7 +14,8 @@ const avecQuotesParts = (siege, regul) => {
 };
 
 describe('Quotes-parts siège et régulation mutualisée', () => {
-  it('deux lignes juste sous les charges de personnel', () => {
+  it('deux lignes de détail juste sous les charges de personnel', () => {
+    expect(libLigneSIG('Quote-part MS siège')).toBe('dont quote-part MS siège');
     const l = lignesSIG(agency('NANTES'), 'cg').map((r) => r.label);
     const i = l.indexOf('Charges de personnel');
     expect(l.slice(i + 1, i + 3)).toEqual(LIGNES_QUOTE_PART);
@@ -27,7 +28,8 @@ describe('Quotes-parts siège et régulation mutualisée', () => {
     }
     expect(Math.round(ann(base, "EXCEDENT BRUT D'EXPLOITATION") - ann(a, "EXCEDENT BRUT D'EXPLOITATION"))).toBe(48000);
     expect(Math.round(ann(base, 'RESULTAT NET') - ann(a, 'RESULTAT NET'))).toBe(48000);
-    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(Math.round(ann(base, 'Charges de personnel')));
+    // incluses dans « Charges de personnel » (présentation des TDB), sans double comptage dans l'EBE
+    expect(Math.round(ann(a, 'Charges de personnel') - ann(base, 'Charges de personnel'))).toBe(48000);
   });
   it('0 = agence non concernée par la régulation mutualisée', () => {
     const a = avecQuotesParts(36000, 0);

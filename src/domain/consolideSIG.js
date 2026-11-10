@@ -1,7 +1,7 @@
 // Compte de résultat consolidé (demande du CG, nov. 2026) — port fidèle de
 // sigAnnuelEntite / entiteDepuisBudget / consolideReseau du mono-fichier.
 // Somme des agences et des 4 structures, version soumise sinon active (budgetData).
-import { T, sig, manual, refs, STRUCTURES, LIB_STRUCTURES } from './calculations.js';
+import { T, sig, manual, refs, STRUCTURES, LIB_STRUCTURES, libLigneSIG } from './calculations.js';
 import { budgetData } from './budgetMapper.js';
 
 export function sigAnnuelEntite(a) {
@@ -56,10 +56,10 @@ export function consolideReseau(map, ops, sansStructures = false) {
 export function feuilleConsolide(c, region = false) {
   if (region) {
     const lr = [['Rubrique', 'Région']];
-    T.forEach((r) => lr.push([r.label, Math.round(c.agences[r.label])]));
+    T.forEach((r) => lr.push([libLigneSIG(r.label), Math.round(c.agences[r.label])]));
     return { nom: 'Compte de résultat', lignes: lr, largeurs: [46, 14] };
   }
   const lignes = [['Rubrique', 'Agences'].concat(STRUCTURES.map((n) => LIB_STRUCTURES[n])).concat(['Consolidé'])];
-  T.forEach((r) => lignes.push([r.label, Math.round(c.agences[r.label])].concat(STRUCTURES.map((n) => Math.round(c.structures[n].s[r.label]))).concat([Math.round(c.total[r.label])])));
+  T.forEach((r) => lignes.push([libLigneSIG(r.label), Math.round(c.agences[r.label])].concat(STRUCTURES.map((n) => Math.round(c.structures[n].s[r.label]))).concat([Math.round(c.total[r.label])])));
   return { nom: 'Compte de résultat', lignes, largeurs: [46, 14, 14, 14, 16, 14, 14] };
 }

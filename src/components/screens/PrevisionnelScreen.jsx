@@ -1,3 +1,4 @@
+import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { ann, amount, isRoulant, M, lignesSIG, resultatAffiche } from '../../domain/calculations.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -114,7 +115,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
               const zero = (v) => (!v || v === 0 ? ' zeroVal' : '');
               return (
                 <tr key={r.label} className={r.type === 'subtotal' ? 'subtotal' : ''}>
-                  <td><b>{r.label}</b></td>
+                  {estDetailSIG(r.label) ? <td style={{ paddingLeft: 18, fontStyle: 'italic' }}>{libLigneSIG(r.label)}</td> : <td><b>{r.label}</b></td>}
                   {M.map((_, m) => {
                     const v = amount(a, r.label, m);
                     return <td key={m} className={'num locked' + zero(v)}>{euro(v)}</td>;
