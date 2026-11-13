@@ -93,14 +93,14 @@ export async function reprendreRatioReseau(a) {
 // Enregistre la version active SANS écraser le travail des autres (fusion par rubrique, cf. fusion.js)
 // et SANS réécrire le statut : seules la soumission, les décisions et l'admin changent le statut.
 // Renvoie { id, version (fusionnée), meta, distantes (rubriques modifiées par d'autres) }.
-export async function saveAgencyBudget({ budgetId, activeVersion, meta, agency, base = null, metaBase = null }) {
+export async function saveAgencyBudget({ budgetId, activeVersion, meta, agency, base = null, metaBase = null, saisieCG = false }) {
   let existingData = null;
   if (budgetId) {
     const { data: existing } = await sb.from('budgets').select('data').eq('id', budgetId).single();
     existingData = (existing && existing.data) || null;
   }
 
-  const fullData = buildBudgetData(existingData, activeVersion, meta, agency, base, metaBase);
+  const fullData = buildBudgetData(existingData, activeVersion, meta, agency, base, metaBase, saisieCG);
   const info = fullData._fusion;
 
   if (budgetId) {

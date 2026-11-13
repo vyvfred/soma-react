@@ -4,6 +4,7 @@
 import { agency, ann, hsTot, baseH, cpGeneres, cpPlanifies, annualCA, needWeeks } from './calculations.js';
 import { migrateAgency } from './budgetMapper.js';
 import { newValidation } from './validationEngine.js';
+import { socleVersion, premiereVersionRemplie } from './refCG.js';
 
 export const VERSIONS = ['v1', 'v2', 'v3'];
 export const VERSION_LABELS = { v1: 'V1', v2: 'V2', v3: 'V3' };
@@ -35,7 +36,8 @@ export function agenceDeVersion(nom, data, v) {
     return migrateAgency({ ...agency(nom), ...data.versions[v], name: nom });
   }
   const a = { ...agency(nom), name: nom };
-  const ref = (data && data.versions && data.versions.v1) || {};
+  const ref = premiereVersionRemplie(data && data.versions);
+  Object.assign(a, socleVersion(ref));
   if (ref.histCA2025) a.histCA2025 = ref.histCA2025;
   if (ref.histCA) a.histCA = ref.histCA;
   if (ref.histTXR2026) { a.histTXR2026 = ref.histTXR2026; a.histTXR = ref.histTXR2026; a.targetTXR = ref.histTXR2026; }

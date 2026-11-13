@@ -68,3 +68,34 @@ export function alertesParametrage(a) {
   }
   return out;
 }
+
+// ── Versions V1/V2/V3 (revue nov. 2026) ──
+// Socle commun à toutes les versions : références et charges posées par le CG, équipe chargée depuis le
+// registre, périodes de paie. Une version vide part de ce socle au lieu d'un budget sans paramétrage.
+export function socleVersion(src){
+  let o = pickRefCG(src || {});
+  ['rex','employees','periodesPaie'].forEach(function(k){ if(src && src[k] !== undefined && src[k] !== null) o[k] = JSON.parse(JSON.stringify(src[k])); });
+  return o;
+}
+export function premiereVersionRemplie(versions){
+  let vs = versions || {};
+  return ['v1','v2','v3'].map(function(v){ return vs[v]; }).find(function(x){ return x && Object.keys(x).length; }) || {};
+}
+// Le CG modifie ses références ou ses charges sur la version ouverte : la modification est reportée dans
+// les autres versions remplies, pour que les variantes du REX restent comparables. Renvoie le nombre de versions mises à jour.
+export function reporterSaisieCG(versions, active, avant, apres){
+  let J = function(v){ return JSON.stringify(v === undefined ? null : v); };
+  let cles = CG_REF_KEYS.filter(function(k){ return J(avant ? avant[k] : undefined) !== J(apres[k]); });
+  let lignes = Object.keys(apres.rex || {}).filter(function(l){ return J(avant && avant.rex ? avant.rex[l] : undefined) !== J(apres.rex[l]); });
+  if(!cles.length && !lignes.length) return 0;
+  let n = 0;
+  Object.keys(versions || {}).forEach(function(v){
+    let x = versions[v];
+    if(v === active || !x || !Object.keys(x).length) return;
+    cles.forEach(function(k){ x[k] = JSON.parse(J(apres[k])); });
+    if(lignes.length){ x.rex = x.rex || {}; lignes.forEach(function(l){ x.rex[l] = JSON.parse(JSON.stringify(apres.rex[l])); }); }
+    n++;
+  });
+  return n;
+}
+export function descriptionCopie(descSource, labelSource){ return descSource ? descSource + ' (copie)' : 'Copie de ' + labelSource; }

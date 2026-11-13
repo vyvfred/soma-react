@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
-import { appliquerRefCG } from '../domain/refCG.js';
+import { appliquerRefCG, descriptionCopie } from '../domain/refCG.js';
+import { useAuth } from './AuthContext.jsx';
 import { toast } from '../components/Toast.jsx';
 import { estModifiable, cibleDuplication, agenceDeVersion, copieVersion, comparerVersions, VERSION_LABELS } from '../domain/versions.js';
 
@@ -31,6 +32,9 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
   const inFlightRef = useRef(Promise.resolve()); // sérialise les sauvegardes
   const pendingRef = useRef(null);               // dernière agence modifiée non encore sauvegardée
   const agencyRef = useRef(null);
+  const { profile } = useAuth();
+  const saisieCGRef = useRef(false);
+  saisieCGRef.current = !!(profile && ['cg', 'admin'].includes(profile.role));
   // État chargé (ou dernier état enregistré) : point de départ de la fusion à l'enregistrement
   const baseRef = useRef(null);
   const metaBaseRef = useRef(null);
@@ -54,7 +58,8 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
           meta: metaRef.current,
           agency: a,
           base: avant,
-          metaBase: metaBaseRef.current
+          metaBase: metaBaseRef.current,
+          saisieCG: saisieCGRef.current
         });
         const id = res.id;
         baseRef.current = JSON.parse(JSON.stringify(res.version));
@@ -114,7 +119,8 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
         if (!active) return;
         // En consultation, le valideur voit la version soumise (celle qu'il valide)
         const sv = res.meta && res.meta.submittedVersion;
-        if (lectureSeule && sv && sv !== res.activeVersion && res.data && res.data.versions && res.data.versions[sv]) {
+        // Budget en validation : tout le monde ouvre la version officielle
+        if ((lectureSeule || !estModifiable(res.statut)) && sv && sv !== res.activeVersion && res.data && res.data.versions && res.data.versions[sv]) {
           res.agency = agenceDeVersion(agenceNom, res.data, sv);
           res.activeVersion = sv;
         }
@@ -197,11 +203,12 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     metaBaseRef.current = data.meta ? JSON.parse(JSON.stringify(data.meta)) : null;
     return remplie
       ? 'Version ' + VERSION_LABELS[v] + ' active'
-      : 'Version ' + VERSION_LABELS[v] + ' vide — repartez de zéro ou dupliquez une autre version';
+      : 'Version ' + VERSION_LABELS[v] + ' vide : paramétrage du CG, charges et équipe repris, le reste est à construire — ou dupliquez une autre version';
   }, [agenceNom, flush, majMeta]);
 
   // Duplique la version active vers la première version libre et bascule dessus
   const duplicateVersion = useCallback(async () => {
+    if (!editable) return { ok: false, message: 'Budget en validation : les versions ne peuvent plus être modifiées' };
     await flush();
     if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
     const { data } = await loadBudgetData(budgetIdRef.current);
@@ -210,7 +217,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     if (!cible) return { ok: false, message: 'Les 3 versions sont déjà utilisées. Videz-en une ou modifiez une version existante.' };
     const versions = { ...(data.versions || {}), [cible]: copieVersion(agencyRef.current) };
     const m = { ...(metaRef.current || DEFAULT_META()) };
-    m.descriptions = { ...(m.descriptions || {}), [cible]: (m.descriptions && m.descriptions[source] ? m.descriptions[source] : '') + ' (copie)' };
+    m.descriptions = { ...(m.descriptions || {}), [cible]: descriptionCopie(m.descriptions && m.descriptions[source], VERSION_LABELS[source]) };
     m.activeVersion = cible;
     const out = { ...data, versions, meta: m };
     await writeBudgetData(budgetIdRef.current, out);
@@ -221,7 +228,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     majMeta(m);
     setVersionsRemplies((p) => ({ ...p, [cible]: true }));
     return { ok: true, cible, message: 'Version ' + VERSION_LABELS[cible] + ' créée à partir de ' + VERSION_LABELS[source] };
-  }, [flush, majMeta]);
+  }, [flush, majMeta, editable]);
 
   // Description de la version active (enregistrée avec la prochaine sauvegarde)
   const setVersionDesc = useCallback((texte) => {
@@ -238,9 +245,10 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
 
   // Choisit la version active comme version de soumission
   const chooseSubmittedVersion = useCallback(async () => {
+    if (!editable) return;
     majMeta({ ...(metaRef.current || DEFAULT_META()), submittedVersion: versionRef.current });
     await saveNow();
-  }, [majMeta, saveNow]);
+  }, [majMeta, saveNow, editable]);
 
   // Comparatif des versions remplies (la version active est prise en mémoire)
   const compareVersions = useCallback(async () => {

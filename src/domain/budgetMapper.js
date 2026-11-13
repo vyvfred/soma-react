@@ -10,7 +10,7 @@ import { fusionnerVersion } from './fusion.js';
 // soit « plat » (ancien format) = les champs de l'agence directement.
 
 import { agency, refs, buildPeriodesPaie, T, genCal, LIGNES_QUOTE_PART } from './calculations.js';
-import { pickRefCG, appliquerRefCG } from './refCG.js';
+import { pickRefCG, appliquerRefCG, reporterSaisieCG } from './refCG.js';
 
 const DEFAULT_META = () => ({
   activeVersion: 'v1',
@@ -86,11 +86,13 @@ export function agencyFromRow(row) {
 // Données à écrire : la version active est FUSIONNÉE avec celle relue en base (fusionnerVersion) —
 // seules les rubriques modifiées par cette session depuis « base » sont écrites. Idem pour meta.
 // Sans « base » (ancien appel), la version locale fait foi.
-export function buildBudgetData(existingData, activeVersion, meta, a, base = null, metaBase = null) {
+export function buildBudgetData(existingData, activeVersion, meta, a, base = null, metaBase = null, saisieCG = false) {
   const versions = existingData && existingData.versions ? { ...existingData.versions } : {};
   const distant = existingData && existingData.versions ? existingData.versions[activeVersion] : null;
   const fv = fusionnerVersion(base, a, distant);
   versions[activeVersion] = fv.fusion;
+  // Saisie du CG (références, charges) reportée dans les autres versions
+  if (saisieCG) reporterSaisieCG(versions, activeVersion, base, a);
   const fm = metaBase ? fusionnerVersion(metaBase, meta, existingData && existingData.meta) : { fusion: meta };
   const out = { versions, meta: fm.fusion };
   // Conserver l'état de validation (décisions, historique des refus) : sans cela,
