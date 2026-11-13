@@ -28,7 +28,7 @@ export function collecterAnomalies(a, role) {
       out.push({ panel: 'rh', level: 'warn', text: critiques.length + ' semaine' + (critiques.length > 1 ? 's' : '') + ' en tension' + (mm ? ' (dès ' + M[mm.month] + ')' : ''), month: mm ? mm.month : null });
     }
     const rest = cpGeneres(a) - cpPlanifies(a);
-    if (Math.abs(rest) > (refAgenceSeuils(a).toleranceCP || 3)) out.push({ panel: 'rh', level: 'warn', text: Math.abs(rest).toFixed(0) + ' jours de congés ' + (rest > 0 ? 'à placer' : 'en excès') });
+    if (Math.abs(rest) > (refAgenceSeuils(a).toleranceCP || 3)) out.push({ panel: 'rh', level: 'warn', text: Math.abs(rest).toFixed(0) + ' jours de congés ' + (rest > 0 ? 'encore à poser' : 'posés en trop (absentéisme modifié ?)') });
   }
   if (ca > 0) {
     if (net < 0) out.push({ panel: 'previsionnel', level: 'warn', text: (vueExploitation(a, role) ? 'Résultat d\'exploitation déficitaire (' : 'Budget déficitaire (') + euro(net) + ')' });

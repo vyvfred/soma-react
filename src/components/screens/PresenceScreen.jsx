@@ -216,8 +216,8 @@ export default function PresenceScreen() {
   const cpEtat = Math.abs(rest) <= tol
     ? <span style={{ color: 'var(--green, #2e7d6f)' }}>✓ Équilibré</span>
     : rest > tol
-      ? <span style={{ color: 'var(--orange, #c45300)' }}>⚠ {rest.toFixed(1)} J à placer</span>
-      : <span style={{ color: 'var(--orange, #c45300)' }}>⚠ {Math.abs(rest).toFixed(1)} J en excès</span>;
+      ? <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours acquis que de jours posés : relancez la répartition ou posez-les à la main">⚠ {rest.toFixed(1)} J encore à poser</span>
+      : <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours posés que de jours acquis, souvent parce que l'absentéisme a augmenté après la répartition : relancez la répartition ou retirez des congés">⚠ {Math.abs(rest).toFixed(1)} J posés en trop</span>;
 
   // ── Absentéisme ──
   const filled = a.sick.filter((v) => v !== null && v !== undefined);
@@ -255,79 +255,12 @@ export default function PresenceScreen() {
         </div>
       ) : null}
 
-      {/* ── Congés payés : répartition, enveloppes, compteur ── */}
-      {editable ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
-          <button onClick={distribuerCP} style={{ width: 'auto', margin: 0 }}>Répartir les congés automatiquement</button>
-          <button data-testid="reset-cp" onClick={resetCP} style={btnSec}>Remettre les CP à zéro</button>
-          <span className="hint" style={{ fontSize: 12 }}>SOMA place les congés en lissant la charge, dans le respect des enveloppes légales. Les mois validés ne sont pas modifiés.</span>
-        </div>
-      ) : null}
-
-      {a.cpEnveloppes && a.cpEnveloppes.length ? (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-          {a.cpEnveloppes.map((e, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 150, padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 12 }}>
-              <div style={{ color: 'var(--ink65)' }}>{e.nom} <span style={{ color: 'var(--ink30)' }}>({Math.round(e.pct * 100)}%)</span></div>
-              <div style={{ fontWeight: 700 }}>{e.budget.toFixed(1)} J</div>
-              {e.verrouille > 0 ? <div style={{ color: 'var(--ink30)' }}>dont {e.verrouille.toFixed(1)} verrouillés</div> : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {a.cpReliquat > 0.05 ? (
-        <div style={{ marginBottom: 12, padding: '8px 14px', background: 'rgba(196,83,0,.10)', border: '1px solid var(--orange, #c45300)', fontSize: 12, color: 'var(--orange, #c45300)' }}>
-          ⚠ {a.cpReliquat.toFixed(1)} jours n'ont pas pu être placés (capacité insuffisante sur certaines semaines).
-        </div>
-      ) : null}
-
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', marginBottom: 18, fontSize: 13 }}>
-        <span><b>Congés payés</b></span>
-        <span>Générés : <b>{gen.toFixed(1)} J</b></span>
-        <span>Planifiés : <b>{plan.toFixed(1)} J</b></span>
-        <span>Restant : <b style={{ color: Math.abs(rest) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{rest.toFixed(1)} J</b></span>
-        <span style={{ marginLeft: 'auto' }}>{cpEtat}</span>
-      </div>
-
-      {/* ── Mois par mois ── */}
-      <h3 style={{ fontSize: 15, margin: '6px 0 8px' }}>Mois par mois</h3>
-      <div data-testid="progression-mois" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, fontSize: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 160, height: 8, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-          <div style={{ width: (prog.nbVerrouilles / 12) * 100 + '%', height: '100%', background: 'var(--green, #2e7d6f)', transition: 'width .3s' }} />
-        </div>
-        <span><b>{prog.nbVerrouilles}/12</b> mois validés</span>
-        <span>CP restants à répartir sur les mois libres : <b>{fmt1(prog.cpLibres)} J</b></span>
-      </div>
-      <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
-        💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les absences payées ou non payées, puis <b>validez-le</b> : il passe en lecture seule
-        et SOMA répartit à nouveau les congés restants sur les mois encore libres. <Pourquoi k="conges" />
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
-        {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
-      </div>
-
-      {ouvert !== null ? (
-        <DetailMois a={a} m={ouvert} editable={editable}
-          onNav={(d) => ouvrir(Math.max(0, Math.min(11, ouvert + d)))}
-          onFermer={() => setOuvert(null)}
-          onSet={setSem}
-          onValider={() => valider(ouvert)}
-          onDeverrouiller={() => deverrouiller(ouvert)} />
-      ) : null}
-
-      {critiques.length ? (
-        <div data-testid="alertes-critiques" style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(196,83,0,.08)', border: '1px solid var(--orange, #c45300)', fontSize: 12 }}>
-          <b style={{ color: 'var(--orange, #c45300)' }}>⚠ {critiques.length} semaine{critiques.length > 1 ? 's' : ''} en tension critique</b>
-          <div style={{ marginTop: 6, color: 'var(--ink65)' }}>
-            {critiques.map((c) => 'S' + c.week + ' (' + c.mois + ', ' + Math.round(c.hs) + ' h)').join(' · ')}
-          </div>
-          <div style={{ marginTop: 6, color: 'var(--ink65)' }}>Évitez d'y poser des congés ou envisagez un renfort ponctuel.</div>
-        </div>
-      ) : null}
-
       {/* ── Absentéisme ── */}
-      <Repli titre="Taux de maladie & AT par mois" testid="repli-maladie">
+      <Repli titre="1. Absentéisme maladie & AT, mois par mois" testid="repli-maladie">
+        <p className="hint" style={{ fontSize: 12, margin: '6px 0 0' }}>
+          À saisir en premier : les congés payés acquis par l'équipe en dépendent (pas d'acquisition pendant les absences maladie).
+          Si vous le modifiez après avoir réparti les congés, le nombre de jours acquis change et le compteur des congés affiche un écart.
+        </p>
         <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
           <span>🩺</span>
           <div>
@@ -366,6 +299,83 @@ export default function PresenceScreen() {
           {editable && !aCible ? <button className="secondary" onClick={rebalance}>Rééquilibrer automatiquement</button> : null}
         </div>
       </Repli>
+
+      {/* ── Congés payés : répartition, enveloppes, compteur ── */}
+      <h3 style={{ fontSize: 15, margin: '18px 0 4px' }}>2. Congés payés</h3>
+      {editable ? (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
+          <button onClick={distribuerCP} style={{ width: 'auto', margin: 0 }}>Répartir les congés automatiquement</button>
+          <button data-testid="reset-cp" onClick={resetCP} style={btnSec}>Remettre les CP à zéro</button>
+          <span className="hint" style={{ fontSize: 12 }}>SOMA pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales. Les mois validés ne sont pas modifiés.</span>
+        </div>
+      ) : null}
+
+      {a.cpEnveloppes && a.cpEnveloppes.length ? (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          {a.cpEnveloppes.map((e, i) => (
+            <div key={i} style={{ flex: 1, minWidth: 150, padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 12 }}>
+              <div style={{ color: 'var(--ink65)' }}>{e.nom} <span style={{ color: 'var(--ink30)' }}>({Math.round(e.pct * 100)}%)</span></div>
+              <div style={{ fontWeight: 700 }}>{e.budget.toFixed(1)} J</div>
+              {e.verrouille > 0 ? <div style={{ color: 'var(--ink30)' }}>dont {e.verrouille.toFixed(1)} verrouillés</div> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {a.cpReliquat > 0.05 ? (
+        <div style={{ marginBottom: 12, padding: '8px 14px', background: 'rgba(196,83,0,.10)', border: '1px solid var(--orange, #c45300)', fontSize: 12, color: 'var(--orange, #c45300)' }}>
+          ⚠ {a.cpReliquat.toFixed(1)} jours n'ont pas pu être placés (capacité insuffisante sur certaines semaines).
+        </div>
+      ) : null}
+
+      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', marginBottom: 18, fontSize: 13 }}>
+        <span><b>Congés payés</b></span>
+        <span title="Jours de congés que l'équipe roulante acquiert sur 2027 : 25 jours par an au prorata du temps de travail et de la part roulante, moins les périodes de maladie">Acquis sur l'année : <b>{gen.toFixed(1)} J</b></span>
+        <span>Posés : <b>{plan.toFixed(1)} J</b></span>
+        <span>Reste à poser : <b style={{ color: Math.abs(rest) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{rest.toFixed(1)} J</b></span>
+        <span style={{ marginLeft: 'auto' }}>{cpEtat}</span>
+      </div>
+      <p className="hint" style={{ fontSize: 12, margin: '-10px 0 16px' }}>
+        La répartition automatique pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales
+        (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai). Vous pouvez ensuite déplacer des congés semaine par semaine :
+        le compteur suit vos choix. Si l'absentéisme change, relancez la répartition ou ajustez à la main.
+      </p>
+
+      {/* ── Mois par mois ── */}
+      <h3 style={{ fontSize: 15, margin: '6px 0 8px' }}>3. Mois par mois</h3>
+      <div data-testid="progression-mois" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, fontSize: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 160, height: 8, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+          <div style={{ width: (prog.nbVerrouilles / 12) * 100 + '%', height: '100%', background: 'var(--green, #2e7d6f)', transition: 'width .3s' }} />
+        </div>
+        <span><b>{prog.nbVerrouilles}/12</b> mois validés</span>
+        <span title="Jours acquis moins les jours déjà posés sur les mois validés : c'est ce que la répartition place sur les mois encore ouverts">Congés à poser sur les mois non validés : <b>{fmt1(prog.cpLibres)} J</b></span>
+      </div>
+      <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
+        💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les absences payées ou non payées, puis <b>validez-le</b> : il passe en lecture seule
+        et SOMA répartit à nouveau les congés restants sur les mois encore libres. <Pourquoi k="conges" />
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
+        {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
+      </div>
+
+      {ouvert !== null ? (
+        <DetailMois a={a} m={ouvert} editable={editable}
+          onNav={(d) => ouvrir(Math.max(0, Math.min(11, ouvert + d)))}
+          onFermer={() => setOuvert(null)}
+          onSet={setSem}
+          onValider={() => valider(ouvert)}
+          onDeverrouiller={() => deverrouiller(ouvert)} />
+      ) : null}
+
+      {critiques.length ? (
+        <div data-testid="alertes-critiques" style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(196,83,0,.08)', border: '1px solid var(--orange, #c45300)', fontSize: 12 }}>
+          <b style={{ color: 'var(--orange, #c45300)' }}>⚠ {critiques.length} semaine{critiques.length > 1 ? 's' : ''} en tension critique</b>
+          <div style={{ marginTop: 6, color: 'var(--ink65)' }}>
+            {critiques.map((c) => 'S' + c.week + ' (' + c.mois + ', ' + Math.round(c.hs) + ' h)').join(' · ')}
+          </div>
+          <div style={{ marginTop: 6, color: 'var(--ink65)' }}>Évitez d'y poser des congés ou envisagez un renfort ponctuel.</div>
+        </div>
+      ) : null}
 
       {/* ── HS 25 % / 50 % ── */}
       <Repli titre={<>Répartition des heures supplémentaires (25% / 50%) <Pourquoi k="hs50" /></>} testid="repli-hs50">

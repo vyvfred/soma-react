@@ -119,7 +119,7 @@ describe('Centre d\'attention', () => {
     const a = base();
     a.presence = {};
     const l = collecterAnomalies(a);
-    expect(l.some((x) => /congés à placer/.test(x.text) && x.panel === 'rh')).toBe(true);
+    expect(l.some((x) => /congés encore à poser/.test(x.text) && x.panel === 'rh')).toBe(true);
   });
 });
 
