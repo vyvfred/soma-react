@@ -36,6 +36,7 @@ export const PANELS_CG = [
 
 export const PANELS_DR = [
   ['validation', 'Budgets à valider'],
+  ['saisie', 'Saisir pour un REX'],
   ['consolidation', 'Consolidation région'],
   ['aide', 'Aide']
 ];

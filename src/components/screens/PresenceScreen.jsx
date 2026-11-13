@@ -1,3 +1,4 @@
+import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows } from '../../domain/calculations.js';
@@ -120,9 +121,9 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
               <tr key={s.week} style={{ textAlign: 'right' }}>
                 <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b></td>
                 <td style={cell}>{Math.round(s.base)}</td>
-                <td style={cell}><input data-testid={'cp-' + s.week} type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).cp || ''} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value)} style={{ width: 56 }} /></td>
-                <td style={cell}><input type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).otherPaid || ''} placeholder="0" title="Absences payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value)} style={{ width: 56 }} /></td>
-                <td style={cell}><input type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).other || ''} placeholder="0" title="Absences non payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value)} style={{ width: 56 }} /></td>
+                <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).cp || ''} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value)} style={{ width: 56 }} /></td>
+                <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={(a.presence[s.week] || {}).otherPaid || ''} placeholder="0" title="Absences payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value)} style={{ width: 56 }} /></td>
+                <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.other') ? '1' : undefined} min="0" step="0.5" value={(a.presence[s.week] || {}).other || ''} placeholder="0" title="Absences non payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value)} style={{ width: 56 }} /></td>
                 <td style={cell}>{Math.round(s.mal)}</td>
                 <td style={cell}>{Math.round(s.av)}</td>
                 <td style={cell}>{Math.round(s.besoin)}</td>
@@ -349,7 +350,7 @@ export default function PresenceScreen() {
                 <td style={{ padding: '4px 8px' }}><b>Maladie &amp; AT %</b></td>
                 {a.sick.map((v, i) => (
                   <td key={i} style={{ padding: '2px 4px' }}>
-                    <input type="number" value={v ?? ''} placeholder="—" disabled={!editable} onChange={setSick(i)} style={{ width: 52 }} />
+                    <input type="number" data-saisie-dr={estSaisieDR(a, 'sick.' + i) ? '1' : undefined} value={v ?? ''} placeholder="—" disabled={!editable} onChange={setSick(i)} style={{ width: 52 }} />
                   </td>
                 ))}
                 <td className="num" style={{ padding: '4px 8px' }}><span className={aCible ? 'ok' : 'warn'}>{pct(avg)}</span></td>
@@ -382,7 +383,7 @@ export default function PresenceScreen() {
                 <td style={{ padding: '4px 8px' }}><b>% HS à +50%</b></td>
                 {hs50.map((v, i) => (
                   <td key={i} style={{ padding: '2px 4px' }}>
-                    <input data-testid={'hs50-' + i} type="number" min="0" max="100" value={v ?? ''} placeholder="0" disabled={!editable} onChange={setHS50(i)} style={{ width: 52 }} />
+                    <input data-testid={'hs50-' + i} data-saisie-dr={estSaisieDR(a, 'hs50.' + i) ? '1' : undefined} type="number" min="0" max="100" value={v ?? ''} placeholder="0" disabled={!editable} onChange={setHS50(i)} style={{ width: 52 }} />
                   </td>
                 ))}
                 <td className="num" style={{ padding: '4px 8px' }}><b>{pct(moy50)}</b></td>
@@ -422,7 +423,7 @@ export default function PresenceScreen() {
                 <tr key={l.week}>
                   <td style={cell}><b>S{l.week}</b> <span style={{ color: 'var(--ink30)' }}>{M[l.mois] || ''}</span></td>
                   {[['repasRoulant', l.rR], ['repasNonRoulant', l.rNR], ['idjfRoulant', l.iR], ['idjfNonRoulant', l.iNR]].map(([k, v]) => (
-                    <td key={k} style={cell}><input data-testid={k + '-' + l.week} type="number" min="0" value={v || ''} placeholder="0" disabled={!editable} onChange={(e) => setMontant(k, l.week, e.target.value)} style={{ width: 80 }} /></td>
+                    <td key={k} style={cell}><input data-testid={k + '-' + l.week} data-saisie-dr={estSaisieDR(a, k + '.' + l.week) ? '1' : undefined} type="number" min="0" value={v || ''} placeholder="0" disabled={!editable} onChange={(e) => setMontant(k, l.week, e.target.value)} style={{ width: 80 }} /></td>
                   ))}
                   <td style={{ ...cell, textAlign: 'right', fontWeight: l.total ? 700 : 400 }}>{l.total ? euro(l.total) : '—'}</td>
                 </tr>
@@ -454,7 +455,7 @@ export default function PresenceScreen() {
               {imp.lignes.map((l) => (
                 <tr key={l.week}>
                   <td style={cell}><b>S{l.week}</b> <span style={{ color: 'var(--ink30)' }}>{M[l.mois] || ''}</span></td>
-                  <td style={cell}><input data-testid={'hsimp-' + l.week} type="number" min="0" step="0.5" value={l.hs || ''} placeholder="0" disabled={!editable} onChange={(e) => setMontant('hsImproductif', l.week, e.target.value)} style={{ width: 64 }} /></td>
+                  <td style={cell}><input data-testid={'hsimp-' + l.week} data-saisie-dr={estSaisieDR(a, 'hsImproductif.' + l.week) ? '1' : undefined} type="number" min="0" step="0.5" value={l.hs || ''} placeholder="0" disabled={!editable} onChange={(e) => setMontant('hsImproductif', l.week, e.target.value)} style={{ width: 64 }} /></td>
                   <td style={{ ...cell, textAlign: 'right' }}>{l.cout ? euro(l.cout) : '—'}</td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
 import { appliquerRefCG, descriptionCopie } from '../domain/refCG.js';
+import { marquerSaisiesDR } from '../domain/saisiesDR.js';
 import { useAuth } from './AuthContext.jsx';
 import { toast } from '../components/Toast.jsx';
 import { estModifiable, cibleDuplication, agenceDeVersion, copieVersion, comparerVersions, VERSION_LABELS } from '../domain/versions.js';
@@ -13,7 +14,7 @@ const BudgetContext = createContext(null);
 const SAVE_DEBOUNCE_MS = 900;
 const DEFAULT_META = () => ({ activeVersion: 'v1', submittedVersion: null, descriptions: { v1: '', v2: '', v3: '' } });
 
-export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
+export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = false, children }) {
   const [agency, setAgency] = useState(null);
   const [statut, setStatut] = useState('brouillon');
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,8 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
   const inFlightRef = useRef(Promise.resolve()); // sérialise les sauvegardes
   const pendingRef = useRef(null);               // dernière agence modifiée non encore sauvegardée
   const agencyRef = useRef(null);
+  // Dernier état connu, pour repérer ce que l'utilisateur vient de modifier (marques des saisies du DR)
+  const snapRef = useRef(null);
   const { profile } = useAuth();
   const saisieCGRef = useRef(false);
   saisieCGRef.current = !!(profile && ['cg', 'admin'].includes(profile.role));
@@ -74,6 +77,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
             res.distantes.forEach((k) => { if (J(prev[k]) === J(avant[k])) next[k] = JSON.parse(JSON.stringify(res.version[k] === undefined ? null : res.version[k])); });
             return next;
           };
+          snapRef.current = null;
           setAgency((prev) => { const n = patch(prev); if (pendingRef.current) pendingRef.current = patch(pendingRef.current); return n; });
           toast('Budget mis à jour avec les modifications enregistrées par un autre utilisateur', 'info');
         }
@@ -124,7 +128,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
           res.agency = agenceDeVersion(agenceNom, res.data, sv);
           res.activeVersion = sv;
         }
-        setAgency(res.agency);
+        setAgency(res.agency);        snapRef.current = null;
         // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)
         // = la version BRUTE lue en base (avant les compléments par défaut de migrateAgency) :
         // sinon ces compléments passeraient pour des modifications faites par quelqu'un d'autre.
@@ -163,19 +167,23 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     if (!editable) return;
     setAgency((prev) => {
       if (!prev) return prev;
+      const avant = snapRef.current || JSON.parse(JSON.stringify(prev));
       const next = mutator({ ...prev });
+      marquerSaisiesDR(avant, next, saisieDR);
+      snapRef.current = JSON.parse(JSON.stringify(next));
       pendingRef.current = next;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => persist(next), SAVE_DEBOUNCE_MS);
       return next;
     });
-  }, [persist, editable]);
+  }, [persist, editable, saisieDR]);
 
   // Données écrites par le CG pendant que l'agence est ouverte : mises à jour en mémoire,
   // sinon la sauvegarde automatique suivante réécrirait l'ancienne version.
   // brut = true : simple remplacement de champs (ex. équipe importée), sans verrou CG.
   const applyExternal = useCallback((nom, data, brut = false) => {
     if (!nom || nom !== agenceNom) return;
+    snapRef.current = null;
     setAgency((prev) => {
       if (!prev) return prev;
       const next = brut ? { ...prev, ...data } : appliquerRefCG({ ...prev }, data);
@@ -197,7 +205,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
     versionRef.current = v;
     setActiveVersion(v);
     majMeta({ ...(metaRef.current || DEFAULT_META()), activeVersion: v });
-    setAgency(a);
+    snapRef.current = null;    setAgency(a);
     const remplie = !!(data.versions && data.versions[v] && Object.keys(data.versions[v]).length);
     baseRef.current = remplie ? JSON.parse(JSON.stringify(data.versions[v])) : null;
     metaBaseRef.current = data.meta ? JSON.parse(JSON.stringify(data.meta)) : null;
@@ -271,7 +279,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, children }) {
   }, [saveNow, majMeta]);
 
   const value = {
-    agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal,
+    agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal, saisieDR,
     budgetId, activeVersion, meta, versionsRemplies, validation,
     switchVersion, duplicateVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush, recharger
   };

@@ -1,3 +1,4 @@
+import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { genCal } from '../../domain/calculations.js';
 import { euro } from '../../domain/format.js';
@@ -88,7 +89,7 @@ export default function RefsScreen() {
                       <td style={{ padding: '4px 8px', whiteSpace: 'nowrap' }}>{dt.label}</td>
                       {M.map((_, m) => (
                         <td key={m} style={{ padding: '2px 3px' }}>
-                          <input type="number" value={(refs[m] && refs[m][dt.key]) ?? ''} placeholder="—" disabled={!editable}
+                          <input type="number" data-saisie-dr={estSaisieDR(a, 'refs.' + act.key + '.' + m + '.' + dt.key) ? '1' : undefined} value={(refs[m] && refs[m][dt.key]) ?? ''} placeholder="—" disabled={!editable}
                             onChange={(e) => setRef(act.key, m, dt.key, e.target.value)} style={{ width: 56 }} />
                         </td>
                       ))}

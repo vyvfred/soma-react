@@ -151,3 +151,10 @@
 .tableColFixe th:first-child, .prev-table th:first-child { position: sticky; left: 0; z-index: 3; background: var(--bg2); }
 .prev-table td:first-child { min-width: 210px; }
 .prev-table tr.subtotal td:first-child { background: linear-gradient(rgba(71,38,131,.15), rgba(71,38,131,.15)), var(--card) !important; }
+
+/* Saisie du DR à la place du REX : valeurs saisies par le DR (nov. 2026) */
+[data-saisie-dr="1"] { color: #B4430B !important; background: #FFF1E6 !important; border-color: #F08A3C !important; font-weight: 700; box-shadow: inset 3px 0 0 #F08A3C; }
+.legendeDR { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink65, #555); }
+.legendeDR i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: #FFF1E6; border: 2px solid #F08A3C; }
+.bandeauDR { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 14px; background: #B4430B; color: #fff; font-size: 13px; font-weight: 600; flex-wrap: wrap; }
+.bandeauDR button { width: auto; margin: 0; padding: 4px 12px; font-size: 12px; background: #fff; color: #B4430B; border: none; font-weight: 700; }

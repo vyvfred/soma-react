@@ -1,3 +1,4 @@
+import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { objectifInsight, coherenceCapacite } from '../../domain/objectifInsight.js';
@@ -56,7 +57,7 @@ export default function ObjectifScreen() {
   const ref = (field, label, placeholder, help) => (
     <div>
       <label style={lbl} htmlFor={'obj-' + field}>{label}{help ? <span title={help}> ⓘ</span> : null}</label>
-      <input id={'obj-' + field} type="text" inputMode="decimal" placeholder={placeholder} value={a[field] ?? ''} onChange={nombre(field)}
+      <input id={'obj-' + field} data-saisie-dr={estSaisieDR(a, field) ? '1' : undefined} type="text" inputMode="decimal" placeholder={placeholder} value={a[field] ?? ''} onChange={nombre(field)}
         disabled={!editable || verrouCG} title={verrouCG ? 'Verrouillé par le contrôleur de gestion' : ''} style={verrouCG ? { background: 'var(--bg2)', color: 'var(--ink65)' } : undefined} />
     </div>
   );
@@ -76,7 +77,7 @@ export default function ObjectifScreen() {
         <label style={{ flex: 1, minWidth: 220 }}>
           <span style={{ display: 'block', fontSize: 12, color: 'var(--ink65)', marginBottom: 6 }}>Objectif de chiffre d'affaires</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="text" inputMode="numeric" placeholder="0" autoComplete="off" value={a.targetCA ?? ''} onChange={nombre('targetCA')} disabled={!editable} style={{ flex: 1 }} />
+            <input type="text" inputMode="numeric" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetCA') ? '1' : undefined} value={a.targetCA ?? ''} onChange={nombre('targetCA')} disabled={!editable} style={{ flex: 1 }} />
             <span style={{ color: 'var(--ink65)' }}>€</span>
           </span>
         </label>
@@ -85,7 +86,7 @@ export default function ObjectifScreen() {
             TXR cible <span className="objKpiHelp" title="Taux de recette par heure : chiffre d'affaires ÷ heures de conduite. Généralement proche du TXR réalisé en 2026.">?</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" value={a.targetTXR ?? ''} onChange={nombre('targetTXR')} disabled={!editable} style={{ flex: 1 }} />
+            <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetTXR') ? '1' : undefined} value={a.targetTXR ?? ''} onChange={nombre('targetTXR')} disabled={!editable} style={{ flex: 1 }} />
             <span style={{ color: 'var(--ink65)' }}>€/h</span>
           </span>
         </label>
@@ -124,7 +125,7 @@ export default function ObjectifScreen() {
           {ref('targetAbsRate', 'Absentéisme cible % (maladie)', 'ex : 7', 'Taux d\'absence (maladie + accidents du travail) que vous anticipez pour 2027, en pourcentage. Référence réseau : environ 8%.')}
           <div>
             <label style={lbl} htmlFor="obj-zone">Zone vacances scolaires</label>
-            <select id="obj-zone" value={a.schoolZone || 'B'} onChange={zone} disabled={!editable}>
+            <select id="obj-zone" data-saisie-dr={estSaisieDR(a, 'schoolZone') ? '1' : undefined} value={a.schoolZone || 'B'} onChange={zone} disabled={!editable}>
               <option>A</option><option>B</option><option>C</option>
             </select>
           </div>
@@ -134,7 +135,7 @@ export default function ObjectifScreen() {
       <details className="objCollapse">
         <summary>Perspectives &amp; contexte 2027 <span style={{ color: 'var(--ink30)', fontWeight: 400 }}>(optionnel)</span></summary>
         <div className="objCollapseBody">
-          <textarea rows={5} value={a.perspectives || ''} onChange={texte('perspectives')} disabled={!editable} style={{ width: '100%' }}
+          <textarea rows={5} data-saisie-dr={estSaisieDR(a, 'perspectives') ? '1' : undefined} value={a.perspectives || ''} onChange={texte('perspectives')} disabled={!editable} style={{ width: '100%' }}
             placeholder="Ex : Renouvellement du contrat EHPAD en janvier, recrutement d'un CDD saisonnier prévu en juillet, travaux de locaux au T2..." />
         </div>
       </details>

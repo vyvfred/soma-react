@@ -21,6 +21,7 @@ import RefsScreen from './RefsScreen.jsx';
 import CalScreen from './CalScreen.jsx';
 import AffectationScreen from './AffectationScreen.jsx';
 import VariablesDecScreen from './VariablesDecScreen.jsx';
+import SaisieDRScreen from './SaisieDRScreen.jsx';
 
 function PrevisionnelCgScreen() { return PrevisionnelScreen({ vueCG: true }); }
 
@@ -45,7 +46,8 @@ export const SCREENS = {
   admin: AdminScreen,
   refs: RefsScreen,
   cal: CalScreen,
-  variablesdec: VariablesDecScreen
+  variablesdec: VariablesDecScreen,
+  saisie: SaisieDRScreen
 };
 
 export function screenFor(panelId) {

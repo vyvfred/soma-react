@@ -26,9 +26,9 @@ describe('FAQ — intégrité des données', () => {
   });
 
   it('effectifs de questions attendus par profil', () => {
-    expect(FAQ.rex).toHaveLength(30); // parcours des profils (nov. 2026) : + versions, autres absences, calendrier, résultat d'exploitation, charges, masse salariale
+    expect(FAQ.rex).toHaveLength(31); // + valeurs en orange (saisie du DR), parcours des profils (nov. 2026) : + versions, autres absences, calendrier, résultat d'exploitation, charges, masse salariale
     expect(FAQ.cg).toHaveLength(35); // + % du CA par mois, + quotes-parts siège/régulation, + réimport du registre, calendrier scolaire, structures, IS et participation
-    expect(FAQ.valideur).toHaveLength(17); // + consolidation, agences non rattachées, résultat net, écrans du DF
+    expect(FAQ.valideur).toHaveLength(18); // + saisir à la place d'un REX, + consolidation, agences non rattachées, résultat net, écrans du DF
     expect(FAQ.admin).toHaveLength(7);
     expect(FAQ.commun).toHaveLength(3); // mot de passe, statuts, contacts
   });

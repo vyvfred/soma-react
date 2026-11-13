@@ -1,3 +1,4 @@
+import { aDesSaisiesDR } from '../domain/saisiesDR.js';
 import { useEffect, useMemo, useState } from 'react';
 import { PANELS_REX } from '../config/panels.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -85,6 +86,7 @@ function VersionChip() {
       <b>{agenceNom}</b>
       {budgetId ? <span data-testid="version-chip" style={{ padding: '2px 8px', borderRadius: 20, background: c.bg, color: c.fg, fontWeight: 700 }}>{VERSION_LABELS[activeVersion]}</span> : null}
       {etat ? <span style={{ color: saveStatus === 'error' ? 'var(--orange)' : 'var(--ink30)' }}>{etat}</span> : null}
+      {aDesSaisiesDR(agency) ? <span className="legendeDR" data-testid="legende-dr" title="Valeurs saisies par le directeur régional, tant que le REX ne les a pas modifiées"><i /> saisie du DR</span> : null}
     </span>
   );
 }
@@ -109,10 +111,12 @@ export default function AppShell() {
   const roleNav = profile.role === 'cg' && vueRex ? 'rex' : profile.role;
   // Mode consultation : un valideur parcourt tous les écrans du REX en lecture seule (port de consulterBudget)
   const [consult, setConsult] = useState(null);
+  // Saisie du DR à la place du REX : agence ouverte en écriture, saisies marquées en orange
+  const [saisiePour, setSaisiePour] = useState(null);
   const navRole = useMemo(() => navForRole(roleNav), [roleNav]);
   const { panels, landing, group } = consult
     ? { panels: PANELS_REX.filter((p) => p[0] !== 'aide'), landing: 'finance', group: 'Consultation — ' + consult }
-    : navRole;
+    : saisiePour ? { panels: PANELS_REX, landing: 'objectif', group: 'Saisie pour le REX — ' + saisiePour } : navRole;
   const [active, setActive] = useState(landing);
   const basculerVue = (rex) => { setVueRex(rex); setActive(rex ? 'finance' : 'cgdash'); };
   // Changement de rôle simulé : revenir à l'écran d'atterrissage du rôle
@@ -120,7 +124,7 @@ export default function AppShell() {
 
   // Agence courante : fixe pour le REX (son agence), sélectionnable pour le CG/DF.
   const [cgAgence, setCgAgence] = useState(null);
-  const activeAgence = consult || profile.agence || cgAgence;
+  const activeAgence = consult || saisiePour || profile.agence || cgAgence;
   const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex'].includes(profile.role);
 
   // Pastille du menu « Budgets à valider » : nombre de budgets qui attendent la décision de l'utilisateur
@@ -142,15 +146,22 @@ export default function AppShell() {
   return (
     <NavContext.Provider value={(panel, agence) => {
       if (panel === '__consulter') { setConsult(agence); setActive('finance'); return; }
+      if (panel === '__saisir') { setSaisiePour(agence); setActive('objectif'); return; }
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
-    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult}>
+    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult} saisieDR={!!saisiePour}>
     <div className="soma-shell">
       {consult ? (
         <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>
           <span className="consultBannerDot" />
           <span>Mode consultation — lecture seule</span>
           <button onClick={() => { setConsult(null); setActive('validation'); }}>↩ Revenir à la validation</button>
+        </div>
+      ) : null}
+      {saisiePour ? (
+        <div className="bandeauDR" data-testid="bandeau-dr">
+          <span>✎ Vous saisissez le budget de {saisiePour} à la place du REX : vos saisies apparaissent en orange</span>
+          <button onClick={() => { setSaisiePour(null); setActive('saisie'); }}>↩ Terminer la saisie</button>
         </div>
       ) : null}
       {simRole ? (

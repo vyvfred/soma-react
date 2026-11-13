@@ -1,3 +1,4 @@
+import { champSaisiDR } from '../../domain/saisiesDR.js';
 import { partRoulant, estRoulantPart } from '../../domain/calculations.js';
 import { useRef, useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
@@ -127,24 +128,24 @@ export default function EquipeScreen() {
               return (
                 <tr key={i}>
                   <td style={td}>
-                    <input type="text" value={nom} disabled={!editable} onChange={(ev) => setEmp(i, 'name', ev.target.value)} style={{ width: 150 }} />
+                    <input data-saisie-dr={champSaisiDR(e, 'name') ? '1' : undefined} type="text" value={nom} disabled={!editable} onChange={(ev) => setEmp(i, 'name', ev.target.value)} style={{ width: 150 }} />
                     {isCddSais ? <span style={{ fontSize: 9, background: 'var(--orange, #c45300)', color: '#fff', padding: '1px 4px', marginLeft: 4 }}>CDD</span> : null}
                   </td>
                   <td style={td}>
-                    <select value={e.qual} disabled={!editable} onChange={(ev) => setEmp(i, 'qual', ev.target.value)} style={{ width: 90 }}>
+                    <select data-saisie-dr={champSaisiDR(e, 'qual') ? '1' : undefined} value={e.qual} disabled={!editable} onChange={(ev) => setEmp(i, 'qual', ev.target.value)} style={{ width: 90 }}>
                       {QUALS.map((q) => <option key={q} value={q}>{q}</option>)}
                     </select>
                   </td>
                   <td style={td}>
-                    <select value={contrat} disabled={!editable} onChange={(ev) => setEmp(i, 'contract', ev.target.value)} style={{ width: 74 }}>
+                    <select data-saisie-dr={champSaisiDR(e, 'contract') ? '1' : undefined} value={contrat} disabled={!editable} onChange={(ev) => setEmp(i, 'contract', ev.target.value)} style={{ width: 74 }}>
                       {CONTRACTS.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
-                  <td style={td}><input type="number" value={e.hours || 0} disabled={!editable} onChange={(ev) => setEmp(i, 'hours', ev.target.value)} style={{ width: 60 }} /></td>
-                  <td style={td}><input type="number" value={Math.round(partRoulant(e) * 100)} min="0" max="100" disabled={!editable} onChange={(ev) => setEmp(i, 'pctRoulant', ev.target.value)} style={{ width: 55 }} />%</td>
-                  <td style={td}><input type="number" value={e.joursSem || 5} min="1" max="7" disabled={!editable} onChange={(ev) => setEmp(i, 'joursSem', ev.target.value)} style={{ width: 50 }} /></td>
-                  <td style={td}><input type="date" value={e.dateEntree || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateEntree', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
-                  <td style={td}><input type="date" value={e.dateSortie || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateSortie', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
+                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'hours') ? '1' : undefined} type="number" value={e.hours || 0} disabled={!editable} onChange={(ev) => setEmp(i, 'hours', ev.target.value)} style={{ width: 60 }} /></td>
+                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'pctRoulant') ? '1' : undefined} type="number" value={Math.round(partRoulant(e) * 100)} min="0" max="100" disabled={!editable} onChange={(ev) => setEmp(i, 'pctRoulant', ev.target.value)} style={{ width: 55 }} />%</td>
+                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'joursSem') ? '1' : undefined} type="number" value={e.joursSem || 5} min="1" max="7" disabled={!editable} onChange={(ev) => setEmp(i, 'joursSem', ev.target.value)} style={{ width: 50 }} /></td>
+                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'dateEntree') ? '1' : undefined} type="date" value={e.dateEntree || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateEntree', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
+                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'dateSortie') ? '1' : undefined} type="date" value={e.dateSortie || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateSortie', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
                   <td style={{ ...td, textAlign: 'right' }} className="num">{etp}</td>
                   <td style={td}>
                     <button className="danger" disabled={!editable} onClick={() => delEmp(i)} style={{ padding: '4px 8px', fontSize: 11 }}>✕</button>
