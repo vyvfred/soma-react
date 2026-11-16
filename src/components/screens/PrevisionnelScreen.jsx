@@ -1,6 +1,7 @@
+import { annuel, montant } from '../../domain/memoSIG.js';
 import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { ann, amount, isRoulant, M, lignesSIG, resultatAffiche } from '../../domain/calculations.js';
+import { isRoulant, M, lignesSIG, resultatAffiche } from '../../domain/calculations.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { euro, pct } from '../../domain/format.js';
 
@@ -55,19 +56,19 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   if (error) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
   if (!a) return <div className="card"><h2>Prévisionnel — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
-  const ca = ann(a, "Chiffre d'affaires");
+  const ca = annuel(a, "Chiffre d'affaires");
   const res = resultatAffiche(a, role);
-  const net = vueCG ? ann(a, 'RESULTAT NET') : res.val;
-  const ms = ann(a, 'Charges de personnel');
-  const ebe = ann(a, "EXCEDENT BRUT D'EXPLOITATION");
+  const net = vueCG ? annuel(a, 'RESULTAT NET') : res.val;
+  const ms = annuel(a, 'Charges de personnel');
+  const ebe = annuel(a, "EXCEDENT BRUT D'EXPLOITATION");
   const tauxMS = ca ? (ms / ca) * 100 : 0;
 
-  const rexR = ann(a, "RESULTAT D'EXPLOITATION");
+  const rexR = annuel(a, "RESULTAT D'EXPLOITATION");
   // Vue CG (port de renderREX) : 6 indicateurs du SIG
   const kpis = vueCG ? [
     { label: 'CA', value: euro(ca) },
     { label: 'Charges personnel', value: euro(ms), note: pct(tauxMS) },
-    { label: 'VA', value: euro(ann(a, 'VALEUR AJOUTEE')) },
+    { label: 'VA', value: euro(annuel(a, 'VALEUR AJOUTEE')) },
     { label: 'EBE', value: euro(ebe) },
     { label: 'Résultat d\'exploitation', value: euro(rexR), note: pct(ca ? (rexR / ca) * 100 : 0) },
     { label: 'Résultat net', value: euro(net), note: pct(ca ? (net / ca) * 100 : 0) }
@@ -110,14 +111,14 @@ export default function PrevisionnelScreen({ vueCG = false }) {
           </thead>
           <tbody>
             {lignesSIG(a, role).map((r) => {
-              const total = ann(a, r.label);
+              const total = annuel(a, r.label);
               const pctCA = ca ? pct((total / ca) * 100) : '—';
               const zero = (v) => (!v || v === 0 ? ' zeroVal' : '');
               return (
                 <tr key={r.label} className={r.type === 'subtotal' ? 'subtotal' : ''}>
                   {estDetailSIG(r.label) ? <td style={{ paddingLeft: 18, fontStyle: 'italic' }}>{libLigneSIG(r.label)}</td> : <td><b>{r.label}</b></td>}
                   {M.map((_, m) => {
-                    const v = amount(a, r.label, m);
+                    const v = montant(a, r.label, m);
                     return <td key={m} className={'num locked' + zero(v)}>{euro(v)}</td>;
                   })}
                   <td className={'num locked' + zero(total)}><b>{euro(total)}</b></td>

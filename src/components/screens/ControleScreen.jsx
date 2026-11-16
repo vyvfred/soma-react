@@ -1,5 +1,6 @@
+import { annuel, montant } from '../../domain/memoSIG.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { chargesSummary, auditAlerts, ann } from '../../domain/calculations.js';
+import { chargesSummary, auditAlerts } from '../../domain/calculations.js';
 import { euro, pct } from '../../domain/format.js';
 import { alertesParametrage } from '../../domain/refCG.js';
 
@@ -17,8 +18,8 @@ export default function ControleScreen() {
 
   const s = chargesSummary(a);
   const ca = s.ca;
-  const rex = ann(a, "RESULTAT D'EXPLOITATION");
-  const net = ann(a, 'RESULTAT NET');
+  const rex = annuel(a, "RESULTAT D'EXPLOITATION");
+  const net = annuel(a, 'RESULTAT NET');
   const items = [
     ['Charges fixes', euro(s.fixed), pct(ca ? s.fixed / ca * 100 : 0)],
     ['Charges variables', euro(s.variable), pct(ca ? s.variable / ca * 100 : 0)],

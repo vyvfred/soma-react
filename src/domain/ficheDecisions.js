@@ -1,9 +1,10 @@
+import { annuel, montant } from './memoSIG.js';
 // Fiche des décisions opérationnelles du REX, lue par le valideur — port fidèle de
 // ficheDecisions / ficheDecisionsHTML. Chaque décision est jugée par rapport à une
 // référence fiable : médiane réseau, historique de l'agence, absentéisme RH 2026.
 // Différence assumée : les médianes réseau portent sur tous les budgets chargés
 // (le mono-fichier ne voyait que les agences ouvertes dans la session).
-import { ann, isRoulant, hsTot, coutDuChoixREX } from './calculations.js';
+import { isRoulant, hsTot, coutDuChoixREX } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const median = (arr) => { const s = arr.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -12,11 +13,11 @@ const hsAn = (d) => { try { return hsTot(d).hs; } catch (e) { return 0; } };
 
 // autres : données (agences) des autres budgets du réseau
 export function ficheDecisions(d, autres = []) {
-  const ca = ann(d, "Chiffre d'affaires") || 0;
+  const ca = annuel(d, "Chiffre d'affaires") || 0;
   const histCA = +d.histCA || 0;
   const targetCA = +d.targetCA || ca || 0;
-  const net = ann(d, 'RESULTAT NET') || 0;
-  const ms = ann(d, 'Charges de personnel') || 0;
+  const net = annuel(d, 'RESULTAT NET') || 0;
+  const ms = annuel(d, 'Charges de personnel') || 0;
   const tauxMS = ca ? Math.round((ms / ca) * 100) : 0;
   const nbRoulants = nbRoul(d);
   const absRef = d.targetAbsRate !== null && d.targetAbsRate !== undefined && d.targetAbsRate !== '' ? +d.targetAbsRate : null;
@@ -31,7 +32,7 @@ export function ficheDecisions(d, autres = []) {
   const croissances = [], hsSals = [];
   autres.forEach((a) => {
     if (!a || !a.cal || !a.cal.length) return;
-    const aCA = ann(a, "Chiffre d'affaires") || 0, aHist = +a.histCA || 0;
+    const aCA = annuel(a, "Chiffre d'affaires") || 0, aHist = +a.histCA || 0;
     if (aHist > 0 && aCA > 0) croissances.push(((aCA - aHist) / aHist) * 100);
     const r = nbRoul(a);
     if (r > 0) hsSals.push(hsAn(a) / r / 52);

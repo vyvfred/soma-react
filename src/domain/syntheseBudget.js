@@ -1,15 +1,16 @@
+import { annuel, montant } from './memoSIG.js';
 // Synthèse du budget — fonctions PURES, port de renderSynthese, renderCoutChoix,
 // renderEnveloppesCP et renderDashboard (graphiques et ratios).
-import { ann, hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, resultatAffiche, vueExploitation } from './calculations.js';
+import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, resultatAffiche, vueExploitation } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const VALIDEURS = ['dr', 'df', 'dg', 'pdg'];
 
 export function syntheseBudget(a, role = 'rex') {
-  const ca = ann(a, "Chiffre d'affaires");
+  const ca = annuel(a, "Chiffre d'affaires");
   const res = resultatAffiche(a, role);
   const net = res.val;
-  const ms = ann(a, 'Charges de personnel');
+  const ms = annuel(a, 'Charges de personnel');
   const caObj = +a.targetCA || 0;
   const ecart = ca - caObj;
   const tauxMS = ca ? (ms / ca) * 100 : 0;
@@ -81,10 +82,10 @@ export function indicateursDetailles(a, role) {
   const expl = vueExploitation(a, role);
   const ca2026 = +a.histCA || 0;
   const caObj = +a.targetCA || 0;
-  const caBudget = ann(a, "Chiffre d'affaires");
-  const ms = ann(a, 'Charges de personnel');
-  const rex = ann(a, "RESULTAT D'EXPLOITATION");
-  const net = ann(a, 'RESULTAT NET');
+  const caBudget = annuel(a, "Chiffre d'affaires");
+  const ms = annuel(a, 'Charges de personnel');
+  const rex = annuel(a, "RESULTAT D'EXPLOITATION");
+  const net = annuel(a, 'RESULTAT NET');
   const t = hsTot(a);
   const hsCost = t.hs * (+a.costHour || 0) * coefHSMoyen(a);
   const r = (v) => (caBudget ? (v / caBudget) * 100 : 0);
