@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { syntheseBudget, coutChoix, bilanEnveloppesCP, indicateursDetailles } from '../../domain/syntheseBudget.js';
 import { euro, pct } from '../../domain/format.js';
 import { Pourquoi } from '../Vision.jsx';
+import { totauxCalendrier } from '../../domain/calTotaux.js';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -26,6 +27,29 @@ function Barres({ barres }) {
           <div className="barLabel">{b.label}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// CA mensuel budgété avec, sous chaque mois, les jours ouvrés et les jours de vacances scolaires (VS)
+const kEuro = (v) => { v = +v || 0; return Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(2).replace('.', ',') + ' M€' : Math.round(v / 1000) + ' k€'; };
+function CAMensuel({ a, caMensuel, max }) {
+  const t = totauxCalendrier(a.cal).mois;
+  return (
+    <div className="chartBox" style={{ gridColumn: '1/-1' }} data-testid="ca-mensuel">
+      <div className="chartTitle">CA mensuel budgété, jours ouvrés et jours de vacances scolaires</div>
+      <div className="caMois">
+        {caMensuel.map((x) => (
+          <div key={x.mois} className="caMoisCol" title={x.mois + ' : ' + euro(x.value)}>
+            <div className="caMoisVal">{kEuro(x.value)}</div>
+            <div className="caMoisBar" style={{ height: Math.max(2, (x.value / max) * 170) }} />
+          </div>
+        ))}
+      </div>
+      <div className="caMoisPied">
+        {caMensuel.map((x, i) => <div key={x.mois}><b>{x.mois}</b>{t[i].ouvres} ouv.<br />{t[i].vacances} VS</div>)}
+      </div>
+      <div className="caMoisLeg">ouv. = jours ouvrés hors vacances scolaires · VS = jours de semaine en vacances scolaires (zone {a.schoolZone || '?'})</div>
     </div>
   );
 }
@@ -110,18 +134,13 @@ export default function SyntheseScreen() {
             </div>
             <div className="chartBox"><div className="chartTitle">Résultats</div><Barres barres={ind.barresResultat} /></div>
             <div className="chartBox">
-              <div className="chartTitle">CA mensuel budgété</div>
-              <div className="lineMini">
-                {ind.caMensuel.map((x) => <div key={x.mois} className="lineBar" style={{ height: Math.max(2, (x.value / maxMois) * 180) }} title={x.mois + ' : ' + euro(x.value)} />)}
-              </div>
-            </div>
-            <div className="chartBox">
               <div className="chartTitle">Ratios clés</div>
               {ind.ratios.map((r) => {
                 const v = Math.max(0, Math.min(100, Number(r.value) || 0));
                 return <div className="ratioRow" key={r.label}><b>{r.label}</b><div className="gauge"><div className="gaugeFill" style={{ width: v + '%' }} /></div><span>{pct(v)}</span></div>;
               })}
             </div>
+            <CAMensuel a={a} caMensuel={ind.caMensuel} max={maxMois} />
           </div>
 
           {env ? (
