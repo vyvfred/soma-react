@@ -75,7 +75,7 @@ describe('Import du registre RH', () => {
     const r2 = parseRegistre([H2,
       R('Angoulême', 'A1', 152, 1), R('Chambéry', 'C1', '151,67', 1), R('Châtellerault', 'T1', 0, 0.5),
       R('', 'T2', 0, 0), R('Siège', 'S1', 152, 1)], decoder);
-    expect(r2.parAgence.ANGOULEME[0].hours).toBe(35.1);
+    expect(r2.parAgence.ANGOULEME[0].hours).toBe(35);
     expect(r2.parAgence.CHAMBERY[0].hours).toBe(35);
     expect(r2.parAgence.CHATELLERAULT.map((e) => e.hours)).toEqual([17.5]);
     expect(r2.parAgence.SIEGE).toBeUndefined();
@@ -126,5 +126,19 @@ describe('Import des variables de décembre 2026', () => {
     expect(trouverAgence('st gilles', ops).nom).toBe(SG);
     expect(trouverAgence('AGENCE DE NANTES', ops).nom).toBe('NANTES');
     expect(trouverAgence('', ops)).toBeNull();
+  });
+});
+
+import { heuresHebdoRegistre } from './imports.js';
+describe('Horaire mensuel du registre → base hebdomadaire', () => {
+  it('temps plein : 151,67 h ou 152 h → 35 h (et non 35,1 h)', () => {
+    expect(heuresHebdoRegistre(151.67)).toBe(35);
+    expect(heuresHebdoRegistre(152)).toBe(35);
+  });
+  it('temps partiels et 39 h', () => {
+    expect(heuresHebdoRegistre(121.33)).toBe(28);
+    expect(heuresHebdoRegistre(86.67)).toBe(20);
+    expect(heuresHebdoRegistre(169)).toBe(39);
+    expect(heuresHebdoRegistre(76.2)).toBe(17.5);
   });
 });

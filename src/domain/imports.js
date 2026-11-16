@@ -29,6 +29,10 @@ function ligneEnTete(rows) {
 }
 
 // Retrouve l'agence SOMA à partir d'un nom de fichier (nom exact, alias du registre, ou inclusion)
+// Horaire mensuel du registre → base hebdomadaire (nov. 2026) : coefficient exact 52/12 (et non 4,33) et arrondi
+// au quart d'heure. Un temps plein noté 152 h (151,67 h arrondi) donne 35 h, et non 35,1 h.
+function heuresHebdoRegistre(mensuel){let h=(+mensuel||0)*12/52;return Math.round(h*4)/4;}
+
 export function trouverAgence(nomBrut, agences) {
   const nom = String(nomBrut || '').trim().toUpperCase();
   if (!nom) return null;
@@ -183,7 +187,7 @@ export function parseRegistre(rows, decoderSerie) {
       nom: (nom + ' ' + prenom).trim(),
       qual: m.qual,
       contract: contratImport(row[col.contrat]),
-      hours: Math.round(horaireMensuel / 4.33 * 10) / 10,
+      hours: heuresHebdoRegistre(horaireMensuel),
       hoursMal: 0, hoursHS: 0,
       pctRoulant: m.roulant ? 100 : 0,
       joursSem: 5, coutJour: 0,
@@ -286,3 +290,4 @@ export function parseEquipe(rows) {
   }
   return { employees, ignores };
 }
+export { heuresHebdoRegistre };
