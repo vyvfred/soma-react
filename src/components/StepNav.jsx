@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { VERSION_LABELS } from '../domain/versions.js';
 import { soumettreAvecConfirmations } from './soumission.js';
 
-// Navigation séquentielle des 7 étapes de construction (port de renderStepNav) et
+// Navigation séquentielle des 8 étapes de construction (port de renderStepNav) et
 // récapitulatif de fin de parcours (port de showBudgetRecap).
 const ETAPES = PANELS_REX.filter((p) => p[0] !== 'aide');
 

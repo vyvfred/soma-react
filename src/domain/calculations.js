@@ -508,6 +508,36 @@ function refAgenceSeuilsBase(a) {
 
 function refs(){return Array.from({length:12},()=>({semaine:null,vacances:null,samedi:null,dimanche:null,ferie:null}))}
 
+// Postes de charges saisis par le REX (nov. 2026) : 4 en % du CA différent chaque mois, 2 en montant fixe par mois.
+// Au premier passage, les valeurs déjà posées par le contrôleur de gestion sont reprises, converties dans ce mode
+// (même montant mois par mois). Une ligne saisie par le REX porte saisieREX : l'import du classeur CG ne l'écrase plus.
+const LIGNES_CHARGES_REX=[['Matériels ambulances','pctMois'],['Carburant','pctMois'],['Entretiens petits équipements','pctMois'],['Fourniture bureau - vêtements','pctMois'],['Sous traitance','month'],['Entretiens véhicules - batîment','month']];
+function modeChargeREX(l){let r=LIGNES_CHARGES_REX.find(function(x){return x[0]===l;});return r?r[1]:null;}
+// Valeurs à afficher au REX pour un poste (sans rien modifier) : 12 % du CA ou 12 montants
+function valeursChargeREX(a,l){
+  let mode=modeChargeREX(l),x=a.rex&&a.rex[l];
+  if(!x)return Array(12).fill(null);
+  if(x.mode===mode)return (mode==='pctMois'?(x.pcts||[]):(x.values||[])).slice(0,12).concat(Array(12).fill(null)).slice(0,12);
+  let montants=M.map(function(_,m){return manual(a,l,m);});
+  if(mode==='month')return montants.map(function(v){return v?Math.round(v):null;});
+  let caAn=M.reduce(function(s,_,m){return s+monthCA(a,m);},0);
+  if(caAn>0)return montants.map(function(v,m){let ca=monthCA(a,m);return ca>0&&v?Math.round(v/ca*10000)/100:null;});
+  // CA pas encore construit : taux unique déduit du mode CG (taux fixe, ou montant annuel rapporté à l'objectif de CA)
+  let t=x.mode==='pct'&&+x.pct?+x.pct:(+a.targetCA>0?Math.round(montants.reduce(function(s,v){return s+v;},0)/+a.targetCA*10000)/100:0);
+  return Array(12).fill(t?t:null);
+}
+// Passe le poste dans le mode REX (reprise des valeurs CG) avant une saisie
+function versSaisieREX(a,l){
+  let mode=modeChargeREX(l);if(!mode)return null;
+  if(!a.rex)a.rex={};
+  let x=a.rex[l]||{values:Array(12).fill(null),mode:'month',chargeType:'variable',allocationKey:'monthly12',pct:0,annual:0};
+  if(x.mode!==mode){let v=valeursChargeREX(a,l);x=Object.assign({},x,{mode:mode});if(mode==='pctMois')x.pcts=v;else x.values=v;}
+  else x=Object.assign({},x,mode==='pctMois'?{pcts:(x.pcts||Array(12).fill(null)).slice()}:{values:(x.values||Array(12).fill(null)).slice()});
+  x.saisieREX=true;a.rex=Object.assign({},a.rex);a.rex[l]=x;return x;
+}
+function setChargeREX(a,l,m,v){let x=versSaisieREX(a,l);if(!x)return a;let n=v===''||v===null||v===undefined?null:+String(v).replace(',','.');if(modeChargeREX(l)==='pctMois')x.pcts[m]=n;else x.values[m]=n;return a;}
+// Postes travaillés par le REX (saisieREX) avec au moins une valeur : sert à l'avancement, sans recalcul du CA
+function chargesREXRemplies(a){return LIGNES_CHARGES_REX.filter(function(r){let x=a.rex&&a.rex[r[0]];if(!x||!x.saisieREX)return false;return (r[1]==='pctMois'?(x.pcts||[]):(x.values||[])).some(function(v){return v!==null&&v!==undefined&&v!==''&&+v!==0;});}).length;}
 function sig(a,m){let v=l=>manual(a,l,m),ca=monthCA(a,m),marge=ca-v("Achats Matières premières et sous traitance")-v("Variations stock marchandises et autres approvisionnements"),aa=["Electricité - eau - chauffage","Matériels ambulances","Carburant","Entretiens petits équipements","Fourniture bureau - vêtements","Sous traitance","Crédit bail et location véhicules","Location téléphonie - informatique - mobilité","Location immobilières et charges locatives","Entretiens véhicules - batîment","Maintenance informatique","Assurance","Formation - documentation","Honoraires et prestations de services","Publicité - cadeaux","Frais de déplacement - missions réceptions","Péages","Affranchissement","Téléphonie - internet","Frais bancaires et cotisations"].reduce((s,l)=>s+v(l),0),va=marge-aa,pay=payrollMonth(a,m),qp=estStructure(a)?0:v("Quote-part MS siège")+v("Quote-part régulation mutualisée"),ebe=va+v("Subventions d'exploitation")-v("Impôts, taxes et versements assimilés")-pay-qp,rex=ebe+v("Reprises s/ charges et transferts")+v("Autres produits")-v("Dotations amortissements et provisions")-v("Autres charges"),rf=v("Produits financiers")-v("Charges financières"),rcai=rex+rf,re=v("Produits exceptionnels")-v("Charges exceptionnelles"),rn=rcai+re-v("Impôt sur les sociétés")-v("Participation aux bénéfices");return {"Chiffre d'affaires":ca,"Charges de personnel":pay+qp,"MARGE BRUTE GLOBALE":marge,"Autres Achats et charges externes":aa,"VALEUR AJOUTEE":va,"EXCEDENT BRUT D'EXPLOITATION":ebe,"RESULTAT D'EXPLOITATION":rex,"RESULTAT FINANCIER":rf,"RESULTAT COURANT AVANT IMPOT":rcai,"RESULTAT EXCEPTIONNEL":re,"RESULTAT NET":rn}}
 
 function tauxHS50Mois(a, mois){
@@ -770,5 +800,5 @@ function chargesReport2028(a){
 
 export {
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
-  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

@@ -22,6 +22,7 @@ import CalScreen from './CalScreen.jsx';
 import AffectationScreen from './AffectationScreen.jsx';
 import VariablesDecScreen from './VariablesDecScreen.jsx';
 import SaisieDRScreen from './SaisieDRScreen.jsx';
+import ChargesREXScreen from './ChargesREXScreen.jsx';
 
 function PrevisionnelCgScreen() { return PrevisionnelScreen({ vueCG: true }); }
 
@@ -32,6 +33,7 @@ export const SCREENS = {
   objectif: ObjectifScreen,
   team: EquipeScreen,
   rh: PresenceScreen,
+  charges: ChargesREXScreen,
   cgdash: CgDashScreen,
   comparative: ComparativeScreen,
   consolidation: ConsolidationScreen,

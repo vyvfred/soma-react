@@ -167,6 +167,7 @@ function appliquerLignesRex(rex, lignesEntite){
   var n = 0;
   Object.keys(lignesEntite).forEach(function(poste){
     var nv = lignesEntite[poste], x = rex[poste] || { values: Array(12).fill(null), chargeType: 'variable', allocationKey: 'monthly12', pct: 0, annual: 0, mode: 'month' };
+    if(x.saisieREX) return; // poste saisi par le REX : l'import du classeur ne l'écrase pas
     var avant = JSON.stringify([x.mode, x.annual, x.allocationKey, x.pct, x.values, x.mode === 'pctMois' ? x.pcts : null]);
     var y = Object.assign({}, x, nv);
     if(nv.mode === 'month') y.values = nv.values.slice();

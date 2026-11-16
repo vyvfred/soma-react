@@ -11,6 +11,7 @@ export const PANELS_REX = [
   ['cal', 'Calendrier'],
   ['team', 'Équipe'],
   ['rh', 'Présence & HS'],
+  ['charges', 'Charges'],
   ['previsionnel', 'Prévisionnel'],
   ['finance', 'Synthèse'],
   ['aide', 'Aide']

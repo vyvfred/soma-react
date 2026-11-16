@@ -98,7 +98,7 @@ function VersionBorder({ children }) {
 }
 
 // Panneaux qui portent sur UNE agence (donc concernés par la sélection d'agence CG).
-const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
+const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'charges', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
 
 export default function AppShell() {
   const { profile, logout, simRole, simuler, recuperation } = useAuth();
