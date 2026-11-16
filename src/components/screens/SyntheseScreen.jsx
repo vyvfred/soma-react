@@ -5,7 +5,7 @@ import { euro, pct } from '../../domain/format.js';
 import { Pourquoi } from '../Vision.jsx';
 import { totauxCalendrier } from '../../domain/calTotaux.js';
 import { montant } from '../../domain/memoSIG.js';
-import { M } from '../../domain/calculations.js';
+import { M, SEUIL_MS_CA } from '../../domain/calculations.js';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -57,7 +57,7 @@ function CAMensuel({ a, caMensuel, max }) {
 }
 
 // Masse salariale / CA mois par mois (charges de personnel, quotes-parts comprises, comme l'indicateur annuel)
-const couleurMS = (t) => (t > 85 ? 'var(--orange, #c45300)' : t > 75 ? '#b8860b' : 'var(--green, #2e7d6f)');
+const couleurMS = (t) => (t > SEUIL_MS_CA ? 'var(--orange, #c45300)' : 'var(--green, #2e7d6f)');
 function RatioMSMensuel({ a }) {
   const ca = M.map((_, m) => montant(a, "Chiffre d'affaires", m));
   const ms = M.map((_, m) => montant(a, 'Charges de personnel', m));
@@ -84,7 +84,7 @@ function RatioMSMensuel({ a }) {
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Vert jusqu'à 75 %, jaune de 75 à 85 %, orange au-delà. Masse salariale = charges de personnel du mois (quotes-parts comprises).</div>
+      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Vert jusqu'au seuil de {SEUIL_MS_CA} %, orange au-delà. Masse salariale = charges de personnel du mois (quotes-parts comprises).</div>
     </div>
   );
 }

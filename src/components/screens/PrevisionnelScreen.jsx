@@ -1,5 +1,5 @@
 import { annuel, montant, resultatMemo } from '../../domain/memoSIG.js';
-import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
+import { estDetailSIG, libLigneSIG, SEUIL_MS_CA } from '../../domain/calculations.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { isRoulant, M, lignesSIG } from '../../domain/calculations.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -25,12 +25,10 @@ function previsionnelInsight(a, ca, net, tauxMS, libMin = 'résultat') {
   else if (net < 0) phrase = 'Votre budget présente un ' + libMin + ' déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
   else phrase = 'Votre budget est à l\u2019équilibre. ';
 
-  if (tauxMS > 85) {
-    phrase += 'La masse salariale représente <b>' + pct(tauxMS) + '</b> du chiffre d\u2019affaires, un niveau élevé qui pèse sur la rentabilité. Vérifiez vos charges de personnel ou votre objectif de CA.';
-  } else if (tauxMS > 75) {
-    phrase += 'La masse salariale représente <b>' + pct(tauxMS) + '</b> du chiffre d\u2019affaires, à surveiller mais dans une fourchette acceptable.';
+  if (tauxMS > SEUIL_MS_CA) {
+    phrase += 'La masse salariale représente <b>' + pct(tauxMS) + '</b> du chiffre d\u2019affaires, au-dessus du seuil de ' + SEUIL_MS_CA + ' % : elle pèse sur la rentabilité. Vérifiez vos charges de personnel ou votre objectif de CA.';
   } else if (tauxMS > 0) {
-    phrase += 'La masse salariale représente <b>' + pct(tauxMS) + '</b> du chiffre d\u2019affaires, un niveau maîtrisé. ';
+    phrase += 'La masse salariale représente <b>' + pct(tauxMS) + '</b> du chiffre d\u2019affaires, sous le seuil de ' + SEUIL_MS_CA + ' %. ';
     if (net > 0) phrase += 'Ce budget est équilibré et peut être présenté à votre Directeur Régional.';
   }
   return phrase;
@@ -75,7 +73,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   ] : [
     { label: 'CA budgété', value: euro(ca) },
     { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
-    { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : tauxMS > 85 ? '⚠ élevé' : tauxMS > 75 ? 'à surveiller' : 'maîtrisé' },
+    { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : tauxMS > SEUIL_MS_CA ? '⚠ au-dessus du seuil de ' + SEUIL_MS_CA + ' %' : 'sous le seuil de ' + SEUIL_MS_CA + ' %' },
     { label: 'EBE', value: euro(ebe), note: ca ? pct((ebe / ca) * 100) : '' }
   ];
 

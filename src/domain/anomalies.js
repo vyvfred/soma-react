@@ -1,7 +1,7 @@
 import { annuel, montant, resultatMemo } from './memoSIG.js';
 // Centre d'attention — port fidèle de collectAnomalies : les points du budget ouvert
 // qui demandent l'attention du REX ou du CG, chacun relié à l'écran où agir.
-import { isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, vueExploitation, heuresDispoAnnuelles, avecCacheMoteur } from './calculations.js';
+import { isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, vueExploitation, heuresDispoAnnuelles, avecCacheMoteur, SEUIL_MS_CA } from './calculations.js';
 import { euro, pct } from './format.js';
 
 export function collecterAnomalies(a, role) {
@@ -36,7 +36,7 @@ function collecterAnomaliesCalc(a, role) {
   }
   if (ca > 0) {
     if (net < 0) out.push({ panel: 'previsionnel', level: 'warn', text: (vueExploitation(a, role) ? 'Résultat d\'exploitation déficitaire (' : 'Budget déficitaire (') + euro(net) + ')' });
-    if (tauxMS > 85) out.push({ panel: 'previsionnel', level: 'warn', text: 'Masse salariale élevée (' + pct(tauxMS) + ' du CA)' });
+    if (tauxMS > SEUIL_MS_CA) out.push({ panel: 'previsionnel', level: 'warn', text: 'Masse salariale au-dessus du seuil de ' + SEUIL_MS_CA + ' % (' + pct(tauxMS) + ' du CA)' });
   }
   return out;
 }

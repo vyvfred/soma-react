@@ -1,7 +1,7 @@
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
+import { SEUIL_MS_CA, hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto } from '../../domain/repartitionCP.js';
 import { presenceInsight } from '../../domain/presenceInsight.js';
@@ -92,7 +92,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
       <div data-testid="impact-mois" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 12, marginBottom: 12 }}>
         <span>CA <b>{euro(imp.caMois)}</b></span>
         <span>Masse salariale <b>{euro(imp.msMois)}</b></span>
-        <span>MS / CA <b>{imp.tauxMS.toFixed(1)} %</b></span>
+        <span>MS / CA <b style={{ color: imp.tauxMS > SEUIL_MS_CA ? 'var(--orange, #c45300)' : 'var(--green, #2e7d6f)' }}>{imp.tauxMS.toFixed(1)} %</b></span>
         <span>HS <b>{Math.round(imp.hsM)} h</b> · <b>{euro(imp.coutHSM)}</b></span>
         <span>CP posés <b>{fmt1(imp.cpM)} J</b></span>
         <span style={{ color: imp.critM ? 'var(--orange, #c45300)' : 'var(--green, #2e7d6f)' }}>{imp.critM ? '⚠ ' + imp.critM + ' semaine(s) critique(s)' : '✓ Aucune semaine critique'}</span>
