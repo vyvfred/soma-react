@@ -47,7 +47,7 @@ export const FAQ_CG_SECTIONS = [
       ],
       [
         "Peut-on importer les données ou les équipes depuis Excel ?",
-        "Pas encore dans cette version de SOMA : les imports Excel (données agences, registre RH) existent dans la version actuelle et seront ajoutés ici. En attendant, saisissez ou ajustez les valeurs directement dans le tableau des Données agences ; les équipes se saisissent sur l'écran Équipe de chaque agence."
+        "Oui, sur l'écran Données agences : « 📥 Importer données agences » charge les références et paramètres depuis le fichier Excel du réseau, et « 👥 Importer registre RH » charge les équipes. L'horaire mensuel du registre est converti en base hebdomadaire au coefficient exact (52/12), arrondi au quart d'heure : un temps plein noté 152 h donne 35 h. Contrôlez le compte rendu affiché après chaque import."
       ],
       [
         "Les équipes ont été importées : que se passe-t-il si je réimporte le registre ?",
@@ -103,11 +103,11 @@ export const FAQ_CG_SECTIONS = [
     "items": [
       [
         "Comment préparer les charges de tout le réseau en une fois ?",
-        "Écran « Charges CG », carte « Classeur des charges du réseau ». « Télécharger le classeur » produit un fichier Excel pré-rempli avec ce qui est déjà saisi dans SOMA. Feuille « Réseau » : une ligne par poste, une colonne par agence et par structure. Saisissez un montant annuel (réparti « ÷ 12 » ou « prorata CA » selon la colonne Répartition de la ligne) ou un pourcentage du CA (« 3,2 % »). Une case vide ne change rien ; 0 met le poste à zéro. Feuille « Mensuel », facultative : un poste d'une agence saisi mois par mois. « Importer le classeur » affiche ensuite, par agence, le nombre de postes modifiés et les cases ignorées (agence ou poste inconnus, valeur illisible) ; rien n'est enregistré avant votre confirmation. Les charges s'appliquent à toutes les versions du budget de chaque agence ; SOMA vous demande une confirmation de plus si des budgets sont déjà en validation. Le reste des budgets (équipe, présence, références) n'est jamais modifié."
+        "Écran « Charges CG », carte « Classeur des charges du réseau ». « Télécharger le classeur » produit un fichier Excel pré-rempli avec ce qui est déjà saisi dans SOMA. Feuille « Réseau » : une ligne par poste, une colonne par agence et par structure. Saisissez un montant annuel (réparti « ÷ 12 » ou « prorata CA » selon la colonne Répartition de la ligne) ou un pourcentage du CA (« 3,2 % »). Une case vide ne change rien ; 0 met le poste à zéro. Feuille « Mensuel », facultative : un poste d'une agence saisi mois par mois. « Importer le classeur » affiche ensuite, par agence, le nombre de postes modifiés et les cases ignorées (agence ou poste inconnus, valeur illisible) ; rien n'est enregistré avant votre confirmation. Les charges s'appliquent à toutes les versions du budget de chaque agence ; SOMA vous demande une confirmation de plus si des budgets sont déjà en validation. Le reste des budgets (équipe, présence, références) n'est jamais modifié. Un poste déjà modifié par le REX dans son étape « Charges » n'est pas écrasé par l'import."
       ],
       [
         "Comment saisir les charges d'une agence ?",
-        "Choisissez l'agence dans le sélecteur « Agence ouverte ». En haut de l'écran Charges CG, le bloc « Paramétrage salarial » reprend les taux horaires et la ligne non-roulante des Données agences ; vous pouvez les ajuster ici. Puis, pour chaque poste, choisissez le <b>mode</b> : saisie par mois, montant annuel (réparti en douze mois égaux ou au prorata du CA mensuel, selon la clé), ou pourcentage du CA ; et le <b>type</b>, fixe ou variable. La saisie est enregistrée automatiquement. Les lignes CA et Charges de personnel sont calculées par SOMA."
+        "Choisissez l'agence dans le sélecteur « Agence ouverte ». En haut de l'écran Charges CG, le bloc « Paramétrage salarial » reprend les taux horaires et la ligne non-roulante des Données agences ; vous pouvez les ajuster ici. Puis, pour chaque poste, choisissez le <b>mode</b> : saisie par mois, montant annuel (réparti en douze mois égaux ou au prorata du CA mensuel, selon la clé), ou pourcentage du CA ; et le <b>type</b>, fixe ou variable. La saisie est enregistrée automatiquement. Les lignes CA et Charges de personnel sont calculées par SOMA. Six postes sont construits par le REX dans son étape « Charges » : matériels ambulances, carburant, entretiens petits équipements et fournitures de bureau - vêtements en % du CA de chaque mois, sous-traitance et entretiens véhicules - bâtiment en montant par mois. Vos valeurs lui servent de point de départ ; vous pouvez toujours les corriger ici."
       ],
       [
         "Fixe ou variable : à quoi ça sert ?",
@@ -115,7 +115,7 @@ export const FAQ_CG_SECTIONS = [
       ],
       [
         "Que comprend exactement la masse salariale du prévisionnel ?",
-        "Pour les roulants : les heures travaillées au coût horaire chargé du mois (taux du 1er janvier, puis du 1er juin), les heures supplémentaires selon leur majoration réelle (25% ou 50%), la part de salaire maintenue pendant les arrêts maladie et AT, et la provision de 10% de prime de précarité sur les heures en CDD. Pour les non-roulants : la ligne globale mensuelle, diminuée de la part non maintenue des absences. S'y ajoutent les heures supplémentaires des improductifs, les indemnités et, sur la paie de janvier, les variables de décembre 2026. C'est le coût complet du personnel, charges patronales comprises."
+        "Pour les roulants : les heures travaillées au coût horaire chargé du mois (taux du 1er janvier, puis du 1er juin), les heures supplémentaires selon leur majoration réelle (25% ou 50%), la part de salaire maintenue pendant les arrêts maladie et AT, et la provision de 10% de prime de précarité sur les heures en CDD. Pour les non-roulants : la ligne globale mensuelle, diminuée de la part non maintenue des absences. S'y ajoutent les heures supplémentaires des improductifs, les indemnités et, sur la paie de janvier, les variables de décembre 2026. C'est le coût complet du personnel, charges patronales comprises. Le seuil de référence du ratio masse salariale / CA est de 62 % sur l'année."
       ],
       [
         "À quoi sert l'écran Contrôles ?",
@@ -160,7 +160,7 @@ export const FAQ_CG_SECTIONS = [
       ],
       [
         "Comment savoir où en sont les budgets en préparation ?",
-        "L'écran Consolidation affiche, pour chaque agence, une colonne « Avancement » : la construction du budget par le REX, sur cinq jalons à parts égales (objectif fixé, références CA, équipe, absentéisme mensuel, mois validés). Survolez la barre pour le détail ; le nombre de mois validés et la part des charges saisies par le contrôle de gestion sont rappelés dessous. Un brouillon sans modification depuis une semaine ou plus est signalé en orange, et le commentaire en haut de l'écran donne l'avancement moyen des brouillons et la liste des agences à relancer. Un directeur régional voit ses agences ; la direction, tout le réseau. L'export Excel reprend ces colonnes."
+        "L'écran Consolidation affiche, pour chaque agence, une colonne « Avancement » : la construction du budget par le REX, sur six jalons à parts égales (objectif fixé, références CA, équipe, absentéisme mensuel, mois validés, postes de charges saisis par le REX). Survolez la barre pour le détail ; le nombre de mois validés et la part des charges saisies par le contrôle de gestion sont rappelés dessous. Un brouillon sans modification depuis une semaine ou plus est signalé en orange, et le commentaire en haut de l'écran donne l'avancement moyen des brouillons et la liste des agences à relancer. Un directeur régional voit ses agences ; la direction, tout le réseau. L'export Excel reprend ces colonnes."
       ]
     ]
   },
