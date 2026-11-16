@@ -1,7 +1,7 @@
-import { annuel, montant } from '../../domain/memoSIG.js';
+import { annuel, montant, resultatMemo } from '../../domain/memoSIG.js';
 import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { isRoulant, M, lignesSIG, resultatAffiche } from '../../domain/calculations.js';
+import { isRoulant, M, lignesSIG } from '../../domain/calculations.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { euro, pct } from '../../domain/format.js';
 
@@ -57,7 +57,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   if (!a) return <div className="card"><h2>Prévisionnel — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const ca = annuel(a, "Chiffre d'affaires");
-  const res = resultatAffiche(a, role);
+  const res = resultatMemo(a, role);
   const net = vueCG ? annuel(a, 'RESULTAT NET') : res.val;
   const ms = annuel(a, 'Charges de personnel');
   const ebe = annuel(a, "EXCEDENT BRUT D'EXPLOITATION");

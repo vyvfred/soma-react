@@ -1,14 +1,14 @@
-import { annuel, montant } from './memoSIG.js';
+import { annuel, montant, resultatMemo } from './memoSIG.js';
 // Synthèse du budget — fonctions PURES, port de renderSynthese, renderCoutChoix,
 // renderEnveloppesCP et renderDashboard (graphiques et ratios).
-import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, resultatAffiche, vueExploitation } from './calculations.js';
+import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, vueExploitation } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const VALIDEURS = ['dr', 'df', 'dg', 'pdg'];
 
 export function syntheseBudget(a, role = 'rex') {
   const ca = annuel(a, "Chiffre d'affaires");
-  const res = resultatAffiche(a, role);
+  const res = resultatMemo(a, role);
   const net = res.val;
   const ms = annuel(a, 'Charges de personnel');
   const caObj = +a.targetCA || 0;

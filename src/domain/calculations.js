@@ -189,9 +189,21 @@ function empPresent(e, dateISO){
   return true;
 }
 
+// Index du calendrier par semaine ISO (nov. 2026, accélération) : évite de parcourir les 365 jours à chaque
+// recherche. Indexé sur le tableau a.cal lui-même (genCal en crée un nouveau ; les champs week/month d'un jour
+// ne changent jamais) et revalidé sur sa longueur. Recherche stricte : comme filter(d=>d.week===w).
+const INDEX_CAL=new WeakMap();
+function indexCal(a){let c=a.cal||[],x=INDEX_CAL.get(c);if(x&&x.n===c.length)return x;x={n:c.length,parSemaine:new Map(),moisPrincipal:new Map()};c.forEach(function(d){let l=x.parSemaine.get(d.week);if(!l){l=[];x.parSemaine.set(d.week,l);}l.push(d);});INDEX_CAL.set(c,x);return x;}
+function joursSemaine(a,w){return indexCal(a).parSemaine.get(w)||[];}
 function genCal(a){a.cal=[];for(let m=0;m<12;m++){let days=new Date(2027,m+1,0).getDate();for(let d=1;d<=days;d++){let dt=new Date(2027,m,d),type=typeDay(dt,a),ca={san:+a.refs.san[m][type]||0,sai:+a.refs.sai[m][type]||0,tp:+a.refs.tp[m][type]||0};a.cal.push({month:m,day:d,week:isoWeek(dt),type,ca,total:ca.san+ca.sai+ca.tp})}}}
 
-function hsRows(a){
+// Cache le temps d'UN calcul groupé (avecCacheMoteur) : le budget n'est pas modifié pendant ce calcul.
+// Hors de ce cadre, aucun cache : le comportement reste celui d'avant (sûr pour un objet modifié sur place).
+let CACHE_MOTEUR=null;
+function avecCacheMoteur(fn){if(CACHE_MOTEUR)return fn();CACHE_MOTEUR=new WeakMap();try{return fn();}finally{CACHE_MOTEUR=null;}}
+function memoMoteur(a,cle,calc){if(!CACHE_MOTEUR||!a||typeof a!=='object')return calc();let m=CACHE_MOTEUR.get(a);if(!m){m={};CACHE_MOTEUR.set(a,m);}if(!(cle in m))m[cle]=calc();return m[cle];}
+function hsRows(a){return memoMoteur(a,'hsRows',function(){return hsRowsCalc(a);});}
+function hsRowsCalc(a){
   let seuils=refAgenceSeuilsBase(a);
   return needWeeks(a).map(n=>{
     let p=pres(a,n.week),gap=n.hours-p.av,hs=Math.max(0,gap),under=Math.max(0,-gap);
@@ -230,7 +242,7 @@ function isVac(iso,z){return (vac[z]||vac.B).some(x=>between(iso,x[0],x[1]))}
 
 function isoWeek(date){let d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())),day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
 
-function mainMonth(a,w){let c={};a.cal.filter(d=>d.week==w).forEach(d=>c[d.month]=(c[d.month]||0)+1);return +(Object.entries(c).sort((x,y)=>y[1]-x[1])[0]?.[0]||0)}
+function mainMonth(a,w){let ix=indexCal(a),k=+w;if(ix.moisPrincipal.has(k))return ix.moisPrincipal.get(k);let c={};(isNaN(k)?[]:joursSemaine(a,k)).forEach(d=>c[d.month]=(c[d.month]||0)+1);let r=+(Object.entries(c).sort((x,y)=>y[1]-x[1])[0]?.[0]||0);ix.moisPrincipal.set(k,r);return r}
 
 function manual(a,l,m){let x=a.rex[l];if(!x)return 0;if(x.mode==='pct')return monthCA(a,m)*(+x.pct||0)/100;if(x.mode==='pctMois')return monthCA(a,m)*(+(x.pcts&&x.pcts[m])||0)/100;if(x.mode==='annual'){let annual=+x.annual||0;if(x.allocationKey==='ca')return annual*annualCAWeight(a,m);return annual/12}return x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0}
 
@@ -252,8 +264,8 @@ function payrollMonth(a,m){
 function payrollMonthCivil(a,m){
   // MS roulante : heures travaillées, HS, maintien sur arrêts, précarité CDD (cf. coutRoulantSemaine)
   let msRoulant = hsRows(a).reduce((s,r)=>{
-    let daysWeek=a.cal.filter(d=>d.week===r.week).length||7;
-    let daysMonth=a.cal.filter(d=>d.week===r.week&&d.month===m).length;
+    let daysWeek=joursSemaine(a,r.week).length||7;
+    let daysMonth=joursSemaine(a,r.week).filter(d=>d.month===m).length;
     if(!daysMonth)return s;
     let ratio=daysMonth/daysWeek;
     let weeklyCost=coutRoulantSemaine(a,r,m);
@@ -276,8 +288,8 @@ function payrollMonthCivil(a,m){
     let hs = a.hsImproductif && a.hsImproductif[w] ? +a.hsImproductif[w] : 0;
     if(!hs) return;
     // Ratio du nombre de jours de cette semaine dans le mois
-    let daysWeek=a.cal.filter(d=>d.week===w).length||7;
-    let daysMonth=a.cal.filter(d=>d.week===w&&d.month===m).length;
+    let daysWeek=joursSemaine(a,w).length||7;
+    let daysMonth=joursSemaine(a,w).filter(d=>d.month===m).length;
     let ratio=daysMonth/daysWeek;
     msHSImproductif += hs * coutHoraireImproductif(a) * coefHSMois(a,m) * ratio;
   });
@@ -285,8 +297,8 @@ function payrollMonthCivil(a,m){
   let repasMois = 0;
   let weeksRepas = a.cal.filter(d=>d.month===m).map(d=>d.week).filter((v,i,arr)=>arr.indexOf(v)===i);
   weeksRepas.forEach(function(w){
-    let daysWeek=a.cal.filter(d=>d.week===w).length||7;
-    let daysMonth=a.cal.filter(d=>d.week===w&&d.month===m).length;
+    let daysWeek=joursSemaine(a,w).length||7;
+    let daysMonth=joursSemaine(a,w).filter(d=>d.month===m).length;
     let ratio=daysMonth/daysWeek;
     let rR = a.repasRoulant&&a.repasRoulant[w] ? +a.repasRoulant[w] : 0;
     let rNR = a.repasNonRoulant&&a.repasNonRoulant[w] ? +a.repasNonRoulant[w] : 0;
@@ -319,7 +331,7 @@ function payrollPayMonth(a, moisIdx) {
 
   hsR.forEach(function(r) {
     // Trouver les jours de cette semaine dans le calendrier
-    let daysOfWeek = a.cal.filter(function(d) { return d.week === r.week; });
+    let daysOfWeek = joursSemaine(a, r.week);
     if (!daysOfWeek.length) return;
 
     // Calculer combien de jours de cette semaine tombent dans la période de paie
@@ -359,7 +371,7 @@ function payrollPayMonth(a, moisIdx) {
     hsR.forEach(function(r) {
       let hs = a.hsImproductif[r.week] ? +a.hsImproductif[r.week] : 0;
       if (!hs) return;
-      let daysOfWeek = a.cal.filter(function(d){ return d.week === r.week; });
+      let daysOfWeek = joursSemaine(a, r.week);
       if (!daysOfWeek.length) return;
       let daysInPeriode = daysOfWeek.filter(function(d) {
         let dt = new Date(2027, d.month, d.day);
@@ -375,7 +387,7 @@ function payrollPayMonth(a, moisIdx) {
   let repasPeriode = 0;
   let allWeeks = a.cal.map(d=>d.week).filter((v,i,arr)=>arr.indexOf(v)===i);
   allWeeks.forEach(function(w){
-    let daysOfWeek = a.cal.filter(function(d){ return d.week===w; });
+    let daysOfWeek = joursSemaine(a, w);
     if(!daysOfWeek.length) return;
     let daysInPeriode = daysOfWeek.filter(function(d){
       let dt=new Date(2027,d.month,d.day);
@@ -415,7 +427,7 @@ function coutHSPeriodePaie(a, moisIdx){
   let debut = new Date(p.debut), fin = new Date(p.fin);
   let total = 0;
   hsRows(a).forEach(function(r){
-    let jours = a.cal.filter(function(d){ return d.week === r.week; });
+    let jours = joursSemaine(a, r.week);
     if(!jours.length) return;
     let dedans = jours.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length;
     if(!dedans) return;
@@ -464,7 +476,7 @@ function lissage5eSemaine(a, moisIdx){
 function pres(a,w){
   let base=baseHWeek(a,w);
   // Semaine partielle de l'année (1er-3 janvier, 27-31 décembre) : base au prorata des jours
-  let nbj=a.cal.filter(d=>d.week===w).length; if(nbj && nbj<7) base=base*nbj/7;
+  let nbj=joursSemaine(a,w).length; if(nbj && nbj<7) base=base*nbj/7;
   let p=a.presence[w]||{cp:0,other:0};
   let m=mainMonth(a,w);
   let rate=a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
@@ -550,7 +562,7 @@ function tauxHS50Mois(a, mois){
 function typeDay(date,a){let iso=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0'),wd=date.getDay();if(feries.includes(iso))return 'ferie';if(wd===0)return 'dimanche';if(wd===6)return 'samedi';if(isVac(iso,a.schoolZone))return 'vacances';return 'semaine'}
 
 function weekRefDate(a, week){
-  let days=a.cal.filter(d=>d.week===week);
+  let days=joursSemaine(a,week);
   if(!days.length) return null;
   // Prendre le jour médian
   let mid=days[Math.floor(days.length/2)];
@@ -575,7 +587,7 @@ function hsParPersonne(a, week){
   return {hs:hs, etp:p.etp, ratio:ratio};
 }
 function qualifierSemaine(a, week){
-  let jours = a.cal.filter(function(d){return d.week===week;});
+  let jours = joursSemaine(a, week);
   let ferie = jours.some(function(d){return d.type==='ferie';});
   let vacances = jours.some(function(d){return d.type==='vacances';});
   if(ferie) return 'jour férié';
@@ -784,7 +796,7 @@ function chargesReport2028(a){
   let debut = new Date(2027, 11, 6), fin = new Date(2027, 11, 31), nbJours = 26;
   let ms = 0;
   hsRows(a).forEach(function(r){
-    let daysOfWeek = a.cal.filter(function(d){ return d.week === r.week; });
+    let daysOfWeek = joursSemaine(a, r.week);
     if(!daysOfWeek.length) return;
     let daysIn = daysOfWeek.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length;
     let ratio = daysIn / daysOfWeek.length;
@@ -800,5 +812,5 @@ function chargesReport2028(a){
 
 export {
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
-  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

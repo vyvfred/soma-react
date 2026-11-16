@@ -1,5 +1,5 @@
 import { aDesSaisiesDR } from '../domain/saisiesDR.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PANELS_REX } from '../config/panels.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { BudgetProvider } from '../context/BudgetContext.jsx';
@@ -45,8 +45,16 @@ function AttentionCenter({ onNavigate }) {
     document.addEventListener('click', f);
     return () => document.removeEventListener('click', f);
   }, [ouvert]);
+  // Calcul différé (0,7 s après la dernière modification) : la frappe n'attend plus ce panneau
+  const [l, setL] = useState([]);
+  const dernier = useRef(null);
+  useEffect(() => {
+    if (!agency || !agenceNom) return undefined;
+    const nouveau = dernier.current !== agenceNom + '|' + profile.role;
+    const t = setTimeout(() => { dernier.current = agenceNom + '|' + profile.role; setL(collecterAnomalies(agency, profile.role)); }, nouveau ? 0 : 700);
+    return () => clearTimeout(t);
+  }, [agency, agenceNom, profile.role]);
   if (!agency || !agenceNom) return null;
-  const l = collecterAnomalies(agency, profile.role);
   return (
     <span data-attention style={{ position: 'relative', marginLeft: 12 }}>
       <button data-testid="attention" className={'somAttention ' + (l.length ? 'alert' : 'calm')} onClick={() => setOuvert(!ouvert)}>

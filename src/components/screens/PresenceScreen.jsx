@@ -32,11 +32,13 @@ function Kpi({ label, value, note }) {
   );
 }
 
+// Bloc repliable : son contenu n'est construit qu'à la première ouverture (accélération, nov. 2026)
 function Repli({ titre, children, testid, open = true }) {
+  const [vu, setVu] = useState(open);
   return (
-    <details open={open} data-testid={testid} style={{ border: '1px solid var(--border)', marginTop: 14, background: 'var(--bg)' }}>
+    <details open={open} data-testid={testid} onToggle={(e) => { if (e.currentTarget.open) setVu(true); }} style={{ border: '1px solid var(--border)', marginTop: 14, background: 'var(--bg)' }}>
       <summary style={{ cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fontSize: 14 }}>{titre}</summary>
-      <div style={{ padding: '4px 14px 14px' }}>{children}</div>
+      <div style={{ padding: '4px 14px 14px' }}>{vu ? children : null}</div>
     </details>
   );
 }
