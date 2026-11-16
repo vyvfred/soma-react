@@ -183,11 +183,14 @@ export default function PresenceScreen() {
     muter((x) => reinitialiserCP(x));
     toast('Congés remis à zéro', 'info');
   };
+  // Absentéisme modifié : les CP acquis changent, la répartition des mois non validés est refaite automatiquement
+  // (seulement si des congés étaient déjà posés ; les mois validés ne bougent pas).
+  const majCPApresAbsenteisme = (x) => { if (cpPlanifies(x) > 0) repartirCPAuto(x); };
   const setSick = (m) => (e) => {
     const v = e.target.value;
-    update((draft) => { draft.sick = draft.sick.slice(); draft.sick[m] = v === '' ? null : +v; return draft; });
+    muter((x) => { x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; majCPApresAbsenteisme(x); });
   };
-  const rebalance = () => update((draft) => { draft.sick = reequilibrerSick(draft.sick, +draft.targetAbsRate || 0); return draft; });
+  const rebalance = () => muter((x) => { x.sick = reequilibrerSick(x.sick, +x.targetAbsRate || 0); majCPApresAbsenteisme(x); });
   const setHS50 = (m) => (e) => {
     const v = e.target.value;
     update((draft) => { draft.hs50 = (draft.hs50 || Array(12).fill(null)).slice(); draft.hs50[m] = v === '' ? null : Math.max(0, Math.min(100, +v)); return draft; });
@@ -217,7 +220,7 @@ export default function PresenceScreen() {
     ? <span style={{ color: 'var(--green, #2e7d6f)' }}>✓ Équilibré</span>
     : rest > tol
       ? <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours acquis que de jours posés : relancez la répartition ou posez-les à la main">⚠ {rest.toFixed(1)} J encore à poser</span>
-      : <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours posés que de jours acquis, souvent parce que l'absentéisme a augmenté après la répartition : relancez la répartition ou retirez des congés">⚠ {Math.abs(rest).toFixed(1)} J posés en trop</span>;
+      : <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours posés que de jours acquis, congés ajoutés à la main ou mois déjà validés : relancez la répartition ou retirez des congés">⚠ {Math.abs(rest).toFixed(1)} J posés en trop</span>;
 
   // ── Absentéisme ──
   const filled = a.sick.filter((v) => v !== null && v !== undefined);
@@ -338,7 +341,7 @@ export default function PresenceScreen() {
       <p className="hint" style={{ fontSize: 12, margin: '-10px 0 16px' }}>
         La répartition automatique pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales
         (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai). Vous pouvez ensuite déplacer des congés semaine par semaine :
-        le compteur suit vos choix. Si l'absentéisme change, relancez la répartition ou ajustez à la main.
+        le compteur suit vos choix. Si vous modifiez l'absentéisme, SOMA refait automatiquement la répartition sur les mois non validés (les congés déplacés à la main sur ces mois sont recalculés).
       </p>
 
       {/* ── Mois par mois ── */}
