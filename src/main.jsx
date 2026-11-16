@@ -15,3 +15,6 @@ createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </StrictMode>
 );
+
+// Molette de la souris sur un champ numérique : ne modifie pas la valeur saisie
+document.addEventListener('wheel', function (e) { var t = document.activeElement; if (t && t.type === 'number' && t === e.target) t.blur(); }, { passive: true });
