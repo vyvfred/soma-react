@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { sb } from '../lib/supabase.js';
+import { sb, HASH_INITIAL, LIEN_RECUPERATION, LIEN_EXPIRE } from '../lib/supabase.js';
 
 // Reproduit fidèlement le flux de l'application actuelle :
 //   signInWithPassword  ->  chargement du profil dans "profiles"  ->  session applicative.
@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
   // « Voir en tant que… » : un administrateur simule un autre rôle sans se déconnecter.
   const [simRole, setSimRole] = useState(null);
   // Lien « mot de passe oublié » : la personne arrive connectée et doit choisir un nouveau mot de passe.
-  const [recuperation, setRecuperation] = useState(false);
+  const [recuperation, setRecuperation] = useState(LIEN_RECUPERATION);
 
   // Au montage : reprendre une éventuelle session existante, puis écouter les changements.
   useEffect(() => {
@@ -34,8 +34,9 @@ export function AuthProvider({ children }) {
 
     (async () => {
       // Jeton de récupération dans l'URL (port de init() du mono-fichier)
-      const hash = typeof window !== 'undefined' ? window.location.hash : '';
-      if (hash && hash.includes('type=recovery')) {
+      const hash = HASH_INITIAL;
+      if (LIEN_RECUPERATION || LIEN_EXPIRE) window.history.replaceState(null, '', window.location.pathname);
+      if (LIEN_RECUPERATION) {
         const params = new URLSearchParams(hash.replace('#', ''));
         const accessToken = params.get('access_token');
         if (accessToken) await sb.auth.setSession({ access_token: accessToken, refresh_token: params.get('refresh_token') || '' });

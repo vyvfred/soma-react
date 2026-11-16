@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { LIEN_EXPIRE } from '../lib/supabase.js';
 
 export default function LoginScreen() {
   const { login, error, motDePasseOublie } = useAuth();
-  const [oubli, setOubli] = useState(false);
+  // Lien expiré ou déjà utilisé (souvent ouvert d'avance par l'antivirus de la messagerie)
+  const [oubli, setOubli] = useState(LIEN_EXPIRE);
   const [emailOubli, setEmailOubli] = useState('');
-  const [msgOubli, setMsgOubli] = useState(null);
+  const [msgOubli, setMsgOubli] = useState(LIEN_EXPIRE ? { ok: false, message: 'Ce lien a expiré ou a déjà été utilisé. Saisissez votre e-mail et demandez un nouveau lien, puis ouvrez-le aussitôt.' } : null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
