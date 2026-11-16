@@ -5,6 +5,7 @@ import { useBudget } from '../../context/BudgetContext.jsx';
 import { teamInsight, etpParMois } from '../../domain/teamInsight.js';
 import { isRoulant, M } from '../../domain/calculations.js';
 import { parseEquipe } from '../../domain/imports.js';
+import { TRIS_EQUIPE, majOrdreEquipe } from '../../domain/triEquipe.js';
 import { lireClasseur } from '../../lib/importExcel.js';
 
 const QUALS = ['DEA', 'AA', 'TAXI', 'TPMR', 'REGULATEUR', 'REX'];
@@ -28,12 +29,18 @@ export default function EquipeScreen() {
   const { agency: a, loading, error, editable, update, agenceNom } = useBudget();
   const fichier = useRef(null);
   const [importMsg, setImportMsg] = useState(null);
+  // Tri d'affichage (mémorisé sur ce navigateur) ; l'ordre est figé pendant la saisie
+  const [tri, setTriEtat] = useState(() => { try { return localStorage.getItem('soma.triEquipe') || 'saisie'; } catch (e) { return 'saisie'; } });
+  const etatTri = useRef(null);
+  const setTri = (t) => { setTriEtat(t); etatTri.current = null; try { localStorage.setItem('soma.triEquipe', t); } catch (e) { /* stockage indisponible */ } };
 
   if (!agenceNom) return <div className="card"><h2>Équipe</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Équipe</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Équipe</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
   if (!a) return <div className="card"><h2>Équipe — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
+  etatTri.current = majOrdreEquipe(etatTri.current, a.employees, tri, agenceNom);
+  const ordre = etatTri.current.ordre;
   const { nbSal, etpTotal, capaciteAn, phrase } = teamInsight(a);
   const evolution = etpParMois(a);
 
@@ -109,17 +116,26 @@ export default function EquipeScreen() {
         </div>
       ) : null}
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 12, color: 'var(--ink65)' }}>
+        <label htmlFor="tri-equipe" style={{ margin: 0 }}>Trier par</label>
+        <select id="tri-equipe" data-testid="tri-equipe" value={tri} onChange={(ev) => setTri(ev.target.value)} style={{ width: 'auto', fontSize: 12 }}>
+          {TRIS_EQUIPE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        {tri !== 'saisie' ? <span style={{ fontSize: 11 }}>Un salarié ajouté apparaît en bas jusqu'au prochain tri.</span> : null}
+      </div>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
               {['Nom', 'Qualif.', 'Contrat', 'H. base', '% roul.', 'Jours/sem', 'Entrée 2027', 'Sortie 2027', 'ETP', ''].map((h, i) => (
-                <th key={i} style={th}>{h}{AIDE_COLONNES[h] ? <span className="aide-info">i<span className="aide-tip">{AIDE_COLONNES[h]}</span></span> : null}</th>
+                <th key={i} style={h === 'Nom' ? { ...th, cursor: 'pointer' } : th} data-testid={h === 'Nom' ? 'th-nom' : undefined} title={h === 'Nom' ? 'Trier par nom' : undefined}
+                  onClick={h === 'Nom' ? () => setTri(tri === 'nomAZ' ? 'nomZA' : 'nomAZ') : undefined}>{h}{h === 'Nom' ? (tri === 'nomAZ' ? ' ▲' : tri === 'nomZA' ? ' ▼' : ' ⇅') : ''}{AIDE_COLONNES[h] ? <span className="aide-info">i<span className="aide-tip">{AIDE_COLONNES[h]}</span></span> : null}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {a.employees.map((e, i) => {
+            {ordre.map((i) => {
+              const e = a.employees[i];
               const nom = e.name || e.nom || '';
               const contrat = e.contract || e.contrat || 'CDI';
               const roul = isRoulant(e.qual) || estRoulantPart(e);
