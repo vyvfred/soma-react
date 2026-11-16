@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
 import { appliquerRefCG, descriptionCopie } from '../domain/refCG.js';
 import { marquerSaisiesDR } from '../domain/saisiesDR.js';
+import { creerHistorique, viderHistorique, noterAvant, annulerHisto, retablirHisto } from '../domain/historique.js';
 import { useAuth } from './AuthContext.jsx';
 import { toast } from '../components/Toast.jsx';
 import { estModifiable, cibleDuplication, agenceDeVersion, copieVersion, comparerVersions, VERSION_LABELS } from '../domain/versions.js';
@@ -33,6 +34,13 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   const inFlightRef = useRef(Promise.resolve()); // sérialise les sauvegardes
   const pendingRef = useRef(null);               // dernière agence modifiée non encore sauvegardée
   const agencyRef = useRef(null);
+  // Annuler / rétablir : historique du budget ouvert (vidé au chargement, au changement de version
+  // et quand des données arrivent d'ailleurs, pour ne jamais défaire le travail d'un autre)
+  const histRef = useRef(creerHistorique());
+  const snapTexteRef = useRef(null); // texte JSON de snapRef (comparaison rapide)
+  const [histInfo, setHistInfo] = useState({ annuler: 0, retablir: 0 });
+  const majHistInfo = useCallback(() => { const h = histRef.current; setHistInfo({ annuler: h.passe.length, retablir: h.futur.length }); }, []);
+  const viderHisto = useCallback(() => { viderHistorique(histRef.current); queueMicrotask(majHistInfo); }, [majHistInfo]);
   // Dernier état connu, pour repérer ce que l'utilisateur vient de modifier (marques des saisies du DR)
   const snapRef = useRef(null);
   const { profile } = useAuth();
@@ -77,7 +85,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
             res.distantes.forEach((k) => { if (J(prev[k]) === J(avant[k])) next[k] = JSON.parse(JSON.stringify(res.version[k] === undefined ? null : res.version[k])); });
             return next;
           };
-          snapRef.current = null;
+          snapRef.current = null; viderHistorique(histRef.current); queueMicrotask(majHistInfo);
           setAgency((prev) => { const n = patch(prev); if (pendingRef.current) pendingRef.current = patch(pendingRef.current); return n; });
           toast('Budget mis à jour avec les modifications enregistrées par un autre utilisateur', 'info');
         }
@@ -128,7 +136,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
           res.agency = agenceDeVersion(agenceNom, res.data, sv);
           res.activeVersion = sv;
         }
-        setAgency(res.agency);        snapRef.current = null;
+        setAgency(res.agency);        snapRef.current = null; viderHisto();
         // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)
         // = la version BRUTE lue en base (avant les compléments par défaut de migrateAgency) :
         // sinon ces compléments passeraient pour des modifications faites par quelqu'un d'autre.
@@ -167,23 +175,76 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     if (!editable) return;
     setAgency((prev) => {
       if (!prev) return prev;
-      const avant = snapRef.current || JSON.parse(JSON.stringify(prev));
+      if (!snapRef.current) { snapTexteRef.current = JSON.stringify(prev); snapRef.current = JSON.parse(snapTexteRef.current); }
+      const avant = snapRef.current, avantTexte = snapTexteRef.current;
+      const h = histRef.current, n0 = h.passe.length, d0 = h.dernier, f0 = h.futur;
+      noterAvant(h, avant, Date.now());
       const next = mutator({ ...prev });
       marquerSaisiesDR(avant, next, saisieDR);
-      snapRef.current = JSON.parse(JSON.stringify(next));
+      const texte = JSON.stringify(next);
+      snapRef.current = JSON.parse(texte); snapTexteRef.current = texte;
+      // Pas une action à annuler si rien n'a changé, ou seulement le mois ouvert (simple comparaison de textes)
+      const sansEffet = texte === avantTexte || (next.moisActif !== avant.moisActif && JSON.stringify({ ...next, moisActif: avant.moisActif }) === avantTexte);
+      if (sansEffet) { h.passe.length = n0; h.dernier = d0; h.futur = f0; }
       pendingRef.current = next;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => persist(next), SAVE_DEBOUNCE_MS);
       return next;
     });
-  }, [persist, editable, saisieDR]);
+    queueMicrotask(majHistInfo);
+  }, [persist, editable, saisieDR, majHistInfo]);
+
+  // Remet un état de l'historique (copie : les états gardés ne sont jamais modifiés) et l'enregistre
+  const appliquerEtat = useCallback((etat) => {
+    const t = JSON.stringify(etat);
+    const copie = JSON.parse(t);
+    snapRef.current = JSON.parse(t); snapTexteRef.current = t;
+    pendingRef.current = copie;
+    setAgency(copie);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => persist(copie), SAVE_DEBOUNCE_MS);
+    majHistInfo();
+  }, [persist, majHistInfo]);
+  const etatCourant = () => snapRef.current || JSON.parse(JSON.stringify(agencyRef.current));
+  const annuler = useCallback(() => {
+    if (!editable || !agencyRef.current) return false;
+    const x = annulerHisto(histRef.current, etatCourant());
+    if (!x) return false;
+    appliquerEtat(x);
+    return true;
+  }, [editable, appliquerEtat]);
+  const retablir = useCallback(() => {
+    if (!editable || !agencyRef.current) return false;
+    const x = retablirHisto(histRef.current, etatCourant());
+    if (!x) return false;
+    appliquerEtat(x);
+    return true;
+  }, [editable, appliquerEtat]);
+
+  // Raccourcis clavier : Ctrl+Z (Cmd+Z) annule, Ctrl+Y ou Ctrl+Maj+Z rétablit
+  useEffect(() => {
+    const f = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const k = (e.key || '').toLowerCase();
+      const redo = k === 'y' || (k === 'z' && e.shiftKey);
+      if (k !== 'z' && k !== 'y') return;
+      if (!agencyRef.current || !editable) return;
+      e.preventDefault();
+      // le champ en cours de frappe est relâché, pour afficher la valeur remise
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      const fait = redo ? retablir() : annuler();
+      toast(fait ? (redo ? 'Modification rétablie' : 'Modification annulée') : (redo ? 'Rien à rétablir' : 'Rien à annuler'), 'info');
+    };
+    document.addEventListener('keydown', f);
+    return () => document.removeEventListener('keydown', f);
+  }, [annuler, retablir, editable]);
 
   // Données écrites par le CG pendant que l'agence est ouverte : mises à jour en mémoire,
   // sinon la sauvegarde automatique suivante réécrirait l'ancienne version.
   // brut = true : simple remplacement de champs (ex. équipe importée), sans verrou CG.
   const applyExternal = useCallback((nom, data, brut = false) => {
     if (!nom || nom !== agenceNom) return;
-    snapRef.current = null;
+    snapRef.current = null; viderHisto();
     setAgency((prev) => {
       if (!prev) return prev;
       const next = brut ? { ...prev, ...data } : appliquerRefCG({ ...prev }, data);
@@ -205,7 +266,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     versionRef.current = v;
     setActiveVersion(v);
     majMeta({ ...(metaRef.current || DEFAULT_META()), activeVersion: v });
-    snapRef.current = null;    setAgency(a);
+    snapRef.current = null; viderHisto();    setAgency(a);
     const remplie = !!(data.versions && data.versions[v] && Object.keys(data.versions[v]).length);
     baseRef.current = remplie ? JSON.parse(JSON.stringify(data.versions[v])) : null;
     metaBaseRef.current = data.meta ? JSON.parse(JSON.stringify(data.meta)) : null;
@@ -279,7 +340,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   }, [saveNow, majMeta]);
 
   const value = {
-    agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal, saisieDR,
+    agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal, saisieDR, annuler, retablir, histInfo,
     budgetId, activeVersion, meta, versionsRemplies, validation,
     switchVersion, duplicateVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush, recharger
   };

@@ -34,6 +34,21 @@ function SaveButton() {
   );
 }
 
+// Annuler / rétablir (comme dans Excel) — aussi Ctrl+Z et Ctrl+Y
+function BoutonsHistorique() {
+  const { agency, agenceNom, editable, annuler, retablir, histInfo } = useBudget();
+  if (!agency || !agenceNom || !editable) return null;
+  const n = histInfo.annuler, r = histInfo.retablir;
+  return (
+    <>
+      <button className="soma-btn-ghost" data-testid="btn-annuler" disabled={!n} title={n ? 'Annuler la dernière modification (Ctrl+Z) — ' + n + ' possible' + (n > 1 ? 's' : '') : 'Rien à annuler'}
+        onClick={() => { if (annuler()) toast('Modification annulée', 'info'); }} style={{ opacity: n ? 1 : 0.4 }}>↶</button>
+      <button className="soma-btn-ghost" data-testid="btn-retablir" disabled={!r} title={r ? 'Rétablir (Ctrl+Y) — ' + r + ' possible' + (r > 1 ? 's' : '') : 'Rien à rétablir'}
+        onClick={() => { if (retablir()) toast('Modification rétablie', 'info'); }} style={{ opacity: r ? 1 : 0.4 }}>↷</button>
+    </>
+  );
+}
+
 // Centre d'attention (port de updateAttentionCenter / toggleAttentionPanel)
 function AttentionCenter({ onNavigate }) {
   const { agency, agenceNom } = useBudget();
@@ -195,6 +210,7 @@ export default function AppShell() {
         <div className="soma-user">
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
+          <BoutonsHistorique />
           {['rex', 'cg', 'admin'].includes(profile.role) ? <SaveButton /> : null}
           <button className="soma-btn-ghost" data-testid="btn-mdp" onClick={() => setMdpOuvert(true)} title="Changer mon mot de passe">🔑</button>
           <button className="soma-btn-ghost" onClick={logout}>Déconnexion</button>
