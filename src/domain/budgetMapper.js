@@ -115,6 +115,8 @@ export function migrateAgency(a) {
   if (!Array.isArray(a.cal)) a.cal = [];
   // Calendrier scolaire officiel 2027 corrigé (nov. 2026) : un calendrier construit avant est régénéré
   if (a.cal.length && a.calScolaire !== 2) genCal(a);
+  // TXR de référence saisi par le CG après la création du budget : repris dans les champs vides du REX
+  if (a.histTXR2026) { if (a.histTXR === null || a.histTXR === undefined || a.histTXR === '') a.histTXR = a.histTXR2026; if (a.targetTXR === null || a.targetTXR === undefined || a.targetTXR === '') a.targetTXR = a.histTXR2026; }
   a.calScolaire = 2;
   if (!Array.isArray(a.hs50)) a.hs50 = Array(12).fill(null);
   if (a.drCostAnnual === undefined) a.drCostAnnual = 0;

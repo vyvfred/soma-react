@@ -24,6 +24,13 @@ export function pickRefCG(obj) {
 // Applique des données CG à un budget (ou une version) et recalcule le coût horaire.
 // Verrouille les champs de référence côté REX seulement si de vraies références sont posées.
 export function appliquerRefCG(cible, data) {
+  // TXR de référence 2026 du CG → « TXR moyen réalisé 2026 » et TXR cible du REX, tant que le REX ne les a pas changés
+  const ancienTXR = cible.histTXR2026;
+  if (data.histTXR2026 !== undefined && data.histTXR2026 !== null && data.histTXR2026 !== '') {
+    ['histTXR', 'targetTXR'].forEach((k) => {
+      if (cible[k] === null || cible[k] === undefined || cible[k] === '' || +cible[k] === +ancienTXR) cible[k] = data.histTXR2026;
+    });
+  }
   Object.assign(cible, data);
   const refsReelles = Object.keys(data).some((k) =>
     CG_KEYS_SANS_VERROU.indexOf(k) < 0 && data[k] !== null && data[k] !== undefined && data[k] !== '');
