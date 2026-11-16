@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { euro } from '../../domain/format.js';
 import { needWeeks } from '../../domain/calculations.js';
+import { totauxCalendrier } from '../../domain/calTotaux.js';
 
 const M = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const WD = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -43,6 +44,8 @@ export default function CalScreen() {
         </span>
       </div>
 
+      <BandeauTotaux a={a} month={month} onMonth={setMonth} />
+
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12, fontSize: 12, color: 'var(--ink65)' }}>
         <Legend color="rgba(255,143,0,.15)" border="rgba(255,143,0,.4)" text={'Vacances scolaires (zone ' + (a.schoolZone || '?') + ')'} />
         <Legend color="rgba(139,127,255,.15)" border="rgba(139,127,255,.45)" text="Samedi / Dimanche" />
@@ -82,6 +85,70 @@ export default function CalScreen() {
                 <td style={{ padding: '4px 8px', textAlign: 'center' }}>{w.days}</td>
                 <td className="num" style={{ padding: '4px 8px', textAlign: 'right' }}>{euro(w.ca)}</td>
                 <td className="num" style={{ padding: '4px 8px', textAlign: 'right' }}>{w.hours.toFixed(1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+const M3 = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+const pct = (x) => (x * 100).toFixed(1).replace('.', ',') + ' %';
+
+function BandeauTotaux({ a, month, onMonth }) {
+  const { mois, total } = totauxCalendrier(a.cal);
+  const t = mois[month];
+  const kpis = [
+    ['CA du mois', euro(t.ca), true],
+    ["Part de l'année", pct(t.part)],
+    ['CA moyen / jour', euro(t.moyJour)],
+    ['Jours ouvrés', t.ouvres],
+    ['Vacances', t.vacances],
+    ['Samedis', t.samedis],
+    ['Dimanches', t.dimanches],
+    ['Fériés', t.feries]
+  ];
+  const lignes = [
+    ['Jours ouvrés', 'ouvres'], ['Vacances', 'vacances'], ['Samedis', 'samedis'], ['Dimanches', 'dimanches'], ['Fériés', 'feries'], ['Total jours', 'jours'],
+    ['CA Sanitaire', 'san', true]
+  ];
+  if (a.actSai) lignes.push(['CA Saisonnier', 'sai', true]);
+  if (a.actTP) lignes.push(['CA Transport de personnes', 'tp', true]);
+  lignes.push(['CA total', 'ca', true, true], ["Part de l'année", 'part', 'pct']);
+  const fmt = (v, k) => (k === 'pct' ? pct(v) : k ? euro(v) : v);
+  const cell = { padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
+  const sel = { background: 'rgba(139,127,255,.14)' };
+  return (
+    <div data-testid="cal-totaux-mensuels" style={{ marginBottom: 16, border: '1px solid var(--border)', background: 'var(--bg3, var(--card))', padding: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Récapitulatif — {M[month]}</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        {kpis.map(([l, v, fort]) => (
+          <div key={l} style={{ minWidth: 92, padding: '6px 10px', border: '1px solid var(--border)', background: 'var(--card)' }}>
+            <div style={{ fontSize: 10, color: 'var(--ink65)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{l}</div>
+            <div style={{ fontSize: fort ? 16 : 14, fontWeight: 700, fontFamily: 'DM Mono, monospace', color: fort ? 'var(--violet2, var(--violet))' : undefined }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
+          <thead>
+            <tr style={{ color: 'var(--ink65)' }}>
+              <th style={{ ...cell, textAlign: 'left' }}>Totaux mensuels</th>
+              {mois.map((m) => (
+                <th key={m.month} data-mois={m.month} onClick={() => onMonth(m.month)} title={'Afficher ' + M[m.month]}
+                  style={{ ...cell, cursor: 'pointer', textDecoration: m.month === month ? 'none' : 'underline dotted', ...(m.month === month ? sel : {}) }}>{M3[m.month]}</th>
+              ))}
+              <th style={cell}>Année</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lignes.map(([l, k, f, fort]) => (
+              <tr key={k} style={{ borderTop: '1px solid var(--border)', fontWeight: fort ? 700 : undefined }}>
+                <td style={{ ...cell, textAlign: 'left' }}>{l}</td>
+                {mois.map((m) => <td key={m.month} className="num" style={{ ...cell, ...(m.month === month ? sel : {}) }}>{fmt(m[k], f)}</td>)}
+                <td className="num" style={{ ...cell, fontWeight: 700 }}>{fmt(total[k], f)}</td>
               </tr>
             ))}
           </tbody>
