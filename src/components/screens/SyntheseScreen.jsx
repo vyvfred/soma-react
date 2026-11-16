@@ -4,6 +4,8 @@ import { syntheseBudget, coutChoix, bilanEnveloppesCP, indicateursDetailles } fr
 import { euro, pct } from '../../domain/format.js';
 import { Pourquoi } from '../Vision.jsx';
 import { totauxCalendrier } from '../../domain/calTotaux.js';
+import { montant } from '../../domain/memoSIG.js';
+import { M } from '../../domain/calculations.js';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -54,6 +56,39 @@ function CAMensuel({ a, caMensuel, max }) {
   );
 }
 
+// Masse salariale / CA mois par mois (charges de personnel, quotes-parts comprises, comme l'indicateur annuel)
+const couleurMS = (t) => (t > 85 ? 'var(--orange, #c45300)' : t > 75 ? '#b8860b' : 'var(--green, #2e7d6f)');
+function RatioMSMensuel({ a }) {
+  const ca = M.map((_, m) => montant(a, "Chiffre d'affaires", m));
+  const ms = M.map((_, m) => montant(a, 'Charges de personnel', m));
+  const caAn = ca.reduce((x, y) => x + y, 0), msAn = ms.reduce((x, y) => x + y, 0);
+  const ratio = (c, s) => (c > 0 ? (s / c) * 100 : null);
+  const cel = { padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
+  const fmtR = (r) => (r === null ? '—' : pct(r));
+  return (
+    <div data-testid="ratio-ms-mensuel" style={{ marginBottom: 18, border: '1px solid var(--border)', padding: '12px 14px' }}>
+      <div style={{ fontWeight: 700, marginBottom: 8 }}>Masse salariale / CA, mois par mois</div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            <tr style={{ color: 'var(--ink65)' }}><th style={{ ...cel, textAlign: 'left' }}></th>{M.map((m) => <th key={m} style={cel}>{m}</th>)}<th style={cel}>Année</th></tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderTop: '1px solid var(--border)' }}><td style={{ ...cel, textAlign: 'left' }}>CA</td>{ca.map((v, m) => <td key={m} className="num" style={cel}>{kEuro(v)}</td>)}<td className="num" style={{ ...cel, fontWeight: 700 }}>{kEuro(caAn)}</td></tr>
+            <tr style={{ borderTop: '1px solid var(--border)' }}><td style={{ ...cel, textAlign: 'left' }}>Masse salariale</td>{ms.map((v, m) => <td key={m} className="num" style={cel}>{kEuro(v)}</td>)}<td className="num" style={{ ...cel, fontWeight: 700 }}>{kEuro(msAn)}</td></tr>
+            <tr style={{ borderTop: '1px solid var(--border)', fontWeight: 700 }}>
+              <td style={{ ...cel, textAlign: 'left' }}>MS / CA</td>
+              {M.map((_, m) => { const r = ratio(ca[m], ms[m]); return <td key={m} className="num" data-testid={'ratio-ms-' + m} style={{ ...cel, color: r === null ? undefined : couleurMS(r) }}>{fmtR(r)}</td>; })}
+              <td className="num" style={{ ...cel, color: ratio(caAn, msAn) === null ? undefined : couleurMS(ratio(caAn, msAn)) }}>{fmtR(ratio(caAn, msAn))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Vert jusqu'à 75 %, jaune de 75 à 85 %, orange au-delà. Masse salariale = charges de personnel du mois (quotes-parts comprises).</div>
+    </div>
+  );
+}
+
 const repli = { border: '1px solid var(--border)', marginTop: 14 };
 const sommaire = { cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fontSize: 14 };
 
@@ -74,7 +109,7 @@ export default function SyntheseScreen() {
   const coulVerdict = s.verdict.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)';
 
   return (
-    <div className="card">
+    <div className="card syntheseGrand">
       <h2 style={{ marginBottom: 18 }}>Synthèse du budget — {a.name || agenceNom} 2027</h2>
 
       <div data-testid="synthese-verdict" style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '14px 18px', marginBottom: 16, border: '1px solid ' + coulVerdict, background: s.verdict.ok ? 'rgba(46,125,111,.08)' : 'rgba(196,83,0,.08)' }}>
@@ -86,6 +121,8 @@ export default function SyntheseScreen() {
       </div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>{s.kpis.map((k) => <KpiCard key={k.label} {...k} />)}</div>
+
+      <RatioMSMensuel a={a} />
 
       {s.lecture ? (
         <div data-testid="synthese-lecture" style={{ display: 'flex', gap: 10, padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}>

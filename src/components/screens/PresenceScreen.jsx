@@ -154,19 +154,6 @@ export default function PresenceScreen() {
   const nbRoulants = (a.employees || []).filter((e) => ['DEA', 'AA', 'TAXI', 'TPMR'].includes((e.qual || '').toUpperCase())).length;
   const hasObjectif = +a.targetCA > 0 && +a.targetTXR > 0;
 
-  if (nbRoulants === 0 || !hasObjectif) {
-    return (
-      <div className="card">
-        <h2 style={{ marginBottom: 10 }}>Présence &amp; HS — {agenceNom}</h2>
-        <p className="hint">
-          {nbRoulants === 0
-            ? 'La présence et les heures supplémentaires se calculent à partir de vos salariés roulants. Renseignez d\'abord votre équipe, puis revenez ici.'
-            : 'Le besoin en heures se calcule à partir de votre objectif de chiffre d\'affaires et de votre TXR. Renseignez votre objectif pour voir apparaître vos semaines et leur charge.'}
-        </p>
-      </div>
-    );
-  }
-
   // ── Mutations (copie profonde : l'optimiseur des CP mute l'agence en profondeur) ──
   const muter = (fn) => update((draft) => { const a2 = clone(draft); fn(a2); return a2; });
   const ouvrir = (m) => { setOuvert(m); if (editable && (a.moisVerrouilles || []).indexOf(m) < 0) muter((x) => { x.moisActif = m; }); };
@@ -187,7 +174,7 @@ export default function PresenceScreen() {
   };
   // Absentéisme modifié : les CP acquis changent, la répartition des mois non validés est refaite automatiquement
   // (seulement si des congés étaient déjà posés ; les mois validés ne bougent pas).
-  const majCPApresAbsenteisme = (x) => { if (cpPlanifies(x) > 0) repartirCPAuto(x); };
+  const majCPApresAbsenteisme = (x) => { if (cpPlanifies(x) > 0 && +x.targetCA > 0 && +x.targetTXR > 0) repartirCPAuto(x); };
   const setSick = (m) => (e) => {
     const v = e.target.value;
     muter((x) => { x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; majCPApresAbsenteisme(x); });
@@ -197,6 +184,22 @@ export default function PresenceScreen() {
     const v = e.target.value;
     update((draft) => { draft.hs50 = (draft.hs50 || Array(12).fill(null)).slice(); draft.hs50[m] = v === '' ? null : Math.max(0, Math.min(100, +v)); return draft; });
   };
+
+  // Objectif ou équipe roulante manquants : les semaines ne peuvent pas être calculées, mais l'absentéisme
+  // se saisit quand même (le DR qui démarre un budget doit pouvoir le renseigner).
+  if (nbRoulants === 0 || !hasObjectif) {
+    return (
+      <div className="card">
+        <h2 style={{ marginBottom: 10 }}>Présence &amp; HS — {agenceNom}</h2>
+        <p className="hint" data-testid="presence-incomplet" style={{ padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+          {nbRoulants === 0
+            ? 'Les congés et les heures supplémentaires se calculent à partir des salariés roulants : renseignez d\'abord l\'équipe pour les voir apparaître. L\'absentéisme peut déjà être saisi ci-dessous.'
+            : 'Les congés et les heures supplémentaires se calculent à partir de l\'objectif de chiffre d\'affaires et du TXR : renseignez l\'objectif pour les voir apparaître. L\'absentéisme peut déjà être saisi ci-dessous.'}
+        </p>
+        <BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} />
+      </div>
+    );
+  }
 
   // ── Indicateurs annuels ──
   const rows = hsRows(a);
@@ -224,12 +227,6 @@ export default function PresenceScreen() {
       ? <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours acquis que de jours posés : relancez la répartition ou posez-les à la main">⚠ {rest.toFixed(1)} J encore à poser</span>
       : <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours posés que de jours acquis, congés ajoutés à la main ou mois déjà validés : relancez la répartition ou retirez des congés">⚠ {Math.abs(rest).toFixed(1)} J posés en trop</span>;
 
-  // ── Absentéisme ──
-  const filled = a.sick.filter((v) => v !== null && v !== undefined);
-  const avg = filled.length ? filled.reduce((acc, v) => acc + (+v || 0), 0) / filled.length : 0;
-  const cible = +a.targetAbsRate || 0;
-  const diff = avg - cible;
-  const aCible = Math.abs(diff) <= 0.1;
 
   const hs50 = a.hs50 || Array(12).fill(null);
   const moy50 = moyenneHS50(a);
@@ -261,49 +258,7 @@ export default function PresenceScreen() {
       ) : null}
 
       {/* ── Absentéisme ── */}
-      <Repli titre="1. Absentéisme maladie & AT, mois par mois" testid="repli-maladie">
-        <p className="hint" style={{ fontSize: 12, margin: '6px 0 0' }}>
-          À saisir en premier : les congés payés acquis par l'équipe en dépendent (pas d'acquisition pendant les absences maladie).
-          Si vous le modifiez après avoir réparti les congés, le nombre de jours acquis change et le compteur des congés affiche un écart.
-        </p>
-        <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
-          <span>🩺</span>
-          <div>
-            <b>Taux d'absentéisme fixé par le contrôle de gestion : {pct(cible)}</b> (basé sur l'historique).<br />
-            Vous pouvez ajuster la répartition mois par mois, mais la <b>moyenne annuelle doit rester à {pct(cible)}</b>.
-          </div>
-        </div>
-        <div style={{ overflowX: 'auto', marginBottom: 12 }}>
-          <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '4px 8px' }}>Mois</th>
-                {M.map((m) => <th key={m} style={{ padding: '4px 6px' }}>{m}</th>)}
-                <th style={{ padding: '4px 8px' }}>Moy</th>
-                <th style={{ padding: '4px 8px' }}>Cible</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ padding: '4px 8px' }}><b>Maladie &amp; AT %</b></td>
-                {a.sick.map((v, i) => (
-                  <td key={i} style={{ padding: '2px 4px' }}>
-                    <input type="number" data-saisie-dr={estSaisieDR(a, 'sick.' + i) ? '1' : undefined} value={v ?? ''} placeholder="—" disabled={!editable} onChange={setSick(i)} style={{ width: 52 }} />
-                  </td>
-                ))}
-                <td className="num" style={{ padding: '4px 8px' }}><span className={aCible ? 'ok' : 'warn'}>{pct(avg)}</span></td>
-                <td style={{ padding: '4px 8px' }}>{pct(cible)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 13, color: aCible ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>
-            {aCible ? '✓ Conforme à la cible du contrôle de gestion' : 'Écart de ' + pct(Math.abs(diff)) + ' ' + (diff > 0 ? 'au-dessus' : 'en dessous') + ' de la cible — à corriger'}
-          </span>
-          {editable && !aCible ? <button className="secondary" onClick={rebalance}>Rééquilibrer automatiquement</button> : null}
-        </div>
-      </Repli>
+      <BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} />
 
       {/* ── Congés payés : répartition, enveloppes, compteur ── */}
       <h3 style={{ fontSize: 15, margin: '18px 0 4px' }}>2. Congés payés</h3>
@@ -485,6 +440,60 @@ export default function PresenceScreen() {
 }
 
 // ── Congés des non-roulants : jours par mois et compteur acquis / posés (aucun coût, pas de remplacement) ──
+// ── Absentéisme maladie & AT, mois par mois (toujours affiché, même budget incomplet) ──
+function BlocAbsenteisme({ a, editable, setSick, rebalance }) {
+  const filled = a.sick.filter((v) => v !== null && v !== undefined);
+  const avg = filled.length ? filled.reduce((acc, v) => acc + (+v || 0), 0) / filled.length : 0;
+  const cible = +a.targetAbsRate || 0;
+  const diff = avg - cible;
+  const aCible = Math.abs(diff) <= 0.1;
+  return (
+    <Repli titre="1. Absentéisme maladie & AT, mois par mois" testid="repli-maladie">
+      <p className="hint" style={{ fontSize: 12, margin: '6px 0 0' }}>
+        À saisir en premier : les congés payés acquis par l'équipe en dépendent (pas d'acquisition pendant les absences maladie).
+        Si vous le modifiez après avoir réparti les congés, SOMA refait aussitôt la répartition des mois non validés.
+      </p>
+      <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
+        <span>🩺</span>
+        <div>
+          <b>Taux d'absentéisme fixé par le contrôle de gestion : {pct(cible)}</b> (basé sur l'historique).<br />
+          Vous pouvez ajuster la répartition mois par mois, mais la <b>moyenne annuelle doit rester à {pct(cible)}</b>.
+        </div>
+      </div>
+      <div style={{ overflowX: 'auto', marginBottom: 12 }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '4px 8px' }}>Mois</th>
+              {M.map((m) => <th key={m} style={{ padding: '4px 6px' }}>{m}</th>)}
+              <th style={{ padding: '4px 8px' }}>Moy</th>
+              <th style={{ padding: '4px 8px' }}>Cible</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ padding: '4px 8px' }}><b>Maladie &amp; AT %</b></td>
+              {a.sick.map((v, i) => (
+                <td key={i} style={{ padding: '2px 4px' }}>
+                  <input type="number" data-saisie-dr={estSaisieDR(a, 'sick.' + i) ? '1' : undefined} value={v ?? ''} placeholder="—" disabled={!editable} onChange={setSick(i)} style={{ width: 52 }} />
+                </td>
+              ))}
+              <td className="num" style={{ padding: '4px 8px' }}><span className={aCible ? 'ok' : 'warn'}>{pct(avg)}</span></td>
+              <td style={{ padding: '4px 8px' }}>{pct(cible)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 13, color: aCible ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>
+          {aCible ? '✓ Conforme à la cible du contrôle de gestion' : 'Écart de ' + pct(Math.abs(diff)) + ' ' + (diff > 0 ? 'au-dessus' : 'en dessous') + ' de la cible — à corriger'}
+        </span>
+        {editable && !aCible ? <button className="secondary" onClick={rebalance}>Rééquilibrer automatiquement</button> : null}
+      </div>
+    </Repli>
+  );
+}
+
 function CongesNonRoulants({ a, editable, muter }) {
   const c = a.cpNR || cpNRVide();
   const nb = salariesNR(a).length;

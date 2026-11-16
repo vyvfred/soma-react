@@ -162,3 +162,6 @@
 /* Champs numériques : pas de flèches +/- (gênent la saisie et la lecture) */
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+
+/* Synthèse écrite plus grande (nov. 2026) */
+.syntheseGrand{zoom:1.15;}
