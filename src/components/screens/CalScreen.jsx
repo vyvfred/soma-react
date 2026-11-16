@@ -104,14 +104,14 @@ function BandeauTotaux({ a, month, onMonth }) {
     ['CA du mois', euro(t.ca), true],
     ["Part de l'année", pct(t.part)],
     ['CA moyen / jour', euro(t.moyJour)],
-    ['Jours ouvrés', t.ouvres],
+    ['Jours de semaine hors vacances scolaires', t.ouvres],
     ['Vacances', t.vacances],
     ['Samedis', t.samedis],
     ['Dimanches', t.dimanches],
     ['Fériés', t.feries]
   ];
   const lignes = [
-    ['Jours ouvrés', 'ouvres'], ['Vacances', 'vacances'], ['Samedis', 'samedis'], ['Dimanches', 'dimanches'], ['Fériés', 'feries'], ['Total jours', 'jours'],
+    ['Jours de semaine hors vacances scolaires', 'ouvres'], ['Vacances', 'vacances'], ['Samedis', 'samedis'], ['Dimanches', 'dimanches'], ['Fériés', 'feries'], ['Total jours', 'jours'],
     ['CA Sanitaire', 'san', true]
   ];
   if (a.actSai) lignes.push(['CA Saisonnier', 'sai', true]);

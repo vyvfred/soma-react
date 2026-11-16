@@ -37,7 +37,7 @@ function CAMensuel({ a, caMensuel, max }) {
   const t = totauxCalendrier(a.cal).mois;
   return (
     <div className="chartBox" style={{ gridColumn: '1/-1' }} data-testid="ca-mensuel">
-      <div className="chartTitle">CA mensuel budgété, jours ouvrés et jours de vacances scolaires</div>
+      <div className="chartTitle">CA mensuel budgété, jours de semaine hors vacances et jours de vacances scolaires</div>
       <div className="caMois">
         {caMensuel.map((x) => (
           <div key={x.mois} className="caMoisCol" title={x.mois + ' : ' + euro(x.value)}>
@@ -47,9 +47,9 @@ function CAMensuel({ a, caMensuel, max }) {
         ))}
       </div>
       <div className="caMoisPied">
-        {caMensuel.map((x, i) => <div key={x.mois}><b>{x.mois}</b>{t[i].ouvres} ouv.<br />{t[i].vacances} VS</div>)}
+        {caMensuel.map((x, i) => <div key={x.mois}><b>{x.mois}</b>{t[i].ouvres} sem.<br />{t[i].vacances} VS</div>)}
       </div>
-      <div className="caMoisLeg">ouv. = jours ouvrés hors vacances scolaires · VS = jours de semaine en vacances scolaires (zone {a.schoolZone || '?'})</div>
+      <div className="caMoisLeg">sem. = jours de semaine hors vacances scolaires · VS = jours de semaine en vacances scolaires (zone {a.schoolZone || '?'})</div>
     </div>
   );
 }

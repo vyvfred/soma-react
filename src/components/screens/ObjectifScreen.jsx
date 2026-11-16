@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -29,6 +30,8 @@ function SaveIndicator({ status }) {
 export default function ObjectifScreen() {
   const { agency: a, loading, error, saveStatus, update, editable, agenceNom } = useBudget();
   const { profile } = useAuth();
+  // Texte en cours de frappe : garde « 85, » ou « 85,5 » tel quel tant que le champ a le focus
+  const [brouillon, setBrouillon] = useState({});
   if (!agenceNom) return <div className="card"><h2>Objectif</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Objectif</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Objectif</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
@@ -39,10 +42,14 @@ export default function ObjectifScreen() {
   // Données historiques verrouillées par le CG : lecture seule pour le REX
   const verrouCG = !!a.cgLocked && profile && profile.role === 'rex';
 
+  const valeur = (field) => (brouillon[field] !== undefined ? brouillon[field] : a[field] ?? '');
+  const fin = (field) => () => setBrouillon((b) => { const n = { ...b }; delete n[field]; return n; });
   const nombre = (field, recalcCal = false) => (e) => {
-    const raw = e.target.value.replace(/[\s ]/g, '').replace(',', '.');
-    const val = raw === '' ? null : Number(raw);
-    if (raw !== '' && Number.isNaN(val)) return;
+    const texte = e.target.value;
+    const raw = texte.replace(/[\s  ]/g, '').replace(',', '.');
+    if (raw !== '' && !/^-?\d*\.?\d*$/.test(raw)) return;
+    setBrouillon((b) => ({ ...b, [field]: texte }));
+    const val = raw === '' || raw === '-' || raw === '.' ? null : Number(raw);
     update((d) => { d[field] = val; if (recalcCal) genCal(d); return d; });
   };
   const texte = (field) => (e) => { const v = e.target.value; update((d) => { d[field] = v; return d; }); };
@@ -57,7 +64,7 @@ export default function ObjectifScreen() {
   const ref = (field, label, placeholder, help) => (
     <div>
       <label style={lbl} htmlFor={'obj-' + field}>{label}{help ? <span title={help}> ⓘ</span> : null}</label>
-      <input id={'obj-' + field} data-saisie-dr={estSaisieDR(a, field) ? '1' : undefined} type="text" inputMode="decimal" placeholder={placeholder} value={a[field] ?? ''} onChange={nombre(field)}
+      <input id={'obj-' + field} data-saisie-dr={estSaisieDR(a, field) ? '1' : undefined} type="text" inputMode="decimal" placeholder={placeholder} value={valeur(field)} onChange={nombre(field)} onBlur={fin(field)}
         disabled={!editable || verrouCG} title={verrouCG ? 'Verrouillé par le contrôleur de gestion' : ''} style={verrouCG ? { background: 'var(--bg2)', color: 'var(--ink65)' } : undefined} />
     </div>
   );
@@ -77,7 +84,7 @@ export default function ObjectifScreen() {
         <label style={{ flex: 1, minWidth: 220 }}>
           <span style={{ display: 'block', fontSize: 12, color: 'var(--ink65)', marginBottom: 6 }}>Objectif de chiffre d'affaires</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="text" inputMode="numeric" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetCA') ? '1' : undefined} value={a.targetCA ?? ''} onChange={nombre('targetCA')} disabled={!editable} style={{ flex: 1 }} />
+            <input type="text" inputMode="numeric" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetCA') ? '1' : undefined} value={valeur('targetCA')} onBlur={fin('targetCA')} onChange={nombre('targetCA')} disabled={!editable} style={{ flex: 1 }} />
             <span style={{ color: 'var(--ink65)' }}>€</span>
           </span>
         </label>
@@ -86,7 +93,7 @@ export default function ObjectifScreen() {
             TXR cible <span className="objKpiHelp" title="Taux de recette par heure : chiffre d'affaires ÷ heures de conduite. Généralement proche du TXR réalisé en 2026.">?</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetTXR') ? '1' : undefined} value={a.targetTXR ?? ''} onChange={nombre('targetTXR')} disabled={!editable} style={{ flex: 1 }} />
+            <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetTXR') ? '1' : undefined} value={valeur('targetTXR')} onBlur={fin('targetTXR')} onChange={nombre('targetTXR')} disabled={!editable} style={{ flex: 1 }} />
             <span style={{ color: 'var(--ink65)' }}>€/h</span>
           </span>
         </label>

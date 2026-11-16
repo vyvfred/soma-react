@@ -396,7 +396,7 @@ export default function PresenceScreen() {
                 <td style={{ padding: '4px 8px' }}><b>% HS à +50%</b></td>
                 {hs50.map((v, i) => (
                   <td key={i} style={{ padding: '2px 4px' }}>
-                    <input data-testid={'hs50-' + i} data-saisie-dr={estSaisieDR(a, 'hs50.' + i) ? '1' : undefined} type="number" min="0" max="100" value={v ?? ''} placeholder="0" disabled={!editable} onChange={setHS50(i)} style={{ width: 52 }} />
+                    <input data-testid={'hs50-' + i} data-saisie-dr={estSaisieDR(a, 'hs50.' + i) ? '1' : undefined} type="number" min="0" max="100" value={v ?? ''} placeholder="0" disabled={!editable} onChange={setHS50(i)} style={{ width: '100%', minWidth: 52, padding: '6px 4px', textAlign: 'center' }} />
                   </td>
                 ))}
                 <td className="num" style={{ padding: '4px 8px' }}><b>{pct(moy50)}</b></td>
@@ -454,11 +454,13 @@ export default function PresenceScreen() {
 
       {/* ── HS des improductifs ── */}
       <Repli titre="Personnel improductif (régulateurs, responsables)" testid="repli-improductif" open={false}>
-        <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>La masse salariale des improductifs est saisie en une ligne globale par le contrôleur de gestion. Leur absentéisme suit le même taux que les roulants, mois par mois. Renseignez ici, si besoin, leurs heures supplémentaires par semaine (majorées selon le barème 25/50 du mois). Leurs congés n'ont pas d'impact sur la production ; leurs jours de congés se planifient dans « Congés des non-roulants », plus bas.</p>
+        <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>La masse salariale des improductifs est saisie en une ligne globale par le contrôleur de gestion. Leur absentéisme suit le même taux que les roulants, mois par mois. Renseignez ici, si besoin, leurs heures supplémentaires par semaine (majorées selon le barème 25/50 du mois). Indiquez aussi le nombre de jours de congés payés qu'ils posent chaque mois.</p>
         <div style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 12 }}>
           Absentéisme des improductifs : <b>{pct(imp.absMoy)}</b> en moyenne (aligné sur les roulants) · ratio de maintien de salaire : <b>{imp.ratioMaintien} %</b>
           {imp.totalHS ? <> · HS saisies : <b>{fmt1(imp.totalHS)} h</b> soit <b>{euro(imp.totalCout)}</b></> : null}
         </div>
+        <CongesNonRoulants a={a} editable={editable} muter={muter} />
+        <h4 style={{ margin: '10px 0 8px', fontSize: 13, color: 'var(--ink65)' }}>Heures supplémentaires improductives par semaine</h4>
         <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
             <thead style={{ position: 'sticky', top: 0, background: 'var(--bg)' }}>
@@ -476,8 +478,6 @@ export default function PresenceScreen() {
           </table>
         </div>
       </Repli>
-
-      <CongesNonRoulants a={a} editable={editable} muter={muter} />
     </div>
   );
 }
@@ -492,10 +492,11 @@ function CongesNonRoulants({ a, editable, muter }) {
   const setJour = (i, v) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; x.cpNR.jours[i] = v === '' ? null : +String(v).replace(',', '.'); });
   const cellule = { padding: '4px 6px' };
   return (
-    <Repli titre="Congés des non-roulants" testid="repli-cp-nr" open={false}>
-      <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>
-        Indiquez le nombre de jours de congés de l'équipe non roulante (régulateurs, responsables…) pour chaque mois, pour planifier toute l'équipe et vérifier que les jours acquis sont bien posés.
-        Ces congés n'ont <b>aucun coût</b> dans le budget : le salaire des non-roulants est déjà compté dans la ligne globale du contrôleur de gestion (un congé est payé) et ils ne sont pas remplacés.
+    <div data-testid="repli-cp-nr" style={{ marginBottom: 18 }}>
+      <h4 style={{ margin: '10px 0 6px', fontSize: 13, color: 'var(--ink65)' }}>Congés payés : nombre de jours par mois</h4>
+      <p className="hint" style={{ margin: '0 0 10px', fontSize: 12 }}>
+        Nombre de jours de congés de l'équipe non roulante pour chaque mois, pour planifier toute l'équipe et vérifier que les jours acquis sont bien posés.
+        Ces congés n'ont <b>aucun coût</b> dans le budget : leur salaire est déjà dans la ligne globale du contrôleur de gestion et ils ne sont pas remplacés.
         La part roulante d'un non-roulant (par exemple un régulateur à 20 % roulant) reste comptée avec les congés des roulants.
       </p>
       <div data-testid="cp-nr-compteur" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, marginBottom: 10 }}>
@@ -521,6 +522,6 @@ function CongesNonRoulants({ a, editable, muter }) {
           </tbody>
         </table>
       </div>
-    </Repli>
+    </div>
   );
 }
