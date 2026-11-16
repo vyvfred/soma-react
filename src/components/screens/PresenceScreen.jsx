@@ -1,7 +1,7 @@
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, coutRemplacementCPNR, coutRemplacementCPNRMois, coutJourRemplacementCPNR, pctRemplaceCPNR, salariesNR } from '../../domain/calculations.js';
+import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto } from '../../domain/repartitionCP.js';
 import { presenceInsight } from '../../domain/presenceInsight.js';
@@ -454,7 +454,7 @@ export default function PresenceScreen() {
 
       {/* ── HS des improductifs ── */}
       <Repli titre="Personnel improductif (régulateurs, responsables)" testid="repli-improductif" open={false}>
-        <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>La masse salariale des improductifs est saisie en une ligne globale par le contrôleur de gestion. Leur absentéisme suit le même taux que les roulants, mois par mois. Renseignez ici, si besoin, leurs heures supplémentaires par semaine (majorées selon le barème 25/50 du mois). Leurs congés n'ont pas d'impact sur la production ; leur remplacement se chiffre dans « Congés des non-roulants et remplacement », plus bas.</p>
+        <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>La masse salariale des improductifs est saisie en une ligne globale par le contrôleur de gestion. Leur absentéisme suit le même taux que les roulants, mois par mois. Renseignez ici, si besoin, leurs heures supplémentaires par semaine (majorées selon le barème 25/50 du mois). Leurs congés n'ont pas d'impact sur la production ; leurs jours de congés se planifient dans « Congés des non-roulants », plus bas.</p>
         <div style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 12 }}>
           Absentéisme des improductifs : <b>{pct(imp.absMoy)}</b> en moyenne (aligné sur les roulants) · ratio de maintien de salaire : <b>{imp.ratioMaintien} %</b>
           {imp.totalHS ? <> · HS saisies : <b>{fmt1(imp.totalHS)} h</b> soit <b>{euro(imp.totalCout)}</b></> : null}
@@ -482,31 +482,26 @@ export default function PresenceScreen() {
   );
 }
 
-// ── Congés des non-roulants : jours par mois et coût de remplacement (HS d'un collègue ou intérim) ──
+// ── Congés des non-roulants : jours par mois et compteur acquis / posés (aucun coût, pas de remplacement) ──
 function CongesNonRoulants({ a, editable, muter }) {
   const c = a.cpNR || cpNRVide();
   const nb = salariesNR(a).length;
   const acquis = cpNRAcquis(a);
   const saisis = cpNRSaisis(a);
   const reste = Math.round((acquis - saisis) * 10) / 10;
-  const mode = c.mode || 'hs';
-  const total = coutRemplacementCPNR(a);
-  const coutJour = coutJourRemplacementCPNR(a, 6);
-  const set = (fn) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; fn(x.cpNR); });
-  const num = (v) => (v === '' ? null : +String(v).replace(',', '.'));
+  const setJour = (i, v) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; x.cpNR.jours[i] = v === '' ? null : +String(v).replace(',', '.'); });
   const cellule = { padding: '4px 6px' };
   return (
-    <Repli titre="Congés des non-roulants et remplacement" testid="repli-cp-nr" open={false}>
+    <Repli titre="Congés des non-roulants" testid="repli-cp-nr" open={false}>
       <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>
-        Le salaire des non-roulants est déjà compté dans la ligne globale du contrôleur de gestion : un congé est payé, il ne change pas ce montant.
-        Ce qui coûte, c'est le <b>remplacement</b> pendant l'absence (un régulateur remplacé par un collègue en heures supplémentaires, ou par un intérimaire).
-        Indiquez le nombre de jours de congés de l'équipe non roulante pour chaque mois, puis comment ils sont remplacés : le coût s'ajoute aux charges de personnel du mois.
+        Indiquez le nombre de jours de congés de l'équipe non roulante (régulateurs, responsables…) pour chaque mois, pour planifier toute l'équipe et vérifier que les jours acquis sont bien posés.
+        Ces congés n'ont <b>aucun coût</b> dans le budget : le salaire des non-roulants est déjà compté dans la ligne globale du contrôleur de gestion (un congé est payé) et ils ne sont pas remplacés.
         La part roulante d'un non-roulant (par exemple un régulateur à 20 % roulant) reste comptée avec les congés des roulants.
       </p>
       <div data-testid="cp-nr-compteur" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, marginBottom: 10 }}>
         <span title="25 jours par an au prorata du temps de travail et de la part non roulante, moins l'absentéisme du mois">Acquis par {nb} non-roulant{nb > 1 ? 's' : ''} : <b>{acquis.toFixed(1)} J</b></span>
-        <span>Saisis : <b>{saisis.toFixed(1)} J</b></span>
-        <span>Reste : <b style={{ color: Math.abs(reste) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{reste.toFixed(1)} J</b></span>
+        <span>Posés : <b>{saisis.toFixed(1)} J</b></span>
+        <span>Reste à poser : <b style={{ color: Math.abs(reste) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{reste.toFixed(1)} J</b></span>
         {editable ? <button type="button" data-testid="cp-nr-repartir" onClick={() => muter((x) => repartirCPNRAuto(x))} style={{ marginLeft: 'auto', fontSize: 12 }}>↗ Répartir les jours acquis (60/20/20)</button> : null}
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -518,43 +513,13 @@ function CongesNonRoulants({ a, editable, muter }) {
               {M.map((_, i) => (
                 <td key={i} style={{ padding: '2px 3px' }}>
                   <input data-testid={'cpnr-' + i} data-saisie-dr={estSaisieDR(a, 'cpNR.jours.' + i) ? '1' : undefined} type="number" min="0" step="0.5" value={c.jours && c.jours[i] !== null && c.jours[i] !== undefined ? c.jours[i] : ''} placeholder="0" disabled={!editable}
-                    onChange={(e) => set((x) => { x.jours[i] = num(e.target.value); })} style={{ width: '100%', minWidth: 58, padding: '6px 4px', textAlign: 'center' }} />
+                    onChange={(e) => setJour(i, e.target.value)} style={{ width: '100%', minWidth: 58, padding: '6px 4px', textAlign: 'center' }} />
                 </td>
               ))}
               <td className="num" style={cellule}><b>{saisis.toFixed(1)}</b></td>
             </tr>
-            <tr style={{ color: 'var(--ink65)' }}>
-              <td style={cellule}>Coût de remplacement</td>
-              {M.map((_, i) => <td key={i} className="num" style={{ ...cellule, textAlign: 'right' }}>{coutRemplacementCPNRMois(a, i) ? euro(coutRemplacementCPNRMois(a, i)) : '—'}</td>)}
-              <td className="num" style={{ ...cellule, textAlign: 'right' }}><b>{euro(total)}</b></td>
-            </tr>
           </tbody>
         </table>
-      </div>
-      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 12, fontSize: 13 }}>
-        <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>Remplacement
-          <select data-testid="cp-nr-mode" value={mode} disabled={!editable} onChange={(e) => set((x) => { x.mode = e.target.value; })}>
-            <option value="hs">Heures supplémentaires d'un collègue</option>
-            <option value="interim">Intérim</option>
-            <option value="aucun">Pas de remplacement</option>
-          </select>
-        </label>
-        {mode !== 'aucun' ? (
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>Part des jours remplacés
-            <input data-testid="cp-nr-pct" type="number" min="0" max="100" value={c.pctRemplace ?? ''} placeholder="100" disabled={!editable} onChange={(e) => set((x) => { x.pctRemplace = num(e.target.value); })} style={{ width: 60 }} /> %
-          </label>
-        ) : null}
-        {mode === 'interim' ? (
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>Coût d'un jour d'intérim
-            <input data-testid="cp-nr-interim" type="number" min="0" value={c.coutJourInterim ?? ''} placeholder="0" disabled={!editable} onChange={(e) => set((x) => { x.coutJourInterim = num(e.target.value); })} style={{ width: 80 }} /> €
-          </label>
-        ) : null}
-      </div>
-      <div style={{ fontSize: 12, color: 'var(--ink65)', marginTop: 8 }}>
-        {mode === 'hs' ? <>Un jour remplacé = 7 h au coût horaire des non-roulants, majorées selon votre répartition 25 % / 50 % : environ <b>{euro(coutJour)}</b> par jour. </> : null}
-        {mode === 'interim' && !(+c.coutJourInterim > 0) ? <>Renseignez le coût d'un jour d'intérim pour chiffrer le remplacement. </> : null}
-        {mode === 'aucun' ? <>Les congés ne sont pas remplacés : aucun coût ajouté. </> : null}
-        Coût annuel ajouté aux charges de personnel : <b>{euro(total)}</b>{mode !== 'aucun' && pctRemplaceCPNR(a) < 100 ? <> ({pctRemplaceCPNR(a)} % des jours remplacés)</> : null}.
       </div>
     </Repli>
   );

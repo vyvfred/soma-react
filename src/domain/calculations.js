@@ -148,19 +148,14 @@ function cpGeneres(a) {
   });
   return Math.round(totalJ * 10) / 10;
 }
-// Congés des non-roulants (nov. 2026) : jours de CP saisis par mois pour l'équipe non roulante (total).
-// Leur salaire est déjà dans la ligne non-roulants du CG (un congé est payé) : seul le REMPLACEMENT coûte,
-// soit en heures supplémentaires d'un collègue (7 h × coût horaire improductif × majoration HS du mois),
-// soit en intérim (coût par jour saisi), au prorata de la part des jours réellement remplacés.
+// Congés des non-roulants (nov. 2026) : jours de CP saisis par mois pour l'équipe non roulante (total),
+// suivis avec un compteur acquis / posés. Aucun coût : leur salaire est déjà dans la ligne non-roulants
+// du CG (un congé est payé) et ils ne sont pas remplacés (décision de la direction des opérations).
 function salariesNR(a){return (a.employees||[]).filter(function(e){return !isRoulant(e.qual)&&(1-partRoulant(e))>0;});}
 function cpNRAcquisMois(a,m){let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal)*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
 function cpNRAcquis(a){return Math.round(M.reduce(function(s,_,m){return s+cpNRAcquisMois(a,m);},0)*10)/10;}
 function cpNRSaisis(a){let j=a.cpNR&&a.cpNR.jours;return j?Math.round(j.reduce(function(s,v){return s+(+v||0);},0)*10)/10:0;}
-function pctRemplaceCPNR(a){let v=a.cpNR?a.cpNR.pctRemplace:null;return (v===null||v===undefined||v==='')?100:Math.max(0,Math.min(100,+v||0));}
-function coutJourRemplacementCPNR(a,m){let c=a.cpNR||{},mode=c.mode||'hs';if(mode==='interim')return +c.coutJourInterim||0;if(mode==='hs')return 7*coutHoraireImproductif(a)*coefHSMois(a,m);return 0;}
-function coutRemplacementCPNRMois(a,m){let c=a.cpNR;if(!c||!c.jours)return 0;let j=+c.jours[m]||0;if(!j)return 0;return j*pctRemplaceCPNR(a)/100*coutJourRemplacementCPNR(a,m);}
-function coutRemplacementCPNR(a){return M.reduce(function(s,_,m){return s+coutRemplacementCPNRMois(a,m);},0);}
-function cpNRVide(){return {jours:Array(12).fill(null),mode:'hs',pctRemplace:100,coutJourInterim:null};}
+function cpNRVide(){return {jours:Array(12).fill(null)};}
 // Répartition automatique des jours acquis selon les enveloppes légales (60 % juin-octobre, 20 % novembre-janvier, 20 % février-mai)
 function repartirCPNRAuto(a){
   let tot=cpNRAcquis(a),j=Array(12).fill(0);
@@ -247,12 +242,11 @@ function payrollMonth(a,m){
   // Structure : charges de personnel saisies par le CG
   if(estStructure(a)) return manual(a,'Charges de personnel',m);
   // Si les périodes de paie sont configurées, utiliser le calcul comptable
-  // + remplacement des congés des non-roulants (HS ou intérim), hors lissage des variables
   if(a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length){
-    return payrollPayMonth(a, m) + coutRemplacementCPNRMois(a, m);
+    return payrollPayMonth(a, m);
   }
   // Sinon fallback sur le calcul mois civil
-  return payrollMonthCivil(a,m) + coutRemplacementCPNRMois(a, m);
+  return payrollMonthCivil(a,m);
 }
 
 function payrollMonthCivil(a,m){
@@ -776,5 +770,5 @@ function chargesReport2028(a){
 
 export {
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
-  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, pctRemplaceCPNR, coutJourRemplacementCPNR, coutRemplacementCPNRMois, coutRemplacementCPNR, cpNRVide, repartirCPNRAuto, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

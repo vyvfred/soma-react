@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agency, genCal, payrollMonth, cpNRAcquis, cpNRSaisis, repartirCPNRAuto, coutRemplacementCPNRMois, coutRemplacementCPNR, coutHoraireImproductif, coefHSMois } from './calculations.js';
+import { agency, genCal, payrollMonth, cpNRAcquis, cpNRSaisis, repartirCPNRAuto } from './calculations.js';
 
 function base() {
   const a = agency('TEST');
@@ -13,43 +13,31 @@ function base() {
   return a;
 }
 
-describe('Congés des non-roulants', () => {
+describe('Congés des non-roulants (sans remplacement)', () => {
   it('acquis : 25 j par non-roulant à temps plein, au prorata de la part non roulante', () => {
-    const a = base();
-    const r = a.employees[2]; const part = r.pctRoulant !== undefined ? 1 - r.pctRoulant / 100 : 1;
-    expect(cpNRAcquis(a)).toBeCloseTo(25 + 25 * part, 0);
+    expect(cpNRAcquis(base())).toBeCloseTo(25 + 25 * 0.8, 0);
   });
-  it('agence neuve : aucun coût tant que rien n\'est saisi', () => {
-    const a = base();
-    expect(cpNRSaisis(a)).toBe(0);
-    expect(coutRemplacementCPNR(a)).toBe(0);
+  it('l\'absentéisme réduit les jours acquis', () => {
+    const a = base(); a.sick = Array(12).fill(10);
+    expect(cpNRAcquis(a)).toBeCloseTo(45 * 0.9, 0);
   });
-  it('remplacement en HS : 7 h × coût horaire improductif × majoration du mois', () => {
+  it('aucun coût : les charges de personnel ne bougent pas', () => {
     const a = base();
     const avant = payrollMonth(a, 7);
-    a.cpNR.jours[7] = 10;
-    const attendu = 10 * 7 * coutHoraireImproductif(a) * coefHSMois(a, 7);
-    expect(coutRemplacementCPNRMois(a, 7)).toBeCloseTo(attendu, 2);
-    expect(payrollMonth(a, 7) - avant).toBeCloseTo(attendu, 2);
+    a.cpNR.jours[7] = 20;
+    expect(cpNRSaisis(a)).toBe(20);
+    expect(payrollMonth(a, 7)).toBe(avant);
   });
-  it('intérim et part remplacée', () => {
-    const a = base();
-    a.cpNR.jours[7] = 10; a.cpNR.mode = 'interim'; a.cpNR.coutJourInterim = 300; a.cpNR.pctRemplace = 50;
-    expect(coutRemplacementCPNRMois(a, 7)).toBeCloseTo(1500, 2);
-    a.cpNR.mode = 'aucun';
-    expect(coutRemplacementCPNRMois(a, 7)).toBe(0);
-  });
-  it('répartition automatique : 60 / 20 / 20 et total proche des acquis', () => {
+  it('répartition automatique : 60 / 20 / 20, exactement les jours acquis (à la demi-journée)', () => {
     const a = base();
     repartirCPNRAuto(a);
     const j = a.cpNR.jours, tot = cpNRAcquis(a);
-    const ete = [5, 6, 7, 8, 9].reduce((s, m) => s + j[m], 0);
-    expect(ete / tot).toBeCloseTo(0.6, 1);
+    expect([5, 6, 7, 8, 9].reduce((s, m) => s + j[m], 0) / tot).toBeCloseTo(0.6, 1);
     expect(Math.abs(cpNRSaisis(a) - tot)).toBeLessThanOrEqual(0.25);
   });
   it('budget ancien sans cpNR : pas d\'erreur', () => {
     const a = base(); delete a.cpNR;
-    expect(coutRemplacementCPNRMois(a, 3)).toBe(0);
-    expect(Number.isFinite(payrollMonth(a, 3))).toBe(true);
+    expect(cpNRSaisis(a)).toBe(0);
+    expect(repartirCPNRAuto(a).cpNR.jours).toHaveLength(12);
   });
 });
