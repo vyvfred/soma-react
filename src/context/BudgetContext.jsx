@@ -20,7 +20,9 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   const [statut, setStatut] = useState('brouillon');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
+  const saveStatusRef = useRef('idle');
+  const [saveStatus, setSaveStatusEtat] = useState('idle'); // idle | saving | saved | error
+  const setSaveStatus = (v) => { saveStatusRef.current = v; setSaveStatusEtat(v); };
   const [activeVersion, setActiveVersion] = useState('v1');
   const [meta, setMeta] = useState(DEFAULT_META());
   const [versionsRemplies, setVersionsRemplies] = useState({ v1: true });
@@ -115,6 +117,17 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     if (pendingRef.current) await persist(pendingRef.current);
     else await inFlightRef.current.catch(() => {});
   }, [persist]);
+
+  // Fermeture ou changement d'onglet : enregistrement immédiat de ce qui attend, et avertissement du
+  // navigateur si la page se ferme avec une modification pas encore enregistrée
+  useEffect(() => {
+    const enAttente = () => !!pendingRef.current || saveStatusRef.current === 'saving';
+    const cache = () => { if (document.visibilityState === 'hidden' && pendingRef.current) flush(); };
+    const avantFermeture = (e) => { if (!enAttente()) return undefined; flush(); e.preventDefault(); e.returnValue = ''; return ''; };
+    document.addEventListener('visibilitychange', cache);
+    window.addEventListener('beforeunload', avantFermeture);
+    return () => { document.removeEventListener('visibilitychange', cache); window.removeEventListener('beforeunload', avantFermeture); };
+  }, [flush]);
 
   // Sauvegarde manuelle : enregistre l'état courant même sans modification en attente
   const saveNow = useCallback(async () => {
