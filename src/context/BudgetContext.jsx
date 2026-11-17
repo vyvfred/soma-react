@@ -37,7 +37,8 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   // Annuler / rétablir : historique du budget ouvert (vidé au chargement, au changement de version
   // et quand des données arrivent d'ailleurs, pour ne jamais défaire le travail d'un autre)
   const histRef = useRef(creerHistorique());
-  const snapTexteRef = useRef(null); // texte JSON de snapRef (comparaison rapide)
+  const snapTexteRef = useRef(null);
+  const dernierEchecRef = useRef(null); // dernier motif d'échec de sauvegarde affiché // texte JSON de snapRef (comparaison rapide)
   const [histInfo, setHistInfo] = useState({ annuler: 0, retablir: 0 });
   const majHistInfo = useCallback(() => { const h = histRef.current; setHistInfo({ annuler: h.passe.length, retablir: h.futur.length }); }, []);
   const viderHisto = useCallback(() => { viderHistorique(histRef.current); queueMicrotask(majHistInfo); }, [majHistInfo]);
@@ -96,7 +97,12 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
         setSaveStatus('saved');
       } catch (err) {
         setSaveStatus('error');
+        // Échec visible pour tous les profils (le DR n'a pas l'indicateur de sauvegarde), une fois par motif
+        const motif = (err && (err.message || err.code || err.details)) || 'raison inconnue';
+        if (dernierEchecRef.current !== motif) { dernierEchecRef.current = motif; toast('Modifications NON enregistrées : ' + motif, 'error'); }
+        return;
       }
+      dernierEchecRef.current = null;
     };
     const p = run();
     inFlightRef.current = p;

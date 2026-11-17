@@ -222,7 +222,7 @@ export default function AppShell() {
             </select>
           ) : null}
           <BoutonsHistorique />
-          {['rex', 'cg', 'admin'].includes(profile.role) ? <SaveButton /> : null}
+          {['rex', 'cg', 'admin'].includes(profile.role) || saisiePour ? <SaveButton /> : null}
           <button className="soma-btn-ghost" data-testid="btn-mdp" onClick={() => setMdpOuvert(true)} title="Changer mon mot de passe">🔑</button>
           <button className="soma-btn-ghost" onClick={logout}>Déconnexion</button>
         </div>
