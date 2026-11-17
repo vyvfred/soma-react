@@ -67,6 +67,11 @@ export async function updateUserAgence(userId, agence) {
   const { error } = await ecrire(sb.from('profiles').update({ agence: agence || null }).eq('id', userId));
   if (error) throw error;
 }
+// Agences supplémentaires d'un REX (en plus de son agence principale)
+export async function updateUserAgencesSupp(userId, agences) {
+  const { error } = await ecrire(sb.from('profiles').update({ agences_supp: [...new Set((agences || []).filter(Boolean))] }).eq('id', userId));
+  if (error) throw error;
+}
 export async function forceStatut(budgetId, statut) {
   const { error } = await ecrire(sb.from('budgets').update({ statut }).eq('id', budgetId));
   if (error) throw error;

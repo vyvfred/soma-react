@@ -147,7 +147,12 @@ export default function AppShell() {
 
   // Agence courante : fixe pour le REX (son agence), sélectionnable pour le CG/DF.
   const [cgAgence, setCgAgence] = useState(null);
-  const activeAgence = consult || saisiePour || profile.agence || cgAgence;
+  // REX rattaché à plusieurs agences (agence principale + agences supplémentaires) : il choisit celle qu'il travaille
+  const mesAgences = profile.role === 'rex' ? [...new Set([profile.agence, ...(profile.agences_supp || [])].filter(Boolean))] : [];
+  const [rexAgence, setRexAgenceEtat] = useState(() => { try { return localStorage.getItem('soma.agenceREX'); } catch (e) { return null; } });
+  const setRexAgence = (n) => { setRexAgenceEtat(n); try { localStorage.setItem('soma.agenceREX', n); } catch (e) { /* stockage indisponible */ } };
+  const agenceREX = mesAgences.length > 1 ? (mesAgences.includes(rexAgence) ? rexAgence : mesAgences[0]) : profile.agence;
+  const activeAgence = consult || saisiePour || agenceREX || cgAgence;
   const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex'].includes(profile.role);
 
   // Pastille du menu « Budgets à valider » : nombre de budgets qui attendent la décision de l'utilisateur
@@ -210,6 +215,12 @@ export default function AppShell() {
         <div className="soma-user">
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
+          {mesAgences.length > 1 && !consult ? (
+            <select data-testid="choix-agence-rex" title="Vos agences : choisissez celle dont vous construisez le budget" value={agenceREX}
+              onChange={(e) => setRexAgence(e.target.value)} style={{ width: 'auto', fontSize: 12, padding: '4px 8px' }}>
+              {mesAgences.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          ) : null}
           <BoutonsHistorique />
           {['rex', 'cg', 'admin'].includes(profile.role) ? <SaveButton /> : null}
           <button className="soma-btn-ghost" data-testid="btn-mdp" onClick={() => setMdpOuvert(true)} title="Changer mon mot de passe">🔑</button>

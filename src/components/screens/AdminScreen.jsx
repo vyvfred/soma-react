@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  loadAdminData, createAccount, updateUserRole, updateUserAgence,
+  loadAdminData, createAccount, updateUserRole, updateUserAgence, updateUserAgencesSupp,
   forceStatut, resetPassword, deleteProfile
 } from '../../lib/adminApi.js';
 import { AGENCES, agencesOps } from '../../config/agences.js';
@@ -97,7 +97,7 @@ export default function AdminScreen() {
       <h3 style={{ fontSize: 14, marginBottom: 10 }}>Utilisateurs ({state.users.length})</h3>
       <div style={{ overflowX: 'auto', marginBottom: 24 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-          <thead><tr>{['Nom', 'Email', 'Rôle', 'Agence', 'Actions'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
+          <thead><tr>{['Nom', 'Email', 'Rôle', 'Agence', 'Autres agences (REX)', 'Actions'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 8px' }}>{h}</th>)}</tr></thead>
           <tbody>
             {state.users.map((u) => (
               <tr key={u.id}>
@@ -113,6 +113,23 @@ export default function AdminScreen() {
                     <option value="">—</option>
                     {AGENCES.map((a) => <option key={a.nom} value={a.nom}>{a.nom}</option>)}
                   </select>
+                </td>
+                <td style={{ padding: '4px 8px' }} data-testid={'agences-supp-' + u.email}>
+                  {u.role === 'rex' ? (
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {(u.agences_supp || []).map((n) => (
+                        <span key={n} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '2px 6px', fontSize: 11, whiteSpace: 'nowrap' }}>
+                          {n} <button type="button" title={'Retirer ' + n} style={{ padding: '0 4px', width: 'auto', fontSize: 11 }}
+                            onClick={() => act(() => updateUserAgencesSupp(u.id, (u.agences_supp || []).filter((x) => x !== n)), 'Agence retirée.')}>×</button>
+                        </span>
+                      ))}
+                      <select value="" data-testid={'ajout-agence-' + u.email} style={{ width: 'auto', fontSize: 11 }}
+                        onChange={(e) => e.target.value && act(() => updateUserAgencesSupp(u.id, [...(u.agences_supp || []), e.target.value]), 'Agence ajoutée.')}>
+                        <option value="">+ agence</option>
+                        {agencesOps().filter((a) => a.nom !== u.agence && !(u.agences_supp || []).includes(a.nom)).map((a) => <option key={a.nom} value={a.nom}>{a.nom}</option>)}
+                      </select>
+                    </div>
+                  ) : <span style={{ color: 'var(--ink65)' }}>—</span>}
                 </td>
                 <td style={{ padding: '4px 8px' }}>
                   <button className="warn" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => act(() => resetPassword(u.email), 'Email de réinitialisation envoyé.')}>Reset MDP</button>
