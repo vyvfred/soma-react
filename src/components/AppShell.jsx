@@ -127,6 +127,8 @@ export default function AppShell() {
   const { profile, logout, simRole, simuler, recuperation } = useAuth();
   const [mdpOuvert, setMdpOuvert] = useState(false);
   const [navReduite, setNavReduite] = useState(false);
+  // Téléphone : menu escamotable (☰), refermé après chaque choix de rubrique
+  const [menuMobile, setMenuMobile] = useState(false);
   // Vision SOMA : affichée au premier lancement de chaque utilisateur, puis sur demande
   const [vision, setVision] = useState(() => (visionDejaVue(profile.id) ? null : 'premiere'));
   // Le CG peut basculer en vue « REX exploitation » sur l'agence ouverte (port de setRole).
@@ -201,6 +203,7 @@ export default function AppShell() {
       {vision ? <VisionOverlay premiereFois={vision === 'premiere'} userId={profile.id} onClose={() => setVision(null)} /> : null}
       {mdpOuvert || recuperation ? <ChangePasswordModal onClose={() => setMdpOuvert(false)} /> : null}
       <header className="soma-topbar">
+        <button className="soma-burger" data-testid="menu-mobile" aria-label="Ouvrir le menu" aria-expanded={menuMobile} onClick={() => setMenuMobile(!menuMobile)}>☰</button>
         <div className="soma-brand">SOMA</div>
         <VersionChip />
         {['rex', 'cg'].includes(roleNav) || (profile.role === 'cg') ? <AttentionCenter onNavigate={setActive} /> : null}
@@ -224,12 +227,13 @@ export default function AppShell() {
           <BoutonsHistorique />
           {['rex', 'cg', 'admin'].includes(profile.role) || saisiePour ? <SaveButton /> : null}
           <button className="soma-btn-ghost" data-testid="btn-mdp" onClick={() => setMdpOuvert(true)} title="Changer mon mot de passe">🔑</button>
-          <button className="soma-btn-ghost" onClick={logout}>Déconnexion</button>
+          <button className="soma-btn-ghost" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><span className="soma-txt-long">Déconnexion</span><span className="soma-txt-court">Quitter</span></button>
         </div>
       </header>
 
       <div className="soma-body">
-        <nav className="soma-nav" aria-label="Navigation principale" style={navReduite ? { width: 44, minWidth: 44, padding: '8px 4px', overflow: 'hidden' } : undefined}>
+        {menuMobile ? <div className="soma-nav-voile" onClick={() => setMenuMobile(false)} aria-hidden="true" /> : null}
+        <nav className={'soma-nav' + (menuMobile ? ' ouvert' : '') + (navReduite ? ' reduite' : '')} aria-label="Navigation principale" style={navReduite ? { width: 44, minWidth: 44, padding: '8px 4px', overflow: 'hidden' } : undefined}>
           <button data-testid="nav-toggle" onClick={() => setNavReduite(!navReduite)} title={navReduite ? 'Agrandir le menu' : 'Réduire le menu'}
             style={{ width: 'auto', margin: '0 0 8px', padding: '4px 10px', fontSize: 12, background: 'transparent', border: '1px solid var(--border)', color: 'var(--ink65)', alignSelf: navReduite ? 'center' : 'flex-end' }}>{navReduite ? '»' : '«'}</button>
           {navReduite ? null : <>
@@ -238,13 +242,13 @@ export default function AppShell() {
             <button
               key={id}
               className={'soma-navbtn' + (id === active ? ' current' : '')}
-              onClick={() => setActive(id)}
+              onClick={() => { setActive(id); setMenuMobile(false); }}
             >
               {label}
               {id === 'validation' && nbAValider > 0 ? <span className="navBadge" data-testid="badge-validation">{nbAValider}</span> : null}
             </button>
           ))}
-          <button className="soma-navbtn" data-testid="lien-vision" onClick={() => setVision('demande')} style={{ marginTop: 18, fontSize: 12, color: 'var(--ink65)', fontStyle: 'italic' }}>La vision de SOMA</button>
+          <button className="soma-navbtn" data-testid="lien-vision" onClick={() => { setVision('demande'); setMenuMobile(false); }} style={{ marginTop: 18, fontSize: 12, color: 'var(--ink65)', fontStyle: 'italic' }}>La vision de SOMA</button>
           </>}
         </nav>
 

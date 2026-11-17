@@ -165,3 +165,76 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
 
 /* Synthèse écrite plus grande (nov. 2026) */
 .syntheseGrand{zoom:1.15;}
+
+/* ═══ Téléphone (nov. 2026) : menu escamotable, barre du haut compacte, contenu pleine largeur ═══ */
+.soma-burger, .soma-txt-court, .soma-nav-voile { display: none; }
+@media (max-width: 760px) {
+  html, body { overflow-x: hidden; }
+  /* Barre du haut : sur deux lignes au besoin, boutons compacts, nom masqué (le rôle reste) */
+  .soma-topbar { flex-wrap: wrap; gap: 8px; padding: 8px 10px; position: sticky; top: 0; z-index: 900; }
+  .soma-burger { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin: 0; padding: 0;
+    font-size: 20px; background: transparent; color: var(--ink); border: 1px solid var(--border2); border-radius: var(--radius-sm); cursor: pointer; }
+  .soma-brand { font-size: 18px; }
+  .soma-user { gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 auto; }
+  .soma-user-nom { display: none; }
+  .soma-role-pill { font-size: 11px; padding: 3px 8px; }
+  .soma-btn-ghost { padding: 7px 9px; min-width: 36px; min-height: 36px; }
+  .soma-txt-long { display: none; }
+  /* Enregistrement automatique : le bouton 💾 n'est pas utile sur téléphone et libère la place d'une ligne */
+  .soma-topbar [data-testid="btn-sauver"] { display: none; }
+  .soma-txt-court { display: inline; }
+  .roleSwitch button { padding: 5px 8px !important; font-size: 11px !important; }
+  /* Menu : panneau qui glisse par-dessus l'écran, fermé par défaut */
+  .soma-body { display: block; }
+  .soma-nav, .soma-nav.reduite { position: fixed; top: 0; left: 0; bottom: 0; z-index: 1000; width: min(82vw, 300px) !important; min-width: 0 !important;
+    padding: 16px 12px !important; overflow-y: auto !important; transform: translateX(-105%); transition: transform .2s ease; box-shadow: 0 0 40px rgba(0,0,0,.5); }
+  .soma-nav.ouvert { transform: translateX(0); }
+  .soma-nav [data-testid="nav-toggle"] { display: none; }
+  .soma-nav-voile { display: block; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,.45); }
+  .soma-navbtn { padding: 13px 14px; font-size: 15px; }
+  /* Contenu : toute la largeur */
+  .soma-main { padding: 10px; overflow-x: hidden; }
+  .soma-main .card { padding: 14px 12px; }
+  .soma-main h2 { font-size: 18px; line-height: 1.25; }
+  .soma-main .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+  .soma-main .kpi .value { font-size: 18px; }
+  /* Champs : 16 px minimum pour éviter le zoom automatique de l'iPhone à la saisie */
+  .soma-main input, .soma-main select, .soma-main textarea { font-size: 16px !important; }
+  /* Tableaux larges : défilement horizontal au doigt plutôt que débordement */
+  .soma-main table { max-width: none; }
+  .soma-main div:has(> table) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 760px) {
+  /* Barre du haut sur deux lignes : ☰ SOMA agence / alertes + boutons */
+  .soma-role-pill { display: none; }
+  .soma-topbar > [data-attention] { order: 4; margin-left: 0 !important; }
+  .soma-topbar .somAttention { padding: 5px 10px; font-size: 12px; margin: 0; }
+  .soma-topbar > .soma-crumb { margin-left: auto; }
+  .soma-topbar > .soma-user { order: 5; flex: 0 0 auto; margin-left: auto; }
+  .soma-btn-ghost { padding: 6px 8px; min-width: 34px; min-height: 34px; font-size: 13px; }
+  .soma-topbar .roleSwitch { order: 4; }
+  /* Grands montants des indicateurs : plus petits et retour à la ligne plutôt que débordement */
+  .soma-main .kpi .value { font-size: 16px; overflow-wrap: anywhere; }
+  /* Étiquettes : retour à la ligne autorisé */
+  .cgGuideChip { white-space: normal; }
+  /* Cases à cocher : leur taille normale (pas la largeur des champs de saisie) */
+  .soma-main input[type=checkbox], .soma-main input[type=radio] { width: auto !important; min-width: 0; flex: 0 0 auto; }
+  /* Tableaux de saisie : cases assez larges pour lire un montant */
+  .soma-main td input[type=number] { min-width: 64px; }
+}
+@media (max-width: 760px) {
+  /* Calendrier : numéro du jour, couleur du type et CA total ; le détail est dans le récapitulatif */
+  .calJours { gap: 3px !important; }
+  .calJour { min-height: 52px !important; padding: 3px !important; overflow: hidden; }
+  .calJourDetail, .calJourBadge { display: none !important; }
+  .calJourTotal { font-size: 9px; letter-spacing: -.3px; white-space: nowrap; }
+}
+@media (max-width: 720px) {
+  /* Connexion sur téléphone : bandeau SOMA compact au-dessus du formulaire */
+  .soma-auth { grid-template-rows: auto 1fr; }
+  .soma-auth-brand { display: flex !important; padding: 28px 24px 22px; }
+  .soma-auth-brand h1 { font-size: 38px; margin-bottom: 6px; }
+  .soma-auth-brand .sub { font-size: 14px; }
+  .soma-auth-tags { display: none; }
+  .soma-auth-form { padding: 24px 24px 40px; justify-content: flex-start; }
+}

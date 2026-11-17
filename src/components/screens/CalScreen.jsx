@@ -53,22 +53,22 @@ export default function CalScreen() {
         <span style={{ fontSize: 12 }}>· {nbFeries} fériés · {nbVacances} j. vacances · {nbWeekend} week-end</span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+      <div className="calJours" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6 }}>
         {WD.map((w) => <div key={w} style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', color: 'var(--ink65)' }}>{w}</div>)}
         {Array.from({ length: start }).map((_, i) => <div key={'e' + i} />)}
         {days.map((d) => {
           const st = TYPE_STYLE[d.type];
           return (
-            <div key={d.day} style={{ minHeight: 78, padding: 6, border: '1px solid ' + (st ? st.border : 'var(--border)'), background: st ? st.bg : 'var(--card)', fontSize: 11 }}>
+            <div key={d.day} className="calJour" style={{ minHeight: 78, padding: 6, border: '1px solid ' + (st ? st.border : 'var(--border)'), background: st ? st.bg : 'var(--card)', fontSize: 11 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
                 <b>{d.day}</b>
-                {st ? <span style={{ background: st.badgeBg, color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', textTransform: 'uppercase' }}>{st.badge}</span> : null}
+                {st ? <span className="calJourBadge" style={{ background: st.badgeBg, color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', textTransform: 'uppercase' }}>{st.badge}</span> : null}
               </div>
-              <div style={{ color: 'var(--ink65)', fontSize: 9, marginBottom: 3 }}>S{d.week}</div>
-              <div style={{ fontSize: 10 }} title={'San = sanitaire' + (a.actSai ? ', Sais = saisonnier' : '') + (a.actTP ? ', TP = transport de personnes' : '')}>San {euro(d.ca.san)}</div>
-              {a.actSai ? <div style={{ fontSize: 10 }}>Sais {euro(d.ca.sai)}</div> : null}
-              {a.actTP ? <div style={{ fontSize: 10 }}>TP {euro(d.ca.tp)}</div> : null}
-              <div style={{ fontWeight: 700, marginTop: 2, fontFamily: 'DM Mono, monospace' }}>{euro(d.total)}</div>
+              <div className="calJourDetail" style={{ color: 'var(--ink65)', fontSize: 9, marginBottom: 3 }}>S{d.week}</div>
+              <div className="calJourDetail" style={{ fontSize: 10 }} title={'San = sanitaire' + (a.actSai ? ', Sais = saisonnier' : '') + (a.actTP ? ', TP = transport de personnes' : '')}>San {euro(d.ca.san)}</div>
+              {a.actSai ? <div className="calJourDetail" style={{ fontSize: 10 }}>Sais {euro(d.ca.sai)}</div> : null}
+              {a.actTP ? <div className="calJourDetail" style={{ fontSize: 10 }}>TP {euro(d.ca.tp)}</div> : null}
+              <div className="calJourTotal" style={{ fontWeight: 700, marginTop: 2, fontFamily: 'DM Mono, monospace' }}>{euro(d.total)}</div>
             </div>
           );
         })}
