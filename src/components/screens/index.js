@@ -23,6 +23,7 @@ import AffectationScreen from './AffectationScreen.jsx';
 import VariablesDecScreen from './VariablesDecScreen.jsx';
 import SaisieDRScreen from './SaisieDRScreen.jsx';
 import ChargesREXScreen from './ChargesREXScreen.jsx';
+import JournalScreen from './JournalScreen.jsx';
 
 function PrevisionnelCgScreen() { return PrevisionnelScreen({ vueCG: true }); }
 
@@ -46,6 +47,7 @@ export const SCREENS = {
   graphiques: GraphiquesScreen,
   periodes: PeriodesScreen,
   admin: AdminScreen,
+  journal: JournalScreen,
   refs: RefsScreen,
   cal: CalScreen,
   variablesdec: VariablesDecScreen,

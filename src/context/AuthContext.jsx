@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { journal } from '../lib/journalAppli.js';
 import { sb, HASH_INITIAL, LIEN_RECUPERATION, LIEN_EXPIRE, URL_APPLI } from '../lib/supabase.js';
 
 // Reproduit fidèlement le flux de l'application actuelle :
@@ -88,6 +89,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    await journal.arreter(); // dernier signal (durée, enregistrements) tant que la session est valide
     await sb.auth.signOut();
     setSession(null);
     setProfile(null);
@@ -107,6 +109,14 @@ export function AuthProvider({ children }) {
     setRecuperation(false);
     return { ok: true, message: 'Mot de passe modifié avec succès.' };
   }, []);
+
+  // Journal des connexions : une connexion par ouverture de SOMA avec une session et un profil valides.
+  const userId = session && profile ? session.user.id : null;
+  useEffect(() => {
+    if (!userId) return undefined;
+    journal.demarrer();
+    return () => { journal.arreter(); };
+  }, [userId]);
 
   const simuler = useCallback((role) => setSimRole(role && role !== 'admin' ? role : null), []);
   const vraiProfil = profile;

@@ -5,6 +5,7 @@ import { marquerSaisiesDR } from '../domain/saisiesDR.js';
 import { creerHistorique, viderHistorique, noterAvant, annulerHisto, retablirHisto } from '../domain/historique.js';
 import { useAuth } from './AuthContext.jsx';
 import { toast } from '../components/Toast.jsx';
+import { journal } from '../lib/journalAppli.js';
 import { estModifiable, cibleDuplication, agenceDeVersion, copieVersion, comparerVersions, VERSION_LABELS } from '../domain/versions.js';
 
 // Contexte du budget en cours d'édition (pour le REX : son agence ; pour le CG :
@@ -97,6 +98,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
         pendingRef.current = null;
         setVersionsRemplies((p) => ({ ...p, [versionRef.current]: true }));
         setSaveStatus('saved');
+        journal.noterSaisie();
       } catch (err) {
         setSaveStatus('error');
         // Échec visible pour tous les profils (le DR n'a pas l'indicateur de sauvegarde), une fois par motif

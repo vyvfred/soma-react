@@ -50,6 +50,7 @@ export const PANELS_DG = [
 
 export const PANELS_ADMIN = [
   ['admin', 'Utilisateurs & Budgets'],
+  ['journal', 'Journal des connexions'],
   ['consolidation', 'Consolidation réseau'],
   ['affectation', 'Affectation DR'],
   ['cg', 'Charges du réseau'],
