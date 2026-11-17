@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sb, ecrire, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase.js';
+import { sb, ecrire, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, URL_APPLI } from './supabase.js';
 import { budgetData } from '../domain/budgetMapper.js';
 
 const ANNEE = 2027;
@@ -33,7 +33,7 @@ export async function createAccount({ nom, email, role, agence }) {
     const sbTemp = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false }
     });
-    const { data, error } = await sbTemp.auth.signUp({ email, password: DEFAULT_PASSWORD });
+    const { data, error } = await sbTemp.auth.signUp({ email, password: DEFAULT_PASSWORD, options: { emailRedirectTo: URL_APPLI } });
     if (error) {
       if (String(error.message || '').toLowerCase().includes('already registered')) {
         return { ok: false, message: 'Cette identité existe déjà dans Supabase. Si le profil manque, utilisez le SQL de liaison.' };
@@ -77,7 +77,7 @@ export async function forceStatut(budgetId, statut) {
   if (error) throw error;
 }
 export async function resetPassword(email) {
-  const { error } = await sb.auth.resetPasswordForEmail(email);
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: URL_APPLI });
   if (error) throw error;
 }
 export async function deleteProfile(userId) {

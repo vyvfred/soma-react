@@ -13,6 +13,10 @@ export const LIEN_EXPIRE = /error_code=otp_expired|error=access_denied/.test(HAS
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+// Adresse officielle de l'application : les liens des e-mails (mot de passe oublié, réinitialisation
+// par l'administrateur) y ramènent toujours, quelle que soit la page d'où la demande est partie.
+export const URL_APPLI = 'https://vyv2027-react.netlify.app/';
+
 // Écriture contrôlée : une modification refusée par les droits de la base ne renvoie pas d'erreur
 // (0 ligne modifiée). On la transforme en erreur visible au lieu d'afficher « Enregistré ».
 export async function ecrire(req) {

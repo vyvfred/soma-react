@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { sb, HASH_INITIAL, LIEN_RECUPERATION, LIEN_EXPIRE } from '../lib/supabase.js';
+import { sb, HASH_INITIAL, LIEN_RECUPERATION, LIEN_EXPIRE, URL_APPLI } from '../lib/supabase.js';
 
 // Reproduit fidèlement le flux de l'application actuelle :
 //   signInWithPassword  ->  chargement du profil dans "profiles"  ->  session applicative.
@@ -96,7 +96,7 @@ export function AuthProvider({ children }) {
 
   const motDePasseOublie = useCallback(async (email) => {
     if (!email || !email.trim()) return { ok: false, message: 'Saisissez votre email.' };
-    const { error: e } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + window.location.pathname });
+    const { error: e } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: URL_APPLI });
     return e ? { ok: false, message: 'Erreur : ' + e.message } : { ok: true, message: 'Lien envoyé ! Vérifiez votre boîte mail.' };
   }, []);
   const changerMotDePasse = useCallback(async (p1, p2) => {
