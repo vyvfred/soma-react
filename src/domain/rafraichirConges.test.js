@@ -66,3 +66,32 @@ describe('Règle CP 2024 — mise à jour unique des budgets enregistrés avant'
     expect(appliquerRegleCP2024(a, repartirCPAuto)).toBe(false);
   });
 });
+
+describe('Semaine à cheval sur deux mois — parts par mois', () => {
+  it('les parts saisies dans chaque mois s\'additionnent', async () => {
+    const { moisDeSemaine, absPartMois, setAbsPartMois, needWeeks, genCal } = await import('./calculations.js');
+    const a = agenceReference(); genCal(a);
+    const w = needWeeks(a).map((x) => x.week).find((k) => moisDeSemaine(a, k).length === 2);
+    const [m1, m2] = moisDeSemaine(a, w);
+    setAbsPartMois(a, w, 'cp', m1, 2); setAbsPartMois(a, w, 'cp', m2, 3);
+    expect(a.presence[w].cp).toBe(5);
+    expect(absPartMois(a, w, 'cp', m1)).toBe(2); expect(absPartMois(a, w, 'cp', m2)).toBe(3);
+    setAbsPartMois(a, w, 'cp', m1, 1);
+    expect(a.presence[w].cp).toBe(4);
+  });
+  it('total réparti automatiquement : parts au prorata des jours ouvrés, somme exacte', async () => {
+    const { moisDeSemaine, absPartMois, needWeeks } = await import('./calculations.js');
+    const a = prete();
+    needWeeks(a).forEach(({ week }) => {
+      const ms = moisDeSemaine(a, week); if (ms.length < 2) return;
+      const s = ms.reduce((t, m) => t + absPartMois(a, week, 'cp', m), 0);
+      expect(s).toBeCloseTo(+a.presence[week].cp || 0, 5);
+    });
+  });
+  it('la somme des CP des 12 mois égale le total posé', async () => {
+    const { absPartMois, needWeeks, moisDeSemaine } = await import('./calculations.js');
+    const a = prete();
+    let tot = 0; for (let m = 0; m < 12; m++) needWeeks(a).forEach(({ week }) => { if (moisDeSemaine(a, week).includes(m)) tot += absPartMois(a, week, 'cp', m); });
+    expect(tot).toBeCloseTo(cpPlanifies(a), 1);
+  });
+});

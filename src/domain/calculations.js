@@ -177,6 +177,31 @@ function heuresDispoAnnuelles(a) {
   return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*7);
 }
 
+// Semaine à cheval sur deux mois (nov. 2026) : CP et autres absences se saisissent mois par mois, en jours, selon les jours
+// de la semaine qui tombent dans chaque mois. Le total de la semaine (presence[w][champ], utilisé par tous les calculs)
+// est la somme des parts, mémorisées dans presence[w][champ + 'Mois'] = { mois: jours }.
+function moisDeSemaine(a,w){let s=[];joursSemaine(a,w).forEach(function(d){if(s.indexOf(d.month)<0)s.push(d.month);});return s;}
+function absPartMois(a,w,champ,m){
+  let p=a.presence[w]||{},tot=+p[champ]||0,ms=moisDeSemaine(a,w);
+  if(ms.indexOf(m)<0)return 0;
+  if(ms.length<2)return tot;
+  let parts=p[champ+'Mois'];
+  if(parts&&typeof parts==='object')return +parts[m]||0;
+  // Pas de saisie par mois (répartition automatique, ancien budget) : au prorata des jours ouvrés (lundi-vendredi) de chaque mois,
+  // le dernier mois reçoit le reste pour que les parts fassent exactement le total
+  let ouv=function(mm){return joursSemaine(a,w).filter(function(d){let j=new Date(2027,d.month,d.day).getDay();return d.month===mm&&j>0&&j<6;}).length;};
+  let tous=ms.reduce(function(s,mm){return s+ouv(mm);},0);
+  let part=function(mm){return tous>0?Math.round(tot*ouv(mm)/tous*10)/10:(mm===ms[0]?tot:0);};
+  if(m!==ms[ms.length-1])return part(m);
+  return Math.round((tot-ms.slice(0,-1).reduce(function(s,mm){return s+part(mm);},0))*10)/10;
+}
+function setAbsPartMois(a,w,champ,m,v){
+  let ms=moisDeSemaine(a,w),p=Object.assign({cp:0,other:0},a.presence[w]||{});
+  v=(v===''||v===null||v===undefined)?0:(+String(v).replace(',','.')||0);
+  if(ms.length<2||ms.indexOf(m)<0){p[champ]=v;delete p[champ+'Mois'];}
+  else{let parts={};ms.forEach(function(mm){parts[mm]=mm===m?v:absPartMois(a,w,champ,mm);});p[champ+'Mois']=parts;p[champ]=Math.round(ms.reduce(function(s,mm){return s+parts[mm];},0)*10)/10;}
+  a.presence=Object.assign({},a.presence);a.presence[w]=p;return a;
+}
 function cpPlanifies(a) {
   return Object.values(a.presence || {}).reduce(function(s, p) {
     return s + (+p.cp || 0);
@@ -832,6 +857,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_ACQUIS_MALADIE, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

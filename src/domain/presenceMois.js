@@ -3,7 +3,7 @@
 // deverrouillerMois, resetCP, renderIndemnites, renderHSImproductif.
 import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
-  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien
+  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine
 } from './calculations.js';
 import { repartirCPAuto } from './repartitionCP.js';
 
@@ -29,7 +29,7 @@ export function etatMois(a, m, rows = hsRows(a)) {
   const actif = a.moisActif === m;
   return {
     m, nom: M[m], caM: monthCA(a, m), hsM,
-    cpM: sem.reduce((s, r) => s + (+((a.presence[r.week] || {}).cp) || 0), 0),
+    cpM: sem.reduce((s, r) => s + absPartMois(a, r.week, 'cp', m), 0),
     nbFeries: jours.filter((d) => d.type === 'ferie').length,
     nbVac: jours.filter((d) => d.type === 'vacances').length,
     tensions, warnings,
@@ -54,7 +54,10 @@ export function semainesMois(a, m, rows = hsRows(a)) {
     const impact = impactCPSemaine(a, hr.week, -1);
     const abs = Math.abs(impact);
     return {
-      week: hr.week, base: p.base, cp: p.cp, rate: p.rate, mal: p.mal, other: p.other, av: p.av,
+      week: hr.week, base: p.base, cp: p.cp,
+      // Semaine à cheval sur deux mois : part de ce mois (saisie) et total de la semaine
+      aCheval: moisDeSemaine(a, hr.week).length > 1,
+      parts: { cp: absPartMois(a, hr.week, 'cp', m), otherPaid: absPartMois(a, hr.week, 'otherPaid', m), other: absPartMois(a, hr.week, 'other', m) }, rate: p.rate, mal: p.mal, other: p.other, av: p.av,
       besoin: hr.hours, gap: hr.gap, hs: hr.hs, hsParPers: hp.hs >= 0.5 ? hp.ratio : null,
       charge, impact, impactNiveau: abs <= seuils.seuilFaible ? 'faible' : abs <= seuils.seuilMoyen ? 'moyen' : 'fort'
     };
@@ -70,7 +73,7 @@ export function impactMois(a, m, rows = hsRows(a)) {
   return {
     caMois, msMois, tauxMS: caMois > 0 ? (msMois / caMois) * 100 : 0,
     hsM, coutHSM: hsM * (chMois(a, m) || 28.5) * coefHSMois(a, m),
-    cpM: sem.reduce((s, r) => s + (+((a.presence[r.week] || {}).cp) || 0), 0),
+    cpM: sem.reduce((s, r) => s + absPartMois(a, r.week, 'cp', m), 0),
     critM: sem.filter((r) => r.t === 'critique').length,
     okM: sem.filter((r) => r.t === 'ok').length
   };
@@ -108,7 +111,7 @@ export function deverrouillerMois(a, m) {
   return a;
 }
 export function reinitialiserCP(a) {
-  Object.keys(a.presence || {}).forEach((w) => { if (a.presence[w]) a.presence[w] = { ...a.presence[w], cp: 0 }; });
+  Object.keys(a.presence || {}).forEach((w) => { if (a.presence[w]) { a.presence[w] = { ...a.presence[w], cp: 0 }; delete a.presence[w].cpMois; } });
   // Plus de répartition : la référence « optimale », le reliquat et les enveloppes affichées n'ont plus de sens
   delete a.cpOptimal; delete a.cpOptimalHSCost; delete a.cpReliquat; delete a.cpEnveloppes;
   return a;

@@ -1,6 +1,7 @@
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
+import { setAbsPartMois } from '../../domain/calculations.js';
 import { SEUIL_MS_CA, hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto } from '../../domain/repartitionCP.js';
@@ -122,11 +123,11 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
           <tbody>
             {sem.map((s) => (
               <tr key={s.week} style={{ textAlign: 'right' }}>
-                <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b></td>
+                <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b>{s.aCheval ? <div data-testid={'a-cheval-' + s.week} style={{ fontSize: 10, color: 'var(--ink65)' }} title="Semaine à cheval sur deux mois : saisissez les jours de ce mois, ils s'additionnent à ceux de l'autre mois">à cheval · sem. {fmt1(+((a.presence[s.week] || {}).cp) || 0)} J CP</div> : null}</td>
                 <td style={cell}>{Math.round(s.base)}</td>
-                <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="0.5" value={(a.presence[s.week] || {}).cp || ''} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value)} style={{ width: 56 }} /></td>
-                <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={(a.presence[s.week] || {}).otherPaid || ''} placeholder="0" title="Absences payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value)} style={{ width: 56 }} /></td>
-                <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.other') ? '1' : undefined} min="0" step="0.5" value={(a.presence[s.week] || {}).other || ''} placeholder="0" title="Absences non payées (jours)" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value)} style={{ width: 56 }} /></td>
+                <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="0.5" value={s.parts.cp || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).cp) || 0) + ' J' : undefined} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value, m)} style={{ width: 56 }} /></td>
+                <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={s.parts.otherPaid || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).otherPaid) || 0) + ' J' : 'Absences payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value, m)} style={{ width: 56 }} /></td>
+                <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.other') ? '1' : undefined} min="0" step="0.5" value={s.parts.other || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).other) || 0) + ' J' : 'Absences non payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}>{Math.round(s.mal)}</td>
                 <td style={cell}>{Math.round(s.av)}</td>
                 <td style={cell}>{Math.round(s.besoin)}</td>
@@ -165,7 +166,8 @@ export default function PresenceScreen() {
     setOuvert(null);
   };
   const deverrouiller = (m) => { muter((x) => deverrouillerMois(x, m)); toast(MOIS_LONGS[m] + ' déverrouillé', 'info'); };
-  const setSem = (w, champ, v) => muter((x) => setPresenceSemaine(x, w, champ, v));
+  // m : mois affiché — une semaine à cheval reçoit la part de ce mois, le total de la semaine est la somme des parts
+  const setSem = (w, champ, v, m) => muter((x) => (m === undefined ? setPresenceSemaine(x, w, champ, v) : setAbsPartMois(x, w, champ, m, v)));
   const setMontant = (cle, w, v) => muter((x) => setMontantSemaine(x, cle, w, v));
   const distribuerCP = () => muter((x) => repartirCPAuto(x));
   const resetCP = () => {

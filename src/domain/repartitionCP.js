@@ -17,7 +17,7 @@ export function repartirCPAuto(a, moissLibres){
   needWeeks(a).forEach(function(w){
     let mois = mainMonth(a, w.week);
     if(libres.indexOf(mois) >= 0){
-      if(a.presence[w.week]) a.presence[w.week].cp = 0;
+      if(a.presence[w.week]){ a.presence[w.week].cp = 0; delete a.presence[w.week].cpMois; } // parts par mois (semaine à cheval) recalculées au prorata
     }
   });
 
