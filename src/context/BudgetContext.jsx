@@ -6,6 +6,7 @@ import { creerHistorique, viderHistorique, noterAvant, annulerHisto, retablirHis
 import { useAuth } from './AuthContext.jsx';
 import { toast } from '../components/Toast.jsx';
 import { journal } from '../lib/journalAppli.js';
+import { reprendreBlocs, alerteRepriseBlocs, motifRefusSuppression, donneesSansVersion } from '../domain/blocsVersion.js';
 import { estModifiable, cibleDuplication, agenceDeVersion, copieVersion, comparerVersions, VERSION_LABELS } from '../domain/versions.js';
 
 // Contexte du budget en cours d'édition (pour le REX : son agence ; pour le CG :
@@ -320,6 +321,46 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     return { ok: true, cible, message: 'Version ' + VERSION_LABELS[cible] + ' créée à partir de ' + VERSION_LABELS[source] };
   }, [flush, majMeta, editable]);
 
+  // Reprend dans la version active des blocs (équipe, objectif, présence, charges) d'une autre version.
+  // Passe par update() : annulable (↶) et enregistré automatiquement.
+  const reprendreVersion = useCallback(async (source, ids, confirmer) => {
+    if (!editable) return { ok: false, message: 'Budget en validation : les versions ne peuvent plus être modifiées' };
+    if (!ids || !ids.length) return { ok: false, message: 'Choisissez au moins un bloc à reprendre.' };
+    if (source === versionRef.current) return { ok: false, message: 'Choisissez une autre version que la version active.' };
+    await flush();
+    if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
+    const { data } = await loadBudgetData(budgetIdRef.current);
+    if (!(data.versions && data.versions[source] && Object.keys(data.versions[source]).length)) return { ok: false, message: 'La version ' + VERSION_LABELS[source] + ' est vide.' };
+    const src = agenceDeVersion(agenceNom, data, source);
+    const alerte = alerteRepriseBlocs(agencyRef.current, src, ids);
+    if (alerte && confirmer && !confirmer(alerte)) return { ok: false, annule: true, message: 'Reprise annulée' };
+    update((a) => reprendreBlocs(a, src, ids));
+    return { ok: true, message: 'Données de la ' + VERSION_LABELS[source] + ' reprises dans la ' + VERSION_LABELS[versionRef.current] + ' (↶ pour annuler)' };
+  }, [agenceNom, editable, flush, update]);
+
+  // Supprime une version (V2 ou V3, non choisie pour la soumission). Si c'était la version active, retour sur la V1.
+  const deleteVersion = useCallback(async (v) => {
+    await flush();
+    if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
+    const { data } = await loadBudgetData(budgetIdRef.current);
+    const courant = { ...data, meta: { ...(data.meta || {}), ...(metaRef.current || {}) } };
+    const motif = motifRefusSuppression(courant, v, editable);
+    if (motif) return { ok: false, message: motif };
+    const out = donneesSansVersion(courant, v);
+    await writeBudgetData(budgetIdRef.current, out);
+    setVersionsRemplies((p) => ({ ...p, [v]: false }));
+    if (versionRef.current === v) {
+      const a = agenceDeVersion(agenceNom, out, 'v1');
+      versionRef.current = 'v1';
+      setActiveVersion('v1');
+      snapRef.current = null; viderHisto(); setAgency(a);
+      baseRef.current = out.versions && out.versions.v1 ? JSON.parse(JSON.stringify(out.versions.v1)) : null;
+    }
+    majMeta(out.meta);
+    metaBaseRef.current = JSON.parse(JSON.stringify(out.meta));
+    return { ok: true, message: 'Version ' + VERSION_LABELS[v] + ' supprimée' };
+  }, [agenceNom, editable, flush, majMeta, viderHisto]);
+
   // Description de la version active (enregistrée avec la prochaine sauvegarde)
   const setVersionDesc = useCallback((texte) => {
     const m = { ...(metaRef.current || DEFAULT_META()) };
@@ -363,7 +404,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   const value = {
     agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal, saisieDR, annuler, retablir, histInfo,
     budgetId, activeVersion, meta, versionsRemplies, validation,
-    switchVersion, duplicateVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush, recharger
+    switchVersion, duplicateVersion, reprendreVersion, deleteVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush, recharger
   };
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
 }

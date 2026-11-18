@@ -8,6 +8,7 @@ import { VERSIONS, VERSION_LABELS, refusAAfficher, ecartAbsenteisme } from '../d
 import { euro, pct } from '../domain/format.js';
 import { toast } from './Toast.jsx';
 import { soumettreAvecConfirmations } from './soumission.js';
+import { BLOCS_VERSION, VERSIONS_SUPPRIMABLES } from '../domain/blocsVersion.js';
 
 // Barre de version et de statut du budget (écran Objectif) — port de renderVersionBar,
 // updateStatutBar et renderRefusREX : onglets V1/V2/V3, description, dupliquer, comparer,
@@ -66,14 +67,45 @@ function CompareModal({ cols, nom, onClose, expl }) {
   );
 }
 
+// Reprise de données d'une autre version vers la version active, par bloc
+function RepriseModal({ active, sources, onClose, onValider }) {
+  const [source, setSource] = useState(sources[0]);
+  const [ids, setIds] = useState(['equipe']);
+  const bascule = (id) => setIds((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
+  return (
+    <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{ padding: 20 }}>
+      <div className="modalCard" data-testid="reprise-modal" style={{ width: '100%', maxWidth: 560 }}>
+        <h2 style={{ marginTop: 0 }}>Reprendre les données d'une autre version</h2>
+        <p className="hint">Les blocs cochés remplacent ceux de la version {VERSION_LABELS[active]}. Le paramétrage du contrôle de gestion, commun à toutes les versions, n'est pas touché. ↶ annule la reprise.</p>
+        <label style={{ display: 'block', margin: '12px 0', fontSize: 13 }}>Version source{' '}
+          <select data-testid="reprise-source" value={source} onChange={(e) => setSource(e.target.value)}>
+            {sources.map((v) => <option key={v} value={v}>{VERSION_LABELS[v]}</option>)}
+          </select>
+        </label>
+        {BLOCS_VERSION.map((b) => (
+          <label key={b.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" data-testid={'reprise-' + b.id} checked={ids.includes(b.id)} onChange={() => bascule(b.id)} style={{ width: 'auto', marginTop: 3 }} />
+            <span><b>{b.label}</b><br /><span style={{ color: 'var(--ink65)', fontSize: 12 }}>{b.detail}</span></span>
+          </label>
+        ))}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+          <button onClick={onClose} className="secondary" style={btn}>Annuler</button>
+          <button onClick={() => onValider(source, ids)} disabled={!ids.length} className="ok" style={btn} data-testid="reprise-valider">↧ Reprendre dans la {VERSION_LABELS[active]}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BudgetBar() {
   const { profile } = useAuth();
   const {
     agency: a, agenceNom, statut, editable, budgetId, activeVersion, meta, versionsRemplies, validation,
-    switchVersion, duplicateVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit
+    switchVersion, duplicateVersion, reprendreVersion, deleteVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit
   } = useBudget();
   const [busy, setBusy] = useState(false);
   const [cols, setCols] = useState(null);
+  const [reprise, setReprise] = useState(false);
   if (!a || !profile || !['rex', 'cg', 'admin'].includes(profile.role)) return null;
 
   const run = (f) => async (...args) => { if (busy) return; setBusy(true); try { await f(...args); } catch (e) { toast('Échec : ' + (e.message || 'erreur'), 'error'); } finally { setBusy(false); } };
@@ -89,9 +121,23 @@ export default function BudgetBar() {
     if (c.length < 2) { toast('Il faut au moins 2 versions remplies pour comparer. Utilisez « Dupliquer la version active » pour créer une variante.', 'warn'); return; }
     setCols(c);
   });
+  const onReprise = run(async (source, ids) => {
+    const libelles = BLOCS_VERSION.filter((b) => ids.includes(b.id)).map((b) => b.label).join(', ');
+    if (!window.confirm('Remplacer dans la ' + VERSION_LABELS[activeVersion] + ' : ' + libelles + ' — par les données de la ' + VERSION_LABELS[source] + ' ?')) return;
+    const r = await reprendreVersion(source, ids, (alerte) => window.confirm(alerte + '\n\nReprendre quand même ?'));
+    if (r.annule) return;
+    toast(r.message, r.ok ? 'success' : 'warn');
+    if (r.ok) setReprise(false);
+  });
+  const onDelete = run(async () => {
+    if (!window.confirm('Supprimer définitivement la version ' + VERSION_LABELS[activeVersion] + ' et toutes ses saisies ? Cette action ne peut pas être annulée.')) return;
+    const r = await deleteVersion(activeVersion);
+    toast(r.message, r.ok ? 'success' : 'warn');
+  });
   const onChoose = run(async () => { await chooseSubmittedVersion(); toast('Version ' + VERSION_LABELS[activeVersion] + ' choisie pour la soumission', 'success'); });
   const onSubmit = run(() => soumettreAvecConfirmations({ a, agenceNom, activeVersion, submit, parNom: profile.nom }));
 
+  const autresRemplies = VERSIONS.filter((v) => v !== activeVersion && versionsRemplies[v]);
   const refus = profile.role === 'rex' && statut === 'brouillon' ? refusAAfficher(validation) : null;
   const peutSoumettre = (profile.role === 'rex' || profile.role === 'cg') && editable;
   const libelleSoumettre = statut === 'brouillon' ? 'Soumettre au DR' : 'Re-soumettre au DR';
@@ -125,6 +171,8 @@ export default function BudgetBar() {
             <span style={{ flex: 1 }} />
             <button onClick={onDup} disabled={busy || !editable} style={btn}>⎘ Dupliquer la version active</button>
             <button onClick={onCompare} disabled={busy} style={btn}>⇄ Comparer les versions</button>
+            {autresRemplies.length ? <button onClick={() => setReprise(true)} disabled={busy || !editable} style={btn} data-testid="reprise-ouvrir">↧ Reprendre d'une autre version</button> : null}
+            {VERSIONS_SUPPRIMABLES.includes(activeVersion) && versionsRemplies[activeVersion] ? <button onClick={onDelete} disabled={busy || !editable || meta.submittedVersion === activeVersion} title={meta.submittedVersion === activeVersion ? 'Version choisie pour la soumission : choisissez-en une autre avant de la supprimer' : ''} style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid="version-supprimer">🗑 Supprimer la {VERSION_LABELS[activeVersion]}</button> : null}
           </div>
           <input type="text" value={(meta.descriptions && meta.descriptions[activeVersion]) || ''} onChange={(e) => setVersionDesc(e.target.value)} disabled={!editable}
             placeholder={'Description de la version ' + VERSION_LABELS[activeVersion] + ' (ex. : scénario avec renfort estival)'} style={{ width: '100%', marginBottom: 8 }} />
@@ -147,6 +195,7 @@ export default function BudgetBar() {
         {!editable ? <span style={{ fontSize: 12, color: 'var(--blue2)' }}>🔒 En validation — lecture seule</span> : null}
       </div>
 
+      {reprise ? <RepriseModal active={activeVersion} sources={autresRemplies} onClose={() => setReprise(false)} onValider={onReprise} /> : null}
       {cols ? <CompareModal cols={cols} nom={agenceNom} expl={vueExploitation(a, profile.role)} onClose={() => setCols(null)} /> : null}
     </div>
   );
