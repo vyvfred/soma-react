@@ -22,11 +22,11 @@ function Jalons({ l }) {
   return (
     <div style={{ display: 'flex', gap: 3 }} data-testid="jalons">
       {l.jalons.map((j) => (
-        <div key={j.lib} title={j.lib + ' : ' + detailJalon(j, l.av)} style={{ width: 30 }}>
+        <div key={j.lib} title={j.lib + ' : ' + detailJalon(j, l.av)} style={{ width: 46 }}>
           <div style={{ height: 8, background: 'var(--bg3, #2a2f45)', borderRadius: 2, overflow: 'hidden' }}>
             <div style={{ width: j.pct + '%', height: '100%', background: j.pct >= 100 ? 'var(--green, #2e7d6f)' : 'var(--violet)' }} />
           </div>
-          <div style={{ fontSize: 9, color: 'var(--ink65)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden' }}>{j.lib.slice(0, 5)}</div>
+          <div style={{ fontSize: 10, color: 'var(--ink65)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden' }}>{j.lib.length > 7 ? j.lib.slice(0, 6) + '.' : j.lib}</div>
         </div>
       ))}
     </div>

@@ -1,7 +1,7 @@
 import TexteLectureSeule from '../TexteLectureSeule.jsx';
 import { champSaisiDR } from '../../domain/saisiesDR.js';
 import { partRoulant, estRoulantPart } from '../../domain/calculations.js';
-import { useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import { VERSIONS, VERSION_LABELS } from '../../domain/versions.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -41,6 +41,10 @@ export default function EquipeScreen() {
   // Tri d'affichage (mémorisé sur ce navigateur) ; l'ordre est figé pendant la saisie
   const [tri, setTriEtat] = useState(() => { try { return localStorage.getItem('soma.triEquipe') || 'saisie'; } catch (e) { return 'saisie'; } });
   const etatTri = useRef(null);
+  // Rappels stables pour les lignes mémorisées (toujours la dernière version de setEmp / delEmp)
+  const rappels = useRef({});
+  const onSet = useCallback((i, f, v) => rappels.current.setEmp(i, f, v), []);
+  const onDel = useCallback((i) => rappels.current.delEmp(i), []);
   const setTri = (t) => { setTriEtat(t); etatTri.current = null; try { localStorage.setItem('soma.triEquipe', t); } catch (e) { /* stockage indisponible */ } };
 
   if (!agenceNom) return <div className="card"><h2>Équipe</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
@@ -106,6 +110,7 @@ export default function EquipeScreen() {
   function delEmp(i) {
     majEquipe((draft) => { draft.employees = draft.employees.filter((_, idx) => idx !== i); return draft; });
   }
+  rappels.current = { setEmp, delEmp };
   function addEmployee() {
     majEquipe((draft) => {
       draft.employees = draft.employees.concat({ name: 'Nouveau salarié', qual: 'DEA', contract: 'CDI', hours: 35, hoursM: 0, hsTarget: 3, pctRoulant: 100, joursSem: 5, coutJour: 0, dateEntree: '', dateSortie: '' });
@@ -167,41 +172,7 @@ export default function EquipeScreen() {
             </tr>
           </thead>
           <tbody>
-            {ordre.map((i) => {
-              const e = a.employees[i];
-              const nom = e.name || e.nom || '';
-              const contrat = e.contract || e.contrat || 'CDI';
-              const roul = isRoulant(e.qual) || estRoulantPart(e);
-              const etp = roul ? ((+e.hours || 0) * partRoulant(e) / 35).toFixed(2) : '—';
-              const isCddSais = contrat === 'CDD' && (e.dateEntree || e.dateSortie);
-              return (
-                <tr key={i}>
-                  <td style={td}>
-                    <input data-saisie-dr={champSaisiDR(e, 'name') ? '1' : undefined} type="text" value={nom} disabled={!editable} onChange={(ev) => setEmp(i, 'name', ev.target.value)} style={{ width: 150 }} />
-                    {isCddSais ? <span style={{ fontSize: 9, background: 'var(--orange, #c45300)', color: '#fff', padding: '1px 4px', marginLeft: 4 }}>CDD</span> : null}
-                  </td>
-                  <td style={td}>
-                    <select data-saisie-dr={champSaisiDR(e, 'qual') ? '1' : undefined} value={e.qual} disabled={!editable} onChange={(ev) => setEmp(i, 'qual', ev.target.value)} style={{ width: 90 }}>
-                      {QUALS.map((q) => <option key={q} value={q}>{q}</option>)}
-                    </select>
-                  </td>
-                  <td style={td}>
-                    <select data-saisie-dr={champSaisiDR(e, 'contract') ? '1' : undefined} value={contrat} disabled={!editable} onChange={(ev) => setEmp(i, 'contract', ev.target.value)} style={{ width: 74 }}>
-                      {CONTRACTS.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </td>
-                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'hours') ? '1' : undefined} type="number" value={e.hours || 0} disabled={!editable} onChange={(ev) => setEmp(i, 'hours', ev.target.value)} style={{ width: 60 }} /></td>
-                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'pctRoulant') ? '1' : undefined} type="number" value={Math.round(partRoulant(e) * 100)} min="0" max="100" disabled={!editable} onChange={(ev) => setEmp(i, 'pctRoulant', ev.target.value)} style={{ width: 55 }} />%</td>
-                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'joursSem') ? '1' : undefined} type="number" value={e.joursSem || 5} min="1" max="7" disabled={!editable} onChange={(ev) => setEmp(i, 'joursSem', ev.target.value)} style={{ width: 50 }} /></td>
-                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'dateEntree') ? '1' : undefined} type="date" value={e.dateEntree || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateEntree', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
-                  <td style={td}><input data-saisie-dr={champSaisiDR(e, 'dateSortie') ? '1' : undefined} type="date" value={e.dateSortie || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => setEmp(i, 'dateSortie', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
-                  <td style={{ ...td, textAlign: 'right' }} className="num">{etp}</td>
-                  <td style={td}>
-                    <button className="danger" disabled={!editable} onClick={() => delEmp(i)} style={{ padding: '4px 8px', fontSize: 11 }}>✕</button>
-                  </td>
-                </tr>
-              );
-            })}
+            {ordre.map((i) => <LigneEmploye key={i} e={a.employees[i]} i={i} editable={editable} onSet={onSet} onDel={onDel} />)}
             <tr style={{ background: 'var(--blue-light, rgba(61,111,214,.10))' }}>
               <td colSpan={10} style={{ ...td, fontSize: 12 }}>
                 La masse salariale des non-roulants (régulateurs, responsables, quote-part du DR) est saisie en une ligne globale par le contrôleur de gestion.
@@ -244,6 +215,42 @@ export default function EquipeScreen() {
     </div>
   );
 }
+
+// Ligne de l'équipe mémorisée : seule la ligne modifiée se redessine (équipes de plus de 100 salariés)
+const LigneEmploye = memo(function LigneEmploye({ e, i, editable, onSet, onDel }) {
+  const nom = e.name || e.nom || '';
+  const contrat = e.contract || e.contrat || 'CDI';
+  const roul = isRoulant(e.qual) || estRoulantPart(e);
+  const etp = roul ? ((+e.hours || 0) * partRoulant(e) / 35).toFixed(2) : '—';
+  const isCddSais = contrat === 'CDD' && (e.dateEntree || e.dateSortie);
+  return (
+    <tr>
+      <td style={td}>
+        <input data-saisie-dr={champSaisiDR(e, 'name') ? '1' : undefined} type="text" value={nom} disabled={!editable} onChange={(ev) => onSet(i, 'name', ev.target.value)} style={{ width: 150 }} />
+        {isCddSais ? <span style={{ fontSize: 9, background: 'var(--orange, #c45300)', color: '#fff', padding: '1px 4px', marginLeft: 4 }}>CDD</span> : null}
+      </td>
+      <td style={td}>
+        <select data-saisie-dr={champSaisiDR(e, 'qual') ? '1' : undefined} value={e.qual} disabled={!editable} onChange={(ev) => onSet(i, 'qual', ev.target.value)} style={{ width: 90 }}>
+          {QUALS.map((q) => <option key={q} value={q}>{q}</option>)}
+        </select>
+      </td>
+      <td style={td}>
+        <select data-saisie-dr={champSaisiDR(e, 'contract') ? '1' : undefined} value={contrat} disabled={!editable} onChange={(ev) => onSet(i, 'contract', ev.target.value)} style={{ width: 74 }}>
+          {CONTRACTS.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </td>
+      <td style={td}><input data-saisie-dr={champSaisiDR(e, 'hours') ? '1' : undefined} type="number" value={e.hours || 0} disabled={!editable} onChange={(ev) => onSet(i, 'hours', ev.target.value)} style={{ width: 60 }} /></td>
+      <td style={td}><input data-saisie-dr={champSaisiDR(e, 'pctRoulant') ? '1' : undefined} type="number" value={Math.round(partRoulant(e) * 100)} min="0" max="100" disabled={!editable} onChange={(ev) => onSet(i, 'pctRoulant', ev.target.value)} style={{ width: 55 }} />%</td>
+      <td style={td}><input data-saisie-dr={champSaisiDR(e, 'joursSem') ? '1' : undefined} type="number" value={e.joursSem || 5} min="1" max="7" disabled={!editable} onChange={(ev) => onSet(i, 'joursSem', ev.target.value)} style={{ width: 50 }} /></td>
+      <td style={td}><input data-saisie-dr={champSaisiDR(e, 'dateEntree') ? '1' : undefined} type="date" value={e.dateEntree || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => onSet(i, 'dateEntree', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
+      <td style={td}><input data-saisie-dr={champSaisiDR(e, 'dateSortie') ? '1' : undefined} type="date" value={e.dateSortie || ''} min="2027-01-01" max="2027-12-31" disabled={!editable} onChange={(ev) => onSet(i, 'dateSortie', ev.target.value)} style={{ width: 140, fontSize: 11 }} /></td>
+      <td style={{ ...td, textAlign: 'right' }} className="num">{etp}</td>
+      <td style={td}>
+        <button className="danger" disabled={!editable} onClick={() => onDel(i)} style={{ padding: '4px 8px', fontSize: 11 }}>✕</button>
+      </td>
+    </tr>
+  );
+});
 
 function Kpi({ label, value, sub }) {
   return (
