@@ -90,9 +90,12 @@ describe('Export Excel de la consolidation', () => {
 
 import { chargesReport2028 } from './calculations.js';
 describe('Charges à reporter sur janvier 2028', () => {
-  it('positives pour une agence avec équipe et coût horaire', () => {
-    const a = base();
-    expect(chargesReport2028(a)).toBeGreaterThan(0);
+  it('salaires mensualisés : seules les variables du 6 au 31 décembre 2027 sont reportées', () => {
+    const a = base(); a.sick = Array(12).fill(0); a.presence = {};
+    const sansHS = chargesReport2028(a);
+    a.targetTXR = 20; // forte charge : des HS en décembre
+    expect(chargesReport2028(a)).toBeGreaterThan(sansHS);
+    expect(sansHS).toBe(0);
   });
 });
 

@@ -173,3 +173,36 @@ describe('Semaines à cheval et calendrier — besoins et ressources', () => {
     expect(partSemaineMois(a, 13, 2) + partSemaineMois(a, 13, 3)).toBeCloseTo(1, 9);
   });
 });
+
+describe('Masse salariale mensuelle — salaires mensualisés, variables par période de paie', () => {
+  const agence = async () => {
+    const R = await import('./calculations.js');
+    const a = prete(); a.periodesPaie = R.buildPeriodesPaie(); a.costHour = 30; a.sick = Array(12).fill(5); a.ratioMaintien = 50;
+    return { a, R };
+  };
+  it('salaire de base identique chaque mois (35 h × 52/12 × taux), 4 ou 5 semaines', async () => {
+    const { a, R } = await agence(); a.employees = [{ qual: 'DEA', contract: 'CDI', hours: 35, pctRoulant: 100 }];
+    for (let m = 0; m < 5; m++) expect(R.msRoulantBaseMois(a, m)).toBeCloseTo(35 * 52 / 12 * 30, 6);
+  });
+  it('entrée le 16 mars : moitié environ du salaire de mars, rien avant', async () => {
+    const { a, R } = await agence(); a.employees = [{ qual: 'DEA', contract: 'CDI', hours: 35, pctRoulant: 100, dateEntree: '2027-03-16' }];
+    expect(R.msRoulantBaseMois(a, 1)).toBe(0);
+    expect(R.msRoulantBaseMois(a, 2)).toBeCloseTo(35 * 52 / 12 * 30 * 16 / 31, 6);
+  });
+  it('sans HS, un mois à 5 semaines ne coûte pas plus en salaire de base ; le lissage s\'annule sur l\'année', async () => {
+    const { a, R } = await agence(); a.targetTXR = 100000; a.presence = {}; a.sick = Array(12).fill(0);
+    const avr = R.payrollPayMonth(a, 3), mai = R.payrollPayMonth(a, 4);
+    expect(Math.abs(avr - mai) / mai).toBeLessThan(0.03);
+    let l = 0; for (let m = 0; m < 12; m++) l += R.lissage5eSemaine(a, m);
+    expect(l).toBeCloseTo(0, 6);
+  });
+  it('maladie non maintenue retenue sur la période ; janvier sans salaire de décembre 2026', async () => {
+    const { a, R } = await agence(); a.targetTXR = 100000; a.presence = {};
+    a.sick = Array(12).fill(0); const sans = R.payrollPayMonth(a, 1);
+    a.sick = Array(12).fill(10); const avec = R.payrollPayMonth(a, 1);
+    expect(avec).toBeLessThan(sans);
+    a.sick = Array(12).fill(0);
+    expect(R.baseDec2026(a)).toBeGreaterThan(0); // l'ancien calcul l'ajoutait à janvier
+    expect(Math.abs(R.payrollPayMonth(a, 0) - R.payrollPayMonth(a, 1)) / R.payrollPayMonth(a, 1)).toBeLessThan(0.01);
+  });
+});

@@ -95,9 +95,9 @@ describe('ligne unique de masse salariale non-roulante', () => {
     const avec = payrollPayMonth(a, 1);
     a.msNRBrutMensuel = null;
     const coutJour = a.employees.filter((e) => !['DEA', 'AA', 'TAXI', 'TPMR', 'FACTURIERE'].includes(e.qual))
-      .reduce((s, e) => s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (28 * (+e.joursSem || 5) / 7), 0);
+      .reduce((s, e) => s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (+e.joursSem || 5) * 52 / 12, 0); // mensualisé
     const sans = payrollPayMonth(a, 1);
-    expect(avec - sans).toBeCloseTo(msNRMois({ ...a, msNRBrutMensuel: 6800 }, 1) - coutJour - 90000 * 0.2 * 28 / 365, 4);
+    expect(avec - sans).toBeCloseTo(msNRMois({ ...a, msNRBrutMensuel: 6800 }, 1) - coutJour - 90000 * 0.2 / 12, 4);
   });
 });
 

@@ -360,14 +360,14 @@ function payrollPayMonth(a, moisIdx) {
   let debut = new Date(periode.debut);
   let fin = new Date(periode.fin);
 
-  // Heures roulantes disponibles sur cette période
-  // Pour janvier : ajouter le montant décembre 2026 si saisi
-  // + le salaire de base des roulants pour les jours de décembre 2026 inclus dans la période
-  let msJan2026 = moisIdx === 0 ? varDec2026Total(a) + baseDec2026(a) : 0;
+  // Salaires mensualisés (nov. 2026) : le salaire de base des roulants est celui du mois civil, le même chaque mois ;
+  // seules les variables suivent la période de paie de 4 ou 5 semaines.
+  // Janvier : + les variables de décembre 2026 saisies (le salaire de base de décembre 2026 a été payé en décembre 2026)
+  let msJan2026 = moisIdx === 0 ? varDec2026Total(a) : 0;
 
-  // Agréger les semaines ISO dont la majorité des jours tombe dans la période
+  // Variables des semaines de la période (au prorata des jours compris dans la période)
   let hsR = hsRows(a);
-  let ms = msJan2026;
+  let ms = msJan2026 + msRoulantBaseMois(a, moisIdx);
 
   hsR.forEach(function(r) {
     // Trouver les jours de cette semaine dans le calendrier
@@ -386,14 +386,11 @@ function payrollPayMonth(a, moisIdx) {
     let ratio = daysInPeriode / daysTotal;
     if (ratio <= 0) return;
 
-    // Coût pro-ratisé de cette semaine
-    let coutSem = coutRoulantSemaine(a, r);
-    ms += coutSem * ratio;
+    // Variables pro-ratisées de cette semaine (HS majorées − retenues)
+    ms += variablesRoulantSemaine(a, r) * ratio;
   });
 
-  // Masse salariale non-roulants et DR : répartie sur la période (approximation pro-rata)
-  let nbJoursPeriode = Math.round((fin - debut) / (1000*60*60*24)) + 1;
-  let nbJoursAn = 365;
+  // Masse salariale non-roulants et DR : salaires mensualisés, un mois de salaire par mois de paie
 
   // Non-roulants : ligne globale CG = un salaire mensuel par mois de paie.
   // À défaut, ancien calcul au coût journalier pro-rata de la période.
@@ -401,7 +398,7 @@ function payrollPayMonth(a, moisIdx) {
     ? a.employees.filter(function(e) {
         return !['DEA','AA','TAXI','TPMR','FACTURIERE'].includes(e.qual);
       }).reduce(function(s, e) {
-        return s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (nbJoursPeriode * (+e.joursSem || 5) / 7);
+        return s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (+e.joursSem || 5) * 52 / 12; // mensualisé
       }, 0)
     : 0;
 
@@ -443,7 +440,7 @@ function payrollPayMonth(a, moisIdx) {
   });
 
   // DR pro-rata
-  let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJoursPeriode / nbJoursAn);
+  let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 / 12; // mensualisé
 
   // Lissage de la 5e semaine de variables sur le trimestre (voir lissage5eSemaine)
   return ms + msNonRoulants + msHSImp + repasPeriode + msDR + lissage5eSemaine(a, moisIdx);
@@ -848,26 +845,43 @@ function chargesCGSaisies(d){
 
 // Charges à reporter sur la paie de janvier 2028 : heures du 06/12/2027 au 31/12/2027
 // (port fidèle de chargesReport2028).
+// Salaire de base mensualisé des roulants (nov. 2026, art. L3242-1 du Code du travail) : heures du contrat × 52/12
+// × taux horaire du mois, le même chaque mois quel que soit le nombre de semaines de la période de paie ; au prorata
+// des jours du mois en cas d'entrée ou de sortie ; prime de précarité des CDD comprise. Congés payés et absences
+// payées sont dans ce salaire (maintien) ; HS et retenues sont des variables (variablesRoulantSemaine).
+function msRoulantBaseMois(a,m){
+  let nbj=new Date(2027,m+1,0).getDate(),ch=chMois(a,m);
+  return (a.employees||[]).filter(estRoulantPart).reduce(function(s,e){
+    let f=1;
+    if(e.dateEntree||e.dateSortie){let p=0;for(let d=1;d<=nbj;d++)if(empPresent(e,cleJour(m,d)))p++;f=p/nbj;}
+    return s+(+e.hours||0)*partRoulant(e)*52/12*ch*f*(1+(isCDD(e)?TAUX_PRECARITE_CDD:0));
+  },0);
+}
+// Variables d'une semaine, payées sur la période de paie qui la contient : HS majorées, moins les retenues
+// (part de la maladie non maintenue, absences non payées), précarité CDD comprise
+function variablesRoulantSemaine(a,r){
+  let m=mainMonth(a,r.week),ch=chMois(a,m);
+  let v=(r.hs||0)*ch*coefHSMois(a,m)-(r.mal||0)*ch*(1-ratioMaintien(a))-(r.otherH||0)*ch;
+  return v*(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week));
+}
 function chargesReport2028(a){
-  let debut = new Date(2027, 11, 6), fin = new Date(2027, 11, 31), nbJours = 26;
-  let ms = 0;
+  // Variables du 06/12/2027 au 31/12/2027 (HS, retenues, HS improductives) : payées sur la paie de janvier 2028.
+  // Les salaires mensualisés de décembre (roulants, non-roulants, DR) sont payés en décembre : rien n'est reporté.
+  let debut = new Date(2027, 11, 6), fin = new Date(2027, 11, 31), ms = 0;
   hsRows(a).forEach(function(r){
     let daysOfWeek = joursSemaine(a, r.week);
     if(!daysOfWeek.length) return;
-    let daysIn = daysOfWeek.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length;
-    let ratio = daysIn / daysOfWeek.length;
+    let ratio = daysOfWeek.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length / daysOfWeek.length;
     if(ratio <= 0) return;
-    ms += coutRoulantSemaine(a, r) * ratio;
+    ms += variablesRoulantSemaine(a, r) * ratio;
+    let hsImp = a.hsImproductif && a.hsImproductif[r.week] ? +a.hsImproductif[r.week] : 0;
+    if(hsImp) ms += hsImp * coutHoraireImproductif(a) * coefHSMois(a, mainMonth(a, r.week)) * ratio;
   });
-  if(msNRMensuel(a) === null) ms += (a.employees || [])
-    .filter(function(e){ return !['DEA','AA','TAXI','TPMR','FACTURIERE'].includes(e.qual); })
-    .reduce(function(s, e){ return s + (+e.coutJour || 0) * (1 - partRoulant(e)) * nbJours * (+e.joursSem || 5) / 7; }, 0);
-  if(msNRMensuel(a) === null) ms += (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 * (nbJours / 365);
   return Math.round(ms);
 }
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, msRoulantBaseMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
