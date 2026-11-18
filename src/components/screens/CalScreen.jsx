@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { euro } from '../../domain/format.js';
-import { needWeeks } from '../../domain/calculations.js';
+import { needWeeks, caFunMois, caFunJour } from '../../domain/calculations.js';
 import { totauxCalendrier } from '../../domain/calTotaux.js';
 import { activitesAjustables, joursCibles, appliquerAjustJours, nbJoursAjustes, effacerAjustJours, libelleJour, libellePortee, LIB_TYPE_JOUR } from '../../domain/ajustJours.js';
 
@@ -76,7 +76,8 @@ export default function CalScreen() {
               <div className="calJourDetail" style={{ fontSize: 10 }} title={'San = sanitaire' + (a.actSai ? ', Sais = saisonnier' : '') + (a.actTP ? ', TP = transport de personnes' : '')}>San {euro(d.ca.san)}</div>
               {a.actSai ? <div className="calJourDetail" style={{ fontSize: 10 }}>Sais {euro(d.ca.sai)}</div> : null}
               {a.actTP ? <div className="calJourDetail" style={{ fontSize: 10 }}>TP {euro(d.ca.tp)}</div> : null}
-              <div className="calJourTotal" style={{ fontWeight: 700, marginTop: 2, fontFamily: 'DM Mono, monospace' }}>{euro(d.total)}</div>
+              {caFunMois(a, d.month) ? <div className="calJourDetail" style={{ fontSize: 10, color: 'var(--ink65)' }} title="Funéraire : CA du mois réparti à parts égales sur les jours, sans besoin d'équipage">Fun {euro(caFunJour(a, d.month))}</div> : null}
+              <div className="calJourTotal" style={{ fontWeight: 700, marginTop: 2, fontFamily: 'DM Mono, monospace' }}>{euro(d.total + caFunJour(a, d.month))}</div>
             </div>
           );
         })}
@@ -163,7 +164,7 @@ const M3 = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 
 const pct = (x) => (x * 100).toFixed(1).replace('.', ',') + ' %';
 
 function BandeauTotaux({ a, month, onMonth }) {
-  const { mois, total } = totauxCalendrier(a.cal);
+  const { mois, total } = totauxCalendrier(a.cal, M.map((_, m) => caFunMois(a, m)));
   const t = mois[month];
   const kpis = [
     ['CA du mois', euro(t.ca), true],
@@ -181,6 +182,7 @@ function BandeauTotaux({ a, month, onMonth }) {
   ];
   if (a.actSai) lignes.push(['CA Saisonnier', 'sai', true]);
   if (a.actTP) lignes.push(['CA Transport de personnes', 'tp', true]);
+  if (total.fun) lignes.push(['CA Funéraire (sans besoin d\'équipage)', 'fun', true]);
   lignes.push(['CA total', 'ca', true, true], ["Part de l'année", 'part', 'pct']);
   const fmt = (v, k) => (k === 'pct' ? pct(v) : k ? euro(v) : v);
   const cell = { padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' };

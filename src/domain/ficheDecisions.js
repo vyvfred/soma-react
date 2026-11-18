@@ -41,7 +41,7 @@ export function ficheDecisions(d, autres = []) {
     ca, histCA, targetCA, net, tauxMS, nbRoulants, croissance,
     medCroissance: croissances.length ? median(croissances) : null,
     absRef, absMoy, hsParSalSem, medHSsal: hsSals.length ? median(hsSals) : null, hs50Moy, choix,
-    activites: [d.actSan !== false ? 'sanitaire' : null, d.actSai ? 'saisonnier' : null, d.actTP ? 'transport de personnes' : null].filter(Boolean)
+    activites: [d.actSan !== false ? 'sanitaire' : null, d.actSai ? 'saisonnier' : null, d.actTP ? 'transport de personnes' : null, d.actFun ? 'funéraire' : null].filter(Boolean)
   };
 }
 

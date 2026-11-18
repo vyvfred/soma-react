@@ -5,7 +5,7 @@ import { euro, pct } from '../../domain/format.js';
 import { Pourquoi } from '../Vision.jsx';
 import { totauxCalendrier } from '../../domain/calTotaux.js';
 import { montant } from '../../domain/memoSIG.js';
-import { M, SEUIL_MS_CA } from '../../domain/calculations.js';
+import { M, SEUIL_MS_CA, caFunMois } from '../../domain/calculations.js';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -36,7 +36,7 @@ function Barres({ barres }) {
 // CA mensuel budgété avec, sous chaque mois, les jours ouvrés et les jours de vacances scolaires (VS)
 const kEuro = (v) => { v = +v || 0; return Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(2).replace('.', ',') + ' M€' : Math.round(v / 1000) + ' k€'; };
 function CAMensuel({ a, caMensuel, max }) {
-  const t = totauxCalendrier(a.cal).mois;
+  const t = totauxCalendrier(a.cal, M.map((_, m) => caFunMois(a, m))).mois;
   return (
     <div className="chartBox" style={{ gridColumn: '1/-1' }} data-testid="ca-mensuel">
       <div className="chartTitle">CA mensuel budgété, jours de semaine hors vacances et jours de vacances scolaires</div>

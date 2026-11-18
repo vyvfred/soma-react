@@ -3,7 +3,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { objectifInsight, coherenceCapacite } from '../../domain/objectifInsight.js';
-import { annualCA, hsTot, genCal } from '../../domain/calculations.js';
+import { annualCA, hsTot, genCal, caFunAnnuel } from '../../domain/calculations.js';
 import { euro } from '../../domain/format.js';
 import BudgetBar from '../BudgetBar.jsx';
 
@@ -56,9 +56,11 @@ export default function ObjectifScreen() {
   const activite = (field) => (e) => { const v = e.target.checked; update((d) => { d[field] = v; genCal(d); return d; }); };
   const zone = (e) => { const v = e.target.value; update((d) => { d.schoolZone = v; genCal(d); return d; }); };
 
-  const caConstruit = annualCA(a), t = hsTot(a);
+  // L'objectif de CA porte sur le transport : le CA funéraire (sans besoin d'équipage) est affiché à part
+  const caFun = caFunAnnuel(a), caConstruit = annualCA(a) - caFun, t = hsTot(a);
   const kpis = [
-    ['Objectif CA', euro(a.targetCA)], ['CA construit', euro(caConstruit)], ['Écart', euro(caConstruit - (+a.targetCA || 0))],
+    ['Objectif CA', euro(a.targetCA)], [caFun ? 'CA construit (transport)' : 'CA construit', euro(caConstruit)], ['Écart', euro(caConstruit - (+a.targetCA || 0))],
+    ...(caFun ? [['CA funéraire', euro(caFun)]] : []),
     ['Heures nécessaires', t.need.toFixed(0) + ' h'], ['HS estimées', t.hs.toFixed(0) + ' h'], ['Zone', a.schoolZone]
   ];
   const ref = (field, label, placeholder, help) => (
@@ -116,6 +118,7 @@ export default function ObjectifScreen() {
           <label className="objActChip checked"><input type="checkbox" checked disabled /> Sanitaire <span style={{ fontSize: 10, color: 'var(--ink65)' }}>obligatoire</span></label>
           <label className={'objActChip' + (a.actSai ? ' checked' : '')}><input type="checkbox" checked={!!a.actSai} onChange={activite('actSai')} disabled={!editable} data-testid="act-sai" /> Saisonnier</label>
           <label className={'objActChip' + (a.actTP ? ' checked' : '')}><input type="checkbox" checked={!!a.actTP} onChange={activite('actTP')} disabled={!editable} /> Transport de personnes</label>
+          <label className={'objActChip' + (a.actFun ? ' checked' : '')} title="Activité commerciale sans besoin d'équipage : CA saisi par mois dans Références CA, hors heures nécessaires, TXR et objectif"><input type="checkbox" checked={!!a.actFun} onChange={activite('actFun')} disabled={!editable} data-testid="act-fun-obj" /> Funéraire</label>
         </div>
       </div>
 

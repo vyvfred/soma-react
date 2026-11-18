@@ -286,7 +286,13 @@ function mainMonth(a,w){let ix=indexCal(a),k=+w;if(ix.moisPrincipal.has(k))retur
 
 function manual(a,l,m){let x=a.rex[l];if(!x)return 0;if(x.mode==='pct')return monthCA(a,m)*(+x.pct||0)/100;if(x.mode==='pctMois')return monthCA(a,m)*(+(x.pcts&&x.pcts[m])||0)/100;if(x.mode==='annual'){let annual=+x.annual||0;if(x.allocationKey==='ca')return annual*annualCAWeight(a,m);return annual/12}return x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0}
 
-function monthCA(a,m){if(estStructure(a))return caStructure(a,m);if(!a.cal.length)genCal(a);return a.cal.filter(d=>d.month===m).reduce((s,d)=>s+d.total,0)}
+function monthCA(a,m){if(estStructure(a))return caStructure(a,m);if(!a.cal.length)genCal(a);return a.cal.filter(d=>d.month===m).reduce((s,d)=>s+d.total,0)+caFunMois(a,m)}
+// Activité funéraire (nov. 2026, agence de Cahors) : CA commercial saisi par mois, réparti à parts égales sur les jours du mois.
+// Sans besoin d'équipage : il entre dans le CA (compte de résultat, charges en % du CA) mais ni dans les heures de besoin
+// (qui viennent du CA des jours du calendrier, a.cal[].total), ni dans le TXR, ni dans l'objectif de CA (transport).
+function caFunMois(a,m){if(!a||!a.actFun||!Array.isArray(a.caFuneraire))return 0;return Math.max(0,+a.caFuneraire[m]||0);}
+function caFunJour(a,m){return caFunMois(a,m)/new Date(2027,m+1,0).getDate();}
+function caFunAnnuel(a){return M.reduce(function(s,_,m){return s+caFunMois(a,m);},0);}
 
 function needWeeks(a){return weeks(a).map(w=>({week:w.week,days:w.days.length,ca:w.ca,hours:(+a.targetTXR?w.ca/+a.targetTXR:0)}))}
 
@@ -882,6 +888,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, msRoulantBaseMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

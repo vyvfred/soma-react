@@ -1,7 +1,7 @@
 import { annuel, montant, resultatMemo } from './memoSIG.js';
 // Synthèse du budget — fonctions PURES, port de renderSynthese, renderCoutChoix,
 // renderEnveloppesCP et renderDashboard (graphiques et ratios).
-import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, vueExploitation, SEUIL_MS_CA } from './calculations.js';
+import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, vueExploitation, SEUIL_MS_CA, caFunAnnuel } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const VALIDEURS = ['dr', 'df', 'dg', 'pdg'];
@@ -12,12 +12,12 @@ export function syntheseBudget(a, role = 'rex') {
   const net = res.val;
   const ms = annuel(a, 'Charges de personnel');
   const caObj = +a.targetCA || 0;
-  const ecart = ca - caObj;
+  const ecart = ca - caFunAnnuel(a) - caObj; // l'objectif porte sur le transport (hors funéraire)
   const tauxMS = ca ? (ms / ca) * 100 : 0;
   const nbCritiques = hsRows(a).filter((r) => r.t === 'critique').length;
 
   const kpis = [
-    { label: 'CA budgété', value: euro(ca), note: '' },
+    { label: 'CA budgété', value: euro(ca), note: caFunAnnuel(a) ? 'dont funéraire ' + euro(caFunAnnuel(a)) : '' },
     { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
     { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : tauxMS > SEUIL_MS_CA ? '⚠ au-dessus du seuil de ' + SEUIL_MS_CA + ' %' : 'sous le seuil de ' + SEUIL_MS_CA + ' %' },
     { label: 'Écart à l\'objectif', value: (ecart >= 0 ? '+' : '') + euro(ecart), note: caObj ? (ecart >= 0 ? 'objectif atteint' : 'sous l\'objectif') : '' }
@@ -93,8 +93,8 @@ export function indicateursDetailles(a, role) {
     dash: [
       { label: 'CA 2026', value: euro(ca2026), note: 'réalisé / estimé' },
       { label: 'Objectif CA 2027', value: euro(caObj), note: 'saisi REX' },
-      { label: 'Budget CA 2027', value: euro(caBudget), note: 'calendrier' },
-      { label: 'Écart objectif', value: euro(caBudget - caObj), note: 'budget - objectif' },
+      { label: 'Budget CA 2027', value: euro(caBudget), note: caFunAnnuel(a) ? 'calendrier, dont funéraire ' + euro(caFunAnnuel(a)) : 'calendrier' },
+      { label: 'Écart objectif', value: euro(caBudget - caFunAnnuel(a) - caObj), note: caFunAnnuel(a) ? 'budget hors funéraire - objectif' : 'budget - objectif' },
       { label: 'Résultat d\'exploitation 2027', value: euro(rex), note: pct(r(rex)) },
       { label: 'HS estimées', value: t.hs.toFixed(0) + ' h', note: 'moteur RH' }
     ],
