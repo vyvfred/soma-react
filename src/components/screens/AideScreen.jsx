@@ -15,6 +15,7 @@ export default function AideScreen() {
     ? FAQ_CG_SECTIONS.map((s) => ({ titre: s.t, items: s.items }))
     : [{ titre: null, items: FAQ[key] || [] }])
     // Le DF utilise aussi les écrans de suivi du contrôle de gestion
+    .concat(profile.role === 'df' && FAQ.df ? [{ titre: 'Direction financière : consultation et masse salariale', items: FAQ.df }] : [])
     .concat(profile.role === 'df' ? FAQ_CG_SECTIONS.filter((s) => s.t.indexOf('Suivre le réseau') >= 0).map((s) => ({ titre: 'Écrans de suivi du réseau', items: s.items })) : [])
     // L'administrateur a aussi accès au classeur des charges du réseau
     .concat(profile.role === 'admin' ? FAQ_CG_SECTIONS.filter((s) => s.t.indexOf('Charges par agence') >= 0).map((s) => ({ titre: 'Charges du réseau', items: s.items.slice(0, 1) })) : [])
