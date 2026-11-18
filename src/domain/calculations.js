@@ -195,7 +195,9 @@ function empPresent(e, dateISO){
 const INDEX_CAL=new WeakMap();
 function indexCal(a){let c=a.cal||[],x=INDEX_CAL.get(c);if(x&&x.n===c.length)return x;x={n:c.length,parSemaine:new Map(),moisPrincipal:new Map()};c.forEach(function(d){let l=x.parSemaine.get(d.week);if(!l){l=[];x.parSemaine.set(d.week,l);}l.push(d);});INDEX_CAL.set(c,x);return x;}
 function joursSemaine(a,w){return indexCal(a).parSemaine.get(w)||[];}
-function genCal(a){a.cal=[];for(let m=0;m<12;m++){let days=new Date(2027,m+1,0).getDate();for(let d=1;d<=days;d++){let dt=new Date(2027,m,d),type=typeDay(dt,a),ca={san:+a.refs.san[m][type]||0,sai:+a.refs.sai[m][type]||0,tp:+a.refs.tp[m][type]||0};a.cal.push({month:m,day:d,week:isoWeek(dt),type,ca,total:ca.san+ca.sai+ca.tp})}}}
+function genCal(a){a.cal=[];for(let m=0;m<12;m++){let days=new Date(2027,m+1,0).getDate();for(let d=1;d<=days;d++){let dt=new Date(2027,m,d),type=typeDay(dt,a),ca={san:+a.refs.san[m][type]||0,sai:+a.refs.sai[m][type]||0,tp:+a.refs.tp[m][type]||0},ref=null,aj=a.ajustJours&&a.ajustJours[cleJour(m,d)];if(aj){ref={san:ca.san,sai:ca.sai,tp:ca.tp};['san','sai','tp'].forEach(function(k){if(aj[k]!==undefined&&aj[k]!==null&&aj[k]!=='')ca[k]=+aj[k]||0;});}a.cal.push({month:m,day:d,week:isoWeek(dt),type,ca,total:ca.san+ca.sai+ca.tp,ref})}}}
+// Clé d'un jour 2027 (« 2027-03-16 ») ; a.ajustJours[clé] = {san?, sai?, tp?} remplace la référence CA de ce jour (ajustement fait sur le calendrier)
+function cleJour(m,d){return '2027-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
 
 // Cache le temps d'UN calcul groupé (avecCacheMoteur) : le budget n'est pas modifié pendant ce calcul.
 // Hors de ce cadre, aucun cache : le comportement reste celui d'avant (sûr pour un objet modifié sur place).
@@ -813,6 +815,7 @@ function chargesReport2028(a){
 }
 
 export {
+  cleJour,
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

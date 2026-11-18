@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { euro } from '../../domain/format.js';
 import { needWeeks } from '../../domain/calculations.js';
 import { totauxCalendrier } from '../../domain/calTotaux.js';
+import { activitesAjustables, joursCibles, appliquerAjustJours, nbJoursAjustes, effacerAjustJours, libelleJour, libellePortee, LIB_TYPE_JOUR } from '../../domain/ajustJours.js';
 
 const M = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const WD = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -15,8 +16,9 @@ const TYPE_STYLE = {
 };
 
 export default function CalScreen() {
-  const { agency: a, loading, error, agenceNom } = useBudget();
+  const { agency: a, loading, error, agenceNom, update, editable } = useBudget();
   const [month, setMonth] = useState(0);
+  const [sel, setSel] = useState(null);
 
   if (!agenceNom) return <div className="card"><h2>Calendrier</h2><p className="hint">Aucune agence rattachée.</p></div>;
   if (loading) return <div className="card"><h2>Calendrier</h2><p className="hint">Chargement…</p></div>;
@@ -58,8 +60,14 @@ export default function CalScreen() {
         {Array.from({ length: start }).map((_, i) => <div key={'e' + i} />)}
         {days.map((d) => {
           const st = TYPE_STYLE[d.type];
+          const choisi = sel && sel.m === month && sel.d === d.day;
           return (
-            <div key={d.day} className="calJour" style={{ minHeight: 78, padding: 6, border: '1px solid ' + (st ? st.border : 'var(--border)'), background: st ? st.bg : 'var(--card)', fontSize: 11 }}>
+            <div key={d.day} className="calJour" data-testid={'jour-' + d.day} role={editable ? 'button' : undefined} tabIndex={editable ? 0 : undefined}
+              onClick={editable ? () => setSel(choisi ? null : { m: month, d: d.day }) : undefined}
+              onKeyDown={editable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(choisi ? null : { m: month, d: d.day }); } } : undefined}
+              title={d.ref ? 'CA ajusté sur le calendrier — référence : ' + euro(d.ref.san + d.ref.sai + d.ref.tp) : (editable ? 'Cliquer pour ajuster le CA de ce jour' : undefined)}
+              style={{ minHeight: 78, padding: 6, border: choisi ? '2px solid var(--violet)' : d.ref ? '1px dashed var(--violet)' : '1px solid ' + (st ? st.border : 'var(--border)'), background: st ? st.bg : 'var(--card)', fontSize: 11, cursor: editable ? 'pointer' : 'default', position: 'relative' }}>
+              {d.ref ? <span data-testid={'ajuste-' + d.day} style={{ position: 'absolute', right: 4, bottom: 3, fontSize: 11, color: 'var(--violet)' }} aria-label="jour ajusté">✎</span> : null}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
                 <b>{d.day}</b>
                 {st ? <span className="calJourBadge" style={{ background: st.badgeBg, color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', textTransform: 'uppercase' }}>{st.badge}</span> : null}
@@ -73,6 +81,16 @@ export default function CalScreen() {
           );
         })}
       </div>
+
+      {sel && sel.m === month && editable ? <EditeurJour a={a} m={sel.m} d={sel.d} update={update} onClose={() => setSel(null)} /> : null}
+
+      {editable ? (
+        <p className="hint" style={{ fontSize: 12, marginTop: 10 }}>
+          ✎ Cliquez sur un jour pour ajuster son CA (par exemple le transport de personnes un jour de la semaine), pour ce jour seul ou pour tous les mêmes jours du mois ou de l'année.
+          {nbJoursAjustes(a) ? <> <b data-testid="nb-ajustes">{nbJoursAjustes(a)} jour{nbJoursAjustes(a) > 1 ? 's' : ''} ajusté{nbJoursAjustes(a) > 1 ? 's' : ''}</b> sur l'année.{' '}
+            <button data-testid="effacer-ajustements" onClick={() => { if (window.confirm('Revenir aux références CA pour les ' + nbJoursAjustes(a) + ' jours ajustés ?')) update((x) => effacerAjustJours(x)); }} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '3px 8px' }}>Tout remettre aux références</button></> : null}
+        </p>
+      ) : null}
 
       <h3 style={{ margin: '22px 0 8px', fontSize: 15 }}>Synthèse hebdomadaire</h3>
       <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }} data-testid="cal-semaines">
@@ -90,6 +108,53 @@ export default function CalScreen() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// Ajustement d'un jour : une valeur par activité, appliquée à ce jour seul ou aux mêmes jours du mois / de l'année
+function EditeurJour({ a, m, d, update, onClose }) {
+  const jour = a.cal.find((x) => x.month === m && x.day === d);
+  const acts = activitesAjustables(a);
+  const ref = jour.ref || jour.ca;
+  const [vals, setVals] = useState(() => Object.fromEntries(acts.map(([k]) => [k, jour.ref ? String(jour.ca[k]) : ''])));
+  const [portee, setPortee] = useState('jour');
+  const boite = useRef(null);
+  useEffect(() => { if (boite.current && boite.current.scrollIntoView) boite.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [m, d]);
+  const appliquer = (efface) => {
+    const cles = joursCibles(a, m, d, portee);
+    const valeurs = Object.fromEntries(acts.map(([k]) => [k, efface ? '' : vals[k]]));
+    update((x) => appliquerAjustJours(x, cles, valeurs));
+    onClose();
+  };
+  return (
+    <div ref={boite} data-testid="editeur-jour" style={{ marginTop: 14, padding: '14px 16px', border: '1px solid var(--violet)', background: 'var(--bg2)' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+        <b style={{ fontSize: 15 }}>{libelleJour(m, d)}</b>
+        <span style={{ fontSize: 12, color: 'var(--ink65)' }}>{LIB_TYPE_JOUR[jour.type]}</span>
+        <button onClick={onClose} aria-label="Fermer" style={{ marginLeft: 'auto', width: 'auto', margin: 0, fontSize: 11, padding: '3px 8px' }}>✕</button>
+      </div>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+        {acts.map(([k, lib]) => (
+          <label key={k} style={{ fontSize: 12 }}>
+            <span style={{ display: 'block', color: 'var(--ink65)', marginBottom: 4 }}>{lib} (référence {euro(ref[k])})</span>
+            <input data-testid={'ajust-' + k} type="text" inputMode="decimal" value={vals[k]} placeholder={String(ref[k])} onChange={(e) => setVals((v) => ({ ...v, [k]: e.target.value }))} style={{ width: 150 }} />
+          </label>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, marginBottom: 12 }}>
+        {['jour', 'mois', 'annee'].map((p) => (
+          <label key={p} style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
+            <input type="radio" name="portee" data-testid={'portee-' + p} checked={portee === p} onChange={() => setPortee(p)} style={{ width: 'auto', margin: 0 }} />
+            {libellePortee(a, m, d, p)}
+          </label>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="ok" data-testid="ajust-appliquer" onClick={() => appliquer(false)} style={{ width: 'auto', margin: 0 }}>Appliquer ({joursCibles(a, m, d, portee).length} jour{joursCibles(a, m, d, portee).length > 1 ? 's' : ''})</button>
+        <button data-testid="ajust-reference" onClick={() => appliquer(true)} style={{ width: 'auto', margin: 0 }}>Revenir à la référence</button>
+      </div>
+      <p className="hint" style={{ fontSize: 11, margin: '10px 0 0' }}>Laissez une case vide pour garder la référence de l'activité. ↶ (Ctrl+Z) annule un ajustement.</p>
     </div>
   );
 }
