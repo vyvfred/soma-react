@@ -110,3 +110,37 @@ describe('CP en jours ouvrables — conversion unique des budgets saisis en jour
     expect(convertirCPOuvrables(a)).toBe(false); expect(a.presence[10].cp).toBe(6);
   });
 });
+
+describe('Semaine à cheval — absences payées et non payées', () => {
+  const semCheval = async (a) => { const { moisDeSemaine, needWeeks, genCal } = await import('./calculations.js'); if (!a.cal.length) genCal(a); return needWeeks(a).map((x) => x.week).filter((k) => moisDeSemaine(a, k).length === 2); };
+  it('parts saisies par mois additionnées, heures retirées = total × 7 h, CP non touchés', async () => {
+    const { moisDeSemaine, absPartMois, setAbsPartMois, pres } = await import('./calculations.js');
+    const a = prete();
+    for (const w of await semCheval(a)) {
+      const [m1, m2] = moisDeSemaine(a, w); const cp0 = a.presence[w] ? a.presence[w].cp : 0; const av0 = pres(a, w).av;
+      for (const ch of ['otherPaid', 'other']) { setAbsPartMois(a, w, ch, m1, 1); setAbsPartMois(a, w, ch, m2, 1.5); }
+      expect(a.presence[w].otherPaid).toBe(2.5); expect(a.presence[w].other).toBe(2.5);
+      expect(absPartMois(a, w, 'otherPaid', m1)).toBe(1); expect(absPartMois(a, w, 'other', m2)).toBe(1.5);
+      expect(a.presence[w].cp).toBe(cp0);
+      expect(pres(a, w).otherPaidH).toBe(17.5); expect(pres(a, w).otherH).toBe(17.5);
+      expect(av0 - pres(a, w).av).toBeCloseTo(Math.min(av0, 35), 6);
+    }
+  });
+  it('la répartition automatique des CP ne modifie pas les absences', async () => {
+    const { moisDeSemaine, setAbsPartMois } = await import('./calculations.js');
+    const a = prete(); const w = (await semCheval(a))[0]; const [m1, m2] = moisDeSemaine(a, w);
+    setAbsPartMois(a, w, 'other', m1, 2); setAbsPartMois(a, w, 'other', m2, 1);
+    repartirCPAuto(a); reinitialiserCP(a);
+    expect(a.presence[w].other).toBe(3); expect(a.presence[w].otherMois).toEqual({ [m1]: 2, [m2]: 1 });
+  });
+  it('absence saisie d\'un bloc avant : partagée sur les jours lundi-vendredi, somme exacte', async () => {
+    const { moisDeSemaine, absPartMois } = await import('./calculations.js');
+    const a = prete();
+    for (const w of await semCheval(a)) {
+      a.presence[w] = { ...(a.presence[w] || { cp: 0 }), other: 3, otherPaid: 2 };
+      const ms = moisDeSemaine(a, w);
+      expect(ms.reduce((s, m) => s + absPartMois(a, w, 'other', m), 0)).toBeCloseTo(3, 6);
+      expect(ms.reduce((s, m) => s + absPartMois(a, w, 'otherPaid', m), 0)).toBeCloseTo(2, 6);
+    }
+  });
+});
