@@ -101,12 +101,13 @@ export default function BudgetBar() {
   const { profile } = useAuth();
   const {
     agency: a, agenceNom, statut, editable, budgetId, activeVersion, meta, versionsRemplies, validation,
-    switchVersion, duplicateVersion, reprendreVersion, deleteVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit
+    saisieDR, lectureSeule, switchVersion, duplicateVersion, reprendreVersion, deleteVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit
   } = useBudget();
   const [busy, setBusy] = useState(false);
   const [cols, setCols] = useState(null);
   const [reprise, setReprise] = useState(false);
-  if (!a || !profile || !['rex', 'cg', 'admin'].includes(profile.role)) return null;
+  // Le DR (et les valideurs) voient aussi les versions quand ils saisissent pour un REX ou consultent un budget
+  if (!a || !profile || !(['rex', 'cg', 'admin'].includes(profile.role) || saisieDR || lectureSeule)) return null;
 
   const run = (f) => async (...args) => { if (busy) return; setBusy(true); try { await f(...args); } catch (e) { toast('Échec : ' + (e.message || 'erreur'), 'error'); } finally { setBusy(false); } };
 

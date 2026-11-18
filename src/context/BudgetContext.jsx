@@ -404,7 +404,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   }, [saveNow, majMeta]);
 
   const value = {
-    agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal, saisieDR, annuler, retablir, histInfo,
+    agency, statut, loading, error, saveStatus, update, editable, agenceNom, applyExternal, saisieDR, lectureSeule, annuler, retablir, histInfo,
     budgetId, activeVersion, meta, versionsRemplies, validation,
     switchVersion, duplicateVersion, reprendreVersion, deleteVersion, setVersionDesc, chooseSubmittedVersion, compareVersions, submit, saveNow, flush, recharger
   };
