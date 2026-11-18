@@ -108,7 +108,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
             <tr style={{ textAlign: 'right', color: 'var(--ink65)' }}>
               <th style={{ ...cell, textAlign: 'left' }}>Semaine</th>
               <th style={cell}>Base (h)</th>
-              <th style={cell}>CP (J)</th>
+              <th style={cell} title="Congés payés en jours ouvrables — une semaine de congés = 6 jours (lundi au samedi)">CP (J)</th>
               <th style={cell} title="Absences payées en jours — formation, événements familiaux, récupération… Coûtées au taux horaire comme les congés.">Abs. payées (J)</th>
               <th style={cell} title="Absences non payées en jours — congé sans solde… Retirées de la capacité, sans coût salarial.">Abs. non payées (J)</th>
               <th style={cell}>Maladie (h)</th>
@@ -292,7 +292,7 @@ export default function PresenceScreen() {
 
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', marginBottom: 18, fontSize: 13 }}>
         <span><b>Congés payés</b></span>
-        <span title="Jours de congés que l'équipe roulante acquiert sur 2027 : 25 jours par an au prorata du temps de travail et de la part roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)">Acquis sur l'année : <b>{gen.toFixed(1)} J</b></span>
+        <span title="Jours de congés que l'équipe roulante acquiert sur 2027 : 30 jours ouvrables par an (6 par semaine de congés) au prorata du temps de travail et de la part roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)">Acquis sur l'année : <b>{gen.toFixed(1)} J</b></span>
         <span>Posés : <b>{plan.toFixed(1)} J</b></span>
         <span>Reste à poser : <b style={{ color: Math.abs(rest) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{rest.toFixed(1)} J</b></span>
         <span style={{ marginLeft: 'auto' }}>{cpEtat}</span>
@@ -513,7 +513,7 @@ function CongesNonRoulants({ a, editable, muter }) {
         La part roulante d'un non-roulant (par exemple un régulateur à 20 % roulant) reste comptée avec les congés des roulants.
       </p>
       <div data-testid="cp-nr-compteur" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, marginBottom: 10 }}>
-        <span title="25 jours par an au prorata du temps de travail et de la part non roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)">Acquis par {nb} non-roulant{nb > 1 ? 's' : ''} : <b>{acquis.toFixed(1)} J</b></span>
+        <span title="30 jours ouvrables par an (6 par semaine de congés) au prorata du temps de travail et de la part non roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)">Acquis par {nb} non-roulant{nb > 1 ? 's' : ''} : <b>{acquis.toFixed(1)} J</b></span>
         <span>Posés : <b>{saisis.toFixed(1)} J</b></span>
         <span>Reste à poser : <b style={{ color: Math.abs(reste) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{reste.toFixed(1)} J</b></span>
         {editable ? <button type="button" data-testid="cp-nr-repartir" onClick={() => muter((x) => repartirCPNRAuto(x))} style={{ marginLeft: 'auto', fontSize: 12 }}>↗ Répartir les jours acquis (60/20/20)</button> : null}

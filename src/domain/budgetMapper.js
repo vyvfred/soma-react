@@ -1,3 +1,4 @@
+import { convertirCPOuvrables } from './rafraichirConges.js';
 import { fusionnerVersion } from './fusion.js';
 // Couche de mapping budget ⇄ Supabase.
 // Reproduit fidèlement loadBudgetFromSupabase() et saveBudgetToSupabase() de
@@ -62,7 +63,8 @@ export function agencyFromRow(row) {
   const { versionData, versionVide } = parseBudgetRow(row);
 
   if (!versionVide && versionData && Object.keys(versionData).length) {
-    const a = { ...agency(name), ...versionData, name };
+    // Copie profonde : migrateAgency modifie des sous-objets (CP convertis…), la version lue en base (point de départ de la fusion) doit rester intacte
+    const a = { ...agency(name), ...JSON.parse(JSON.stringify(versionData)), name };
     migrateAgency(a);
     return a;
   }
@@ -123,6 +125,8 @@ export function migrateAgency(a) {
   // TXR de référence saisi par le CG après la création du budget : repris dans les champs vides du REX
   if (a.histTXR2026) { if (a.histTXR === null || a.histTXR === undefined || a.histTXR === '') a.histTXR = a.histTXR2026; if (a.targetTXR === null || a.targetTXR === undefined || a.targetTXR === '') a.targetTXR = a.histTXR2026; }
   a.calScolaire = 2;
+  // CP en jours ouvrables (6 par semaine) : budget saisi avant en jours ouvrés converti une fois
+  convertirCPOuvrables(a);
   if (!Array.isArray(a.hs50)) a.hs50 = Array(12).fill(null);
   if (a.drCostAnnual === undefined) a.drCostAnnual = 0;
   if (a.tauxHoraireBrut === undefined) a.tauxHoraireBrut = null;
@@ -184,10 +188,13 @@ export function migrateAgency(a) {
 // de budgetData(). Diffère de parseBudgetRow : privilégie la version SOUMISE.
 export function budgetData(d) {
   if (!d) return {};
+  let r = d;
   if (d.versions) {
     const meta = d.meta || {};
     const v = meta.submittedVersion || meta.activeVersion || 'v1';
-    return d.versions[v] || premiereVersionRemplie(d.versions);
+    r = d.versions[v] || premiereVersionRemplie(d.versions);
   }
-  return d;
+  // CP saisis avant en jours ouvrés : copie convertie en jours ouvrables (la donnée lue n'est pas modifiée)
+  if (r && r.presence && r.uniteCP !== 'ouvrables') { r = JSON.parse(JSON.stringify(r)); convertirCPOuvrables(r); }
+  return r;
 }

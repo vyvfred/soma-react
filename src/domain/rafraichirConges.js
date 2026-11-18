@@ -22,4 +22,20 @@ function appliquerRegleCP2024(a,repartirRoulants){
   if(cpPlanifies(a)>0&&+a.targetCA>0&&+a.targetTXR>0&&Math.abs(cpPlanifies(a)-cpGeneres(a))>0.05)repartirRoulants(a);
   return true;
 }
-export { etatConges, rafraichirConges, appliquerRegleCP2024 };
+// Unité des CP (nov. 2026) : jours OUVRABLES, 6 par semaine. Un budget saisi avant en jours ouvrés (5 par semaine, 7 h)
+// est converti une fois (× 6/5) au chargement : les heures retirées de la présence restent les mêmes. Renvoie true si converti.
+function convertirCPOuvrables(a){
+  if(!a||a.uniteCP==='ouvrables')return false;
+  let r=function(v){return Math.round((+v||0)*6/5*10)/10;};
+  Object.keys(a.presence||{}).forEach(function(w){
+    let p=a.presence[w];if(!p)return;
+    if(p.cpMois&&typeof p.cpMois==='object'){let s=0;Object.keys(p.cpMois).forEach(function(m){p.cpMois[m]=r(p.cpMois[m]);s+=p.cpMois[m];});p.cp=Math.round(s*10)/10;}
+    else if(+p.cp)p.cp=r(p.cp);
+  });
+  if(a.cpOptimal)Object.keys(a.cpOptimal).forEach(function(w){a.cpOptimal[w]=r(a.cpOptimal[w]);});
+  if(a.cpNR&&Array.isArray(a.cpNR.jours))a.cpNR.jours=a.cpNR.jours.map(function(v){return (v===null||v===undefined||v==='')?v:r(v);});
+  if(Array.isArray(a.cpEnveloppes))a.cpEnveloppes=a.cpEnveloppes.map(function(e){return Object.assign({},e,{cible:r(e.cible),verrouille:r(e.verrouille),budget:r(e.budget)});});
+  if(+a.cpReliquat)a.cpReliquat=r(a.cpReliquat);
+  a.uniteCP='ouvrables';return true;
+}
+export { etatConges, rafraichirConges, appliquerRegleCP2024, convertirCPOuvrables };

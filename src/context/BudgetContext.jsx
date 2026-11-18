@@ -164,7 +164,9 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
         let majCP = null;
         if (!lectureSeule && estModifiable(res.statut) && res.budgetId && res.agency) {
           const a2 = JSON.parse(JSON.stringify(res.agency));
-          if (appliquerRegleCP2024(a2, repartirCPAuto)) { res.agency = a2; majCP = a2; }
+          const brut = res.data && res.data.versions ? res.data.versions[res.activeVersion] : null;
+          const converti = !!(brut && Object.keys(brut).length && brut.uniteCP !== 'ouvrables'); // CP passés en jours ouvrables au chargement
+          if (appliquerRegleCP2024(a2, repartirCPAuto) || converti) { res.agency = a2; majCP = a2; }
         }
         setAgency(res.agency);        snapRef.current = null; viderHisto();
         // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)

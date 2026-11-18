@@ -33,7 +33,7 @@ export function cibleDuplication(data, active) {
 // données historiques de référence de la V1 (communes à toutes les versions).
 export function agenceDeVersion(nom, data, v) {
   if (versionRemplie(data, v)) {
-    return migrateAgency({ ...agency(nom), ...data.versions[v], name: nom });
+    return migrateAgency({ ...agency(nom), ...JSON.parse(JSON.stringify(data.versions[v])), name: nom }); // copie : la migration ne touche pas la donnée lue
   }
   const a = { ...agency(nom), name: nom };
   const ref = premiereVersionRemplie(data && data.versions);

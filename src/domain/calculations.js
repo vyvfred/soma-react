@@ -129,15 +129,17 @@ function coutHoraireImproductif(a){
   return moyJour/7;
 }
 
-// Congés payés : 25 jours ouvrés par an (5 semaines légales = 175 h pour un temps plein), soit 25/12 par mois.
-const CP_JOURS_MOIS = 25/12;
+// Congés payés en jours OUVRABLES (nov. 2026) : une semaine de congés = 6 jours (lundi à samedi), 30 jours par an
+// (5 semaines légales = 175 h pour un temps plein), soit 2,5 jours par mois ; un jour de CP retire 35/6 h ≈ 5,83 h.
+const CP_JOURS_MOIS = 30/12;
+const CP_HEURES_JOUR = 35/6;
 // Arrêt maladie (loi du 22 avril 2024) : les congés continuent de s'acquérir, à 2 jours ouvrables par mois au lieu de 2,5,
 // soit 80 % du rythme normal. L'accident du travail acquiert à 100 %, mais l'absentéisme saisi regroupe maladie et AT :
 // la règle maladie (la plus prudente) s'applique à tout le taux.
 const CP_ACQUIS_MALADIE = 0.8;
 function cpGeneres(a) {
   // CP générés, en jours de 7 h retirés de la présence ROULANTE (audit nov. 2026) :
-  // 25/12 j par mois, 80 % de ce rythme pendant les arrêts (loi 2024), au prorata du temps de travail (heures / 35) et de la part roulante.
+  // 2,5 j ouvrables par mois, 80 % de ce rythme pendant les arrêts (loi 2024), au prorata du temps de travail (heures / 35) et de la part roulante.
   // Les non-roulants n'entrent pas : leurs congés n'enlèvent pas de capacité de production.
   let salaries = a.employees.filter(estRoulantPart);
   if (!salaries.length) return 0;
@@ -174,7 +176,7 @@ function repartirCPNRAuto(a){
 function heuresDispoAnnuelles(a) {
   let remplis = (a.sick||[]).filter(function(v){ return v!==null && v!==undefined; });
   let mal = remplis.length ? remplis.reduce(function(s,v){ return s+(+v||0); },0)/remplis.length/100 : (+a.targetAbsRate||0)/100;
-  return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*7);
+  return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*CP_HEURES_JOUR);
 }
 
 // Semaine à cheval sur deux mois (nov. 2026) : CP et autres absences se saisissent mois par mois, en jours, selon les jours
@@ -187,9 +189,10 @@ function absPartMois(a,w,champ,m){
   if(ms.length<2)return tot;
   let parts=p[champ+'Mois'];
   if(parts&&typeof parts==='object')return +parts[m]||0;
-  // Pas de saisie par mois (répartition automatique, ancien budget) : au prorata des jours ouvrés (lundi-vendredi) de chaque mois,
+  // Pas de saisie par mois (répartition automatique, ancien budget) : au prorata des jours de chaque mois — ouvrables
+  // (lundi-samedi) pour les CP, ouvrés (lundi-vendredi) pour les autres absences ; 
   // le dernier mois reçoit le reste pour que les parts fassent exactement le total
-  let ouv=function(mm){return joursSemaine(a,w).filter(function(d){let j=new Date(2027,d.month,d.day).getDay();return d.month===mm&&j>0&&j<6;}).length;};
+  let ouv=function(mm){return joursSemaine(a,w).filter(function(d){let j=new Date(2027,d.month,d.day).getDay();return d.month===mm&&j>0&&j<(champ==='cp'?7:6);}).length;};
   let tous=ms.reduce(function(s,mm){return s+ouv(mm);},0);
   let part=function(mm){return tous>0?Math.round(tot*ouv(mm)/tous*10)/10:(mm===ms[0]?tot:0);};
   if(m!==ms[ms.length-1])return part(m);
@@ -245,10 +248,10 @@ function hsRowsCalc(a){
 
 function impactCPSemaine(a, week, deltaCPjours) {
   // Impact financier d'ajouter/retirer deltaCPjours sur cette semaine
-  // 1J de CP = 7h. Si semaine en HS, retirer 1J = +7h HS = +7*costHour*hsCostRate
+  // 1J de CP (jour ouvrable) = 35/6 h. Si semaine en HS, retirer 1J = +5,83 h HS × coût horaire × coefficient HS du mois (barème 25/50)
   // Si semaine en sous-charge, ajouter 1J = économie nulle (pas de HS à éviter)
   let hr = hsRows(a).find(function(r){ return r.week === week; }) || {hs:0, gap:0};
-  let hsDelta = -deltaCPjours * 7; // retirer CP augmente les HS
+  let hsDelta = -deltaCPjours * CP_HEURES_JOUR; // retirer CP augmente les HS
   let costHour = chMois(a, mainMonth(a, week)) || 28.5;
   let coefHS = coefHSMois(a, mainMonth(a, week));
   if (hr.gap > 0) {
@@ -511,10 +514,10 @@ function pres(a,w){
   let p=a.presence[w]||{cp:0,other:0};
   let m=mainMonth(a,w);
   let rate=a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
-  // CP et autres absences exprimés en jours (1J = 7H).
+  // CP en jours ouvrables (6 par semaine, 1 J = 35/6 h) ; autres absences en jours de 7 h.
   // Autres absences (décision nov. 2026) : « payées » (formation, événements familiaux,
   // récupération…) coûtées au taux horaire comme les congés ; « non payées » (sans solde) non coûtées.
-  let cpH=(+p.cp||0)*7;
+  let cpH=(+p.cp||0)*CP_HEURES_JOUR; // CP en jours ouvrables (6 par semaine)
   let otherH=(+p.other||0)*7;
   let otherPaidH=(+p.otherPaid||0)*7;
   let mal=base*rate/100;
@@ -857,6 +860,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

@@ -86,8 +86,8 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('congés payés générés sur l’année', () => {
-    // Audit nov. 2026 : 25 j ouvrés par an, roulants seulement, au prorata des heures = 25 × (35 + 35 + 24) / 35
-    expect(+cpGeneres(a).toFixed(1)).toBe(74.6);
+    // 30 j ouvrables par an (6 par semaine, nov. 2026), roulants seulement, au prorata des heures : 74,6 j ouvrés × 6/5
+    expect(+cpGeneres(a).toFixed(1)).toBe(89.6); // 74,55 × 1,2
   });
 
   it('masse salariale de janvier', () => {
@@ -116,17 +116,18 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
 import { pres, coutRoulantSemaine, hsRows, heuresDispoAnnuelles, baseH } from './calculations.js';
 describe('Corrections de l\'audit (nov. 2026)', () => {
   const unTempsPlein = () => { const a = agenceReference(); a.employees = [{ name: 'X', qual: 'DEA', hours: 35, pctRoulant: 100 }]; return a; };
-  it('un temps plein génère 25 jours de 7 h = 175 h de congés (5 semaines légales)', () => {
-    expect(cpGeneres(unTempsPlein())).toBe(25);
+  it('un temps plein génère 30 jours ouvrables de 35/6 h = 175 h de congés (5 semaines légales)', () => {
+    expect(cpGeneres(unTempsPlein())).toBe(30);
+    expect(cpGeneres(unTempsPlein()) * 35 / 6).toBeCloseTo(175, 6);
   });
   it('mi-temps et salarié à 50 % roulant au prorata ; non-roulant exclu', () => {
     const a = unTempsPlein();
     a.employees = [{ qual: 'DEA', hours: 17.5, pctRoulant: 100 }, { qual: 'AA', hours: 35, pctRoulant: 50 }, { qual: 'REGULATEUR', hours: 35 }];
-    expect(cpGeneres(a)).toBe(25);
+    expect(cpGeneres(a)).toBe(30);
   });
   it('les heures de congés sont payées (indemnité de congés payés)', () => {
     const a = unTempsPlein(); a.genCal; const w = 10;
-    a.presence = { [w]: { cp: 5, other: 0 } };
+    a.presence = { [w]: { cp: 6, other: 0 } }; // une semaine de congés = 6 jours ouvrables
     const r = hsRows(a).find((x) => x.week === w);
     const sansCP = { ...r, cpH: 0 };
     expect(coutRoulantSemaine(a, r) - coutRoulantSemaine(a, sansCP)).toBeCloseTo(35 * 28.5, 6);
@@ -139,6 +140,6 @@ describe('Corrections de l\'audit (nov. 2026)', () => {
   });
   it('capacité annuelle hors HS : maladie et congés retirés', () => {
     const a = unTempsPlein(); a.sick = Array(12).fill(10);
-    expect(heuresDispoAnnuelles(a)).toBeCloseTo(baseH(a) * 52 * 0.9 - cpGeneres(a) * 7, 6);
+    expect(heuresDispoAnnuelles(a)).toBeCloseTo(baseH(a) * 52 * 0.9 - cpGeneres(a) * 35 / 6, 6);
   });
 });

@@ -95,3 +95,18 @@ describe('Semaine à cheval sur deux mois — parts par mois', () => {
     expect(tot).toBeCloseTo(cpPlanifies(a), 1);
   });
 });
+
+describe('CP en jours ouvrables — conversion unique des budgets saisis en jours ouvrés', () => {
+  it('× 6/5, heures retirées inchangées, une seule fois', async () => {
+    const { convertirCPOuvrables } = await import('./rafraichirConges.js');
+    const { pres } = await import('./calculations.js');
+    const a = agenceReference(); a.presence = { 10: { cp: 5, other: 1 }, 13: { cp: 5, cpMois: { 2: 2, 3: 3 } } }; a.cpNR = { jours: [null, 5, 0, null, null, null, null, null, null, null, null, null] };
+    delete a.uniteCP;
+    expect(convertirCPOuvrables(a)).toBe(true);
+    expect(a.presence[10]).toEqual({ cp: 6, other: 1 });
+    expect(a.presence[13].cpMois).toEqual({ 2: 2.4, 3: 3.6 }); expect(a.presence[13].cp).toBe(6);
+    expect(a.cpNR.jours[1]).toBe(6); expect(a.cpNR.jours[0]).toBeNull();
+    expect(pres(a, 10).cpH).toBeCloseTo(35, 6);
+    expect(convertirCPOuvrables(a)).toBe(false); expect(a.presence[10].cp).toBe(6);
+  });
+});
