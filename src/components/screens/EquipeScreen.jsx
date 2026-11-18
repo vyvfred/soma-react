@@ -1,3 +1,4 @@
+import TexteLectureSeule from '../TexteLectureSeule.jsx';
 import { champSaisiDR } from '../../domain/saisiesDR.js';
 import { partRoulant, estRoulantPart } from '../../domain/calculations.js';
 import { useRef, useState } from 'react';
@@ -144,7 +145,7 @@ export default function EquipeScreen() {
 
       {!editable ? (
         <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.10))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 13, color: 'var(--blue2, #3d6fd6)' }}>
-          🔒 Budget engagé dans le circuit de validation — lecture seule.
+          <TexteLectureSeule />
         </div>
       ) : null}
 

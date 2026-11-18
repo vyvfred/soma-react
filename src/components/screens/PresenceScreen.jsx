@@ -1,3 +1,4 @@
+import TexteLectureSeule from '../TexteLectureSeule.jsx';
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
@@ -255,7 +256,7 @@ export default function PresenceScreen() {
 
       {!editable ? (
         <div style={{ margin: '12px 0', padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.10))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 13, color: 'var(--blue2, #3d6fd6)' }}>
-          🔒 Budget engagé dans le circuit de validation — lecture seule.
+          <TexteLectureSeule />
         </div>
       ) : null}
 

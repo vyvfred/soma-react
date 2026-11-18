@@ -1,3 +1,4 @@
+import TexteLectureSeule from '../TexteLectureSeule.jsx';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { buildPeriodesPaie, payrollPayMonth, varDec2026Total, chargesReport2028, lissage5eSemaine, nbSemPeriode, msRoulantBaseMois } from '../../domain/calculations.js';
 import { useNav } from '../../context/NavContext.jsx';
@@ -123,7 +124,7 @@ export default function PeriodesScreen() {
 
       {!editable ? (
         <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.10))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 13, color: 'var(--blue2, #3d6fd6)' }}>
-          🔒 Budget engagé dans le circuit de validation — lecture seule.
+          <TexteLectureSeule />
         </div>
       ) : null}
 

@@ -59,8 +59,9 @@ export const PANELS_ADMIN = [
   ['aide', 'Aide']
 ];
 
-// Directeur financier : écrans de suivi et de validation du CG, sans la préparation des données
-const PREPARATION_CG = ['refagences', 'periodes', 'variablesdec', 'affectation', 'cg'];
+// Directeur financier : écrans de suivi et de validation du CG, sans la préparation des données ;
+// les périodes de paie (et le détail du calcul de la masse salariale) en lecture seule
+const PREPARATION_CG = ['refagences', 'variablesdec', 'affectation', 'cg'];
 export const PANELS_DF = PANELS_CG.filter((p) => !PREPARATION_CG.includes(p[0]));
 
 // Rôle -> panneaux + écran d'atterrissage (repris de setupUI()).

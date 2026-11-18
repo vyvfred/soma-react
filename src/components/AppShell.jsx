@@ -157,7 +157,8 @@ export default function AppShell() {
   const [vision, setVision] = useState(() => (visionDejaVue(profile.id) ? null : 'premiere'));
   // Le CG peut basculer en vue « REX exploitation » sur l'agence ouverte (port de setRole).
   const [vueRex, setVueRex] = useState(false);
-  const roleNav = profile.role === 'cg' && vueRex ? 'rex' : profile.role;
+  // CG : bascule vers les écrans du REX (modifiables) ; directeur financier : mêmes écrans en lecture seule
+  const roleNav = ['cg', 'df'].includes(profile.role) && vueRex ? 'rex' : profile.role;
   // Mode consultation : un valideur parcourt tous les écrans du REX en lecture seule (port de consulterBudget)
   const [consult, setConsult] = useState(null);
   // Saisie du DR à la place du REX : agence ouverte en écriture, saisies marquées en orange
@@ -206,7 +207,7 @@ export default function AppShell() {
       if (panel === '__saisir') { setRetour(active); setSaisiePour(agence); setActive('objectif'); return; }
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
-    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult} saisieDR={!!saisiePour}>
+    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || profile.role === 'df'} saisieDR={!!saisiePour}>
       <VisiteGuidee role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} ecransREX={!!saisiePour} />
     <div className="soma-shell">
       {consult ? (
@@ -235,9 +236,9 @@ export default function AppShell() {
         <div className="soma-brand">SOMA</div>
         <VersionChip />
         {['rex', 'cg'].includes(roleNav) || (profile.role === 'cg') ? <AttentionCenter onNavigate={setActive} /> : null}
-        {profile.role === 'cg' ? (
+        {['cg', 'df'].includes(profile.role) ? (
           <div className="roleSwitch" data-testid="role-switch" style={{ display: 'flex', gap: 0, marginLeft: 12 }}>
-            {[[true, 'REX exploitation'], [false, 'Contrôleur de gestion']].map(([rex, l]) => (
+            {[[true, profile.role === 'df' ? 'REX exploitation (lecture)' : 'REX exploitation'], [false, profile.role === 'df' ? 'Direction financière' : 'Contrôleur de gestion']].map(([rex, l]) => (
               <button key={l} onClick={() => basculerVue(rex)} style={{ width: 'auto', margin: 0, padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)',
                 background: vueRex === rex ? 'var(--violet2)' : 'transparent', color: vueRex === rex ? '#fff' : 'var(--ink65)', fontWeight: vueRex === rex ? 700 : 400 }}>{l}</button>
             ))}

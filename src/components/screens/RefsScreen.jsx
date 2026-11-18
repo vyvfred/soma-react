@@ -1,3 +1,4 @@
+import TexteLectureSeule from '../TexteLectureSeule.jsx';
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { genCal } from '../../domain/calculations.js';
@@ -66,7 +67,7 @@ export default function RefsScreen() {
 
       {!editable ? (
         <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.10))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 13, color: 'var(--blue2, #3d6fd6)' }}>
-          🔒 Budget engagé dans le circuit de validation — lecture seule.
+          <TexteLectureSeule />
         </div>
       ) : null}
 
