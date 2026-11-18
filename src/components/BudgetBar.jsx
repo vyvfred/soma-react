@@ -172,7 +172,7 @@ export default function BudgetBar() {
             <button onClick={onDup} disabled={busy || !editable} style={btn}>⎘ Dupliquer la version active</button>
             <button onClick={onCompare} disabled={busy} style={btn}>⇄ Comparer les versions</button>
             {autresRemplies.length ? <button onClick={() => setReprise(true)} disabled={busy || !editable} style={btn} data-testid="reprise-ouvrir">↧ Reprendre d'une autre version</button> : null}
-            {VERSIONS_SUPPRIMABLES.filter((v) => versionsRemplies[v]).map((v) => (
+            {VERSIONS.filter((v) => versionsRemplies[v]).length > 1 && VERSIONS_SUPPRIMABLES.filter((v) => versionsRemplies[v]).map((v) => (
               <button key={v} onClick={() => onDelete(v)} disabled={busy || !editable || meta.submittedVersion === v}
                 title={meta.submittedVersion === v ? 'Version choisie pour la soumission : choisissez-en une autre avant de la supprimer' : 'Supprimer définitivement la ' + VERSION_LABELS[v]}
                 style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid={'version-supprimer-' + v}>🗑 Supprimer la {VERSION_LABELS[v]}</button>

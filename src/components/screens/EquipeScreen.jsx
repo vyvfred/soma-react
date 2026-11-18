@@ -3,6 +3,7 @@ import { partRoulant, estRoulantPart } from '../../domain/calculations.js';
 import { useRef, useState } from 'react';
 import { VERSIONS, VERSION_LABELS } from '../../domain/versions.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { teamInsight, etpParMois } from '../../domain/teamInsight.js';
 import { isRoulant, M } from '../../domain/calculations.js';
 import { parseEquipe } from '../../domain/imports.js';
@@ -29,6 +30,9 @@ const AIDE_COLONNES = {
 export default function EquipeScreen() {
   const { agency: a, loading, error, editable, update, agenceNom, activeVersion, versionsRemplies, reprendreVersion } = useBudget();
   const [repriseMsg, setRepriseMsg] = useState(null);
+  const { profile } = useAuth();
+  // Import Excel de la liste du personnel : réservé au contrôle de gestion et à l'administration (pas aux REX)
+  const peutImporter = !!profile && ['cg', 'admin'].includes(profile.role);
   const fichier = useRef(null);
   const [importMsg, setImportMsg] = useState(null);
   // Tri d'affichage (mémorisé sur ce navigateur) ; l'ordre est figé pendant la saisie
@@ -49,6 +53,7 @@ export default function EquipeScreen() {
 
   // Import Excel de l'équipe (port de handleExcelImport) : feuille « Saisie personnel »
   async function importer(e) {
+    if (!peutImporter) return;
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
@@ -196,8 +201,8 @@ export default function EquipeScreen() {
         <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={addEmployee}>+ Ajouter un salarié</button>
           <button className="secondary" onClick={addPoste}>+ Poste prévisionnel (CDD saisonnier)</button>
-          <button className="secondary" onClick={() => fichier.current && fichier.current.click()}>📥 Importer depuis Excel</button>
-          <input ref={fichier} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={importer} data-testid="fichier-equipe" />
+          {peutImporter ? <button className="secondary" data-testid="importer-equipe" onClick={() => fichier.current && fichier.current.click()}>📥 Importer depuis Excel</button> : null}
+          {peutImporter ? <input ref={fichier} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={importer} data-testid="fichier-equipe" /> : null}
           {importMsg ? <span data-testid="equipe-import-msg" style={{ fontSize: 13, color: importMsg.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{importMsg.t}</span> : null}
         </div>
       ) : null}

@@ -35,10 +35,17 @@ describe('suppression de version', () => {
   const data = { versions: { v1, v2, v3: {} }, meta: { activeVersion: 'v2', submittedVersion: 'v1', descriptions: { v1: 'a', v2: 'b' } } };
   it('règles', () => {
     expect(motifRefusSuppression(data, 'v2', true)).toBe(null);
-    expect(motifRefusSuppression(data, 'v1', true)).toMatch(/référence/);
+    expect(motifRefusSuppression(data, 'v1', true)).toMatch(/soumission/);
+    expect(motifRefusSuppression({ ...data, meta: { submittedVersion: 'v2' } }, 'v1', true)).toBe(null);
+    expect(motifRefusSuppression({ versions: { v1, v2: {}, v3: {} }, meta: {} }, 'v1', true)).toMatch(/seule version/);
     expect(motifRefusSuppression(data, 'v3', true)).toMatch(/vide/);
     expect(motifRefusSuppression(data, 'v2', false)).toMatch(/validation/);
     expect(motifRefusSuppression({ ...data, meta: { submittedVersion: 'v2' } }, 'v2', true)).toMatch(/soumission/);
+  });
+  it('supprimer la V1 active ouvre la première version restante ; la V1 pourra être recréée', () => {
+    const out = donneesSansVersion({ versions: { v1, v2, v3: {} }, meta: { activeVersion: 'v1', submittedVersion: null } }, 'v1');
+    expect(out.versions.v1).toBeUndefined();
+    expect(out.meta.activeVersion).toBe('v2');
   });
   it('retire la version et sa description, la version active repasse en V1', () => {
     const out = donneesSansVersion(data, 'v2');

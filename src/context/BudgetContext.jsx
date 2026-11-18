@@ -347,15 +347,17 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     const motif = motifRefusSuppression(courant, v, editable);
     if (motif) return { ok: false, message: motif };
     const out = donneesSansVersion(courant, v);
+    if (versionRef.current !== v) out.meta.activeVersion = versionRef.current;
     await writeBudgetData(budgetIdRef.current, out);
     setVersionsRemplies((p) => ({ ...p, [v]: false }));
     if (versionRef.current === v) {
-      const a = agenceDeVersion(agenceNom, out, 'v1');
-      versionRef.current = 'v1';
-      setActiveVersion('v1');
+      const nv = out.meta.activeVersion;
+      const a = agenceDeVersion(agenceNom, out, nv);
+      versionRef.current = nv;
+      setActiveVersion(nv);
       snapRef.current = null; viderHisto(); setAgency(a);
-      baseRef.current = out.versions && out.versions.v1 ? JSON.parse(JSON.stringify(out.versions.v1)) : null;
-    }
+      baseRef.current = out.versions && out.versions[nv] ? JSON.parse(JSON.stringify(out.versions[nv])) : null;
+    } else out.meta.activeVersion = versionRef.current;
     majMeta(out.meta);
     metaBaseRef.current = JSON.parse(JSON.stringify(out.meta));
     return { ok: true, message: 'Version ' + VERSION_LABELS[v] + ' supprimée' };

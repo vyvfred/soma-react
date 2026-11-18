@@ -10,7 +10,7 @@ import { fusionnerVersion } from './fusion.js';
 // soit « plat » (ancien format) = les champs de l'agence directement.
 
 import { agency, refs, buildPeriodesPaie, T, genCal, LIGNES_QUOTE_PART } from './calculations.js';
-import { pickRefCG, appliquerRefCG, reporterSaisieCG } from './refCG.js';
+import { pickRefCG, appliquerRefCG, reporterSaisieCG, premiereVersionRemplie } from './refCG.js';
 
 const DEFAULT_META = () => ({
   activeVersion: 'v1',
@@ -28,7 +28,12 @@ export function parseBudgetRow(row) {
     meta = d.meta || DEFAULT_META();
     if (!meta.descriptions) meta.descriptions = { v1: '', v2: '', v3: '' };
     activeVersion = meta.activeVersion || 'v1';
-    versionData = d.versions[activeVersion] || d.versions.v1 || {};
+    // Version active supprimée (ex. la V1) : ouvrir la première version remplie
+    if (!(d.versions[activeVersion] && Object.keys(d.versions[activeVersion]).length)) {
+      const remplie = ['v1', 'v2', 'v3'].find((v) => d.versions[v] && Object.keys(d.versions[v]).length);
+      if (remplie) activeVersion = remplie;
+    }
+    versionData = d.versions[activeVersion] || premiereVersionRemplie(d.versions);
     versionVide = !Object.keys(versionData).length;
     // Références CG laissées au premier niveau par d'anciennes sauvegardes « Données agences »
     const orphelins = pickRefCG(d);
@@ -182,7 +187,7 @@ export function budgetData(d) {
   if (d.versions) {
     const meta = d.meta || {};
     const v = meta.submittedVersion || meta.activeVersion || 'v1';
-    return d.versions[v] || d.versions.v1 || {};
+    return d.versions[v] || premiereVersionRemplie(d.versions);
   }
   return d;
 }
