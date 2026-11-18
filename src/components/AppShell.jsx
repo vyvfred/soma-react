@@ -162,6 +162,8 @@ export default function AppShell() {
   const [consult, setConsult] = useState(null);
   // Saisie du DR à la place du REX : agence ouverte en écriture, saisies marquées en orange
   const [saisiePour, setSaisiePour] = useState(null);
+  // Écran d'où l'on a ouvert une consultation ou une saisie (retour au bon endroit)
+  const [retour, setRetour] = useState(null);
   const navRole = useMemo(() => navForRole(roleNav), [roleNav]);
   const { panels, landing, group } = consult
     ? { panels: PANELS_REX.filter((p) => p[0] !== 'aide'), landing: 'finance', group: 'Consultation — ' + consult }
@@ -200,8 +202,8 @@ export default function AppShell() {
 
   return (
     <NavContext.Provider value={(panel, agence) => {
-      if (panel === '__consulter') { setConsult(agence); setActive('finance'); return; }
-      if (panel === '__saisir') { setSaisiePour(agence); setActive('objectif'); return; }
+      if (panel === '__consulter') { setRetour(active); setConsult(agence); setActive('finance'); return; }
+      if (panel === '__saisir') { setRetour(active); setSaisiePour(agence); setActive('objectif'); return; }
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
     <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult} saisieDR={!!saisiePour}>
@@ -211,13 +213,13 @@ export default function AppShell() {
         <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>
           <span className="consultBannerDot" />
           <span>Mode consultation — lecture seule</span>
-          <button onClick={() => { setConsult(null); setActive('validation'); }}>↩ Revenir à la validation</button>
+          <button onClick={() => { setConsult(null); setActive(retour || 'validation'); }}>{retour === 'suivi' ? '↩ Revenir au suivi des REX' : '↩ Revenir à la validation'}</button>
         </div>
       ) : null}
       {saisiePour ? (
         <div className="bandeauDR" data-testid="bandeau-dr">
           <span>✎ Vous saisissez le budget de {saisiePour} à la place du REX : vos saisies apparaissent en orange</span>
-          <button onClick={() => { setSaisiePour(null); setActive('saisie'); }}>↩ Terminer la saisie</button>
+          <button onClick={() => { setSaisiePour(null); setActive(retour === 'suivi' ? 'suivi' : 'saisie'); }}>↩ Terminer la saisie</button>
         </div>
       ) : null}
       {simRole ? (

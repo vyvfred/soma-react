@@ -28,6 +28,7 @@ const ETAPES_VISITE_DR=[
   {ecran:'validation',cible:'val-kpis',titre:'Budgets à valider',texte:'Les compteurs donnent les budgets qui attendent votre décision, ceux que vous avez validés et ceux que vous avez refusés.'},
   {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'Pour chaque budget soumis : CA, masse salariale / CA, résultat et choix de congés, avec un verdict. « Voir tous les écrans » ouvre le budget en lecture.'},
   {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Validé, le budget passe au contrôle de gestion et au DF ; refusé, il revient au REX avec votre motif.'},
+  {ecran:'suivi',cible:'suivi-table',titre:'Suivi des REX',texte:'L\'avancement de chaque REX de votre région, jalon par jalon, brouillons compris, avec sa dernière activité. Les agences à relancer sont en tête ; « Voir le budget » ouvre tous ses écrans en lecture seule.'},
   {ecran:'saisie',cible:'saisie-agences',titre:'Saisir pour un REX',texte:'Ouvrez le budget d\'une agence pour le saisir à la place du REX, pendant un accompagnement. Vos saisies s\'affichent en orange pour lui.'},
   {ecran:'consolidation',cible:'conso-kpis',titre:'Consolidation région',texte:'L\'état de chaque agence de votre région : non commencé, brouillon, soumis, validé, et le CA consolidé.'},
   {ecran:'consolidation',cible:'conso-table',titre:'Suivre et relancer',texte:'Le tableau donne l\'avancement de chaque budget. Relancez les agences qui n\'avancent plus : les REX doivent soumettre avant le 27 novembre.'},

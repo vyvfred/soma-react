@@ -24,6 +24,7 @@ import VariablesDecScreen from './VariablesDecScreen.jsx';
 import SaisieDRScreen from './SaisieDRScreen.jsx';
 import ChargesREXScreen from './ChargesREXScreen.jsx';
 import JournalScreen from './JournalScreen.jsx';
+import SuiviREXScreen from './SuiviREXScreen.jsx';
 
 function PrevisionnelCgScreen() { return PrevisionnelScreen({ vueCG: true }); }
 
@@ -48,6 +49,7 @@ export const SCREENS = {
   periodes: PeriodesScreen,
   admin: AdminScreen,
   journal: JournalScreen,
+  suivi: SuiviREXScreen,
   refs: RefsScreen,
   cal: CalScreen,
   variablesdec: VariablesDecScreen,
