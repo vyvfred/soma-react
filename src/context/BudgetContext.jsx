@@ -1,4 +1,4 @@
-import { etatConges, rafraichirConges } from '../domain/rafraichirConges.js';
+import { etatConges, rafraichirConges, appliquerRegleCP2024 } from '../domain/rafraichirConges.js';
 import { repartirCPAuto } from '../domain/repartitionCP.js';
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
@@ -160,6 +160,12 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
           res.agency = agenceDeVersion(agenceNom, res.data, sv);
           res.activeVersion = sv;
         }
+        // Règle CP 2024 : budget modifiable enregistré avant la règle → répartition remise à jour une fois et enregistrée
+        let majCP = null;
+        if (!lectureSeule && estModifiable(res.statut) && res.budgetId && res.agency) {
+          const a2 = JSON.parse(JSON.stringify(res.agency));
+          if (appliquerRegleCP2024(a2, repartirCPAuto)) { res.agency = a2; majCP = a2; }
+        }
         setAgency(res.agency);        snapRef.current = null; viderHisto();
         // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)
         // = la version BRUTE lue en base (avant les compléments par défaut de migrateAgency) :
@@ -180,6 +186,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
         setVersionsRemplies({ v1: !!vs.v1 || !res.data, v2: !!(vs.v2 && Object.keys(vs.v2).length), v3: !!(vs.v3 && Object.keys(vs.v3).length) });
         setValidation(res.validation || null);
         setLoading(false);
+        if (majCP) { pendingRef.current = majCP; if (timerRef.current) clearTimeout(timerRef.current); timerRef.current = setTimeout(() => persist(majCP), SAVE_DEBOUNCE_MS); }
       })
       .catch((err) => { if (active) { setError(err.message || 'Erreur de chargement'); setLoading(false); } });
     return () => {

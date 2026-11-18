@@ -13,4 +13,13 @@ function rafraichirConges(a,avant,repartirRoulants){
   if(Math.abs(cpNRAcquis(a)-avant.nr)>0.05&&a.cpNR&&a.cpNR.auto){repartirCPNRAuto(a);r.nonRoulants=true;}
   return r;
 }
-export { etatConges, rafraichirConges };
+// Règle d'acquisition 2024 (nov. 2026 : 80 % du rythme pendant les arrêts maladie). Un budget enregistré avant
+// a ses congés posés sur l'ancien total acquis : à la première ouverture en modification, la répartition des roulants
+// est refaite une fois sur les mois non validés (comme après un changement d'absentéisme). Renvoie true si le budget a changé.
+function appliquerRegleCP2024(a,repartirRoulants){
+  if(!a||a.regleCP===2024)return false;
+  a.regleCP=2024;
+  if(cpPlanifies(a)>0&&+a.targetCA>0&&+a.targetTXR>0&&Math.abs(cpPlanifies(a)-cpGeneres(a))>0.05)repartirRoulants(a);
+  return true;
+}
+export { etatConges, rafraichirConges, appliquerRegleCP2024 };

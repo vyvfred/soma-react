@@ -50,3 +50,19 @@ describe('Coût du choix REX — comparaison à données égales', () => {
     expect(coutDuChoixREX(a).semaines).toHaveLength(0);
   });
 });
+
+describe('Règle CP 2024 — mise à jour unique des budgets enregistrés avant', () => {
+  it('pendant un arrêt, 80 % du rythme normal', () => {
+    const a = agenceReference(); const g0 = cpGeneres(a);
+    a.sick = Array(12).fill(10);
+    expect(cpGeneres(a)).toBeCloseTo(g0 * (1 - 0.1 * 0.2), 0);
+  });
+  it('répartition refaite une seule fois si posés ≠ acquis', async () => {
+    const { appliquerRegleCP2024 } = await import('./rafraichirConges.js');
+    const a = prete(); Object.values(a.presence).forEach((p) => { p.cp = Math.round(p.cp * 0.9 * 10) / 10; });
+    expect(appliquerRegleCP2024(a, repartirCPAuto)).toBe(true);
+    expect(a.regleCP).toBe(2024);
+    expect(cpPlanifies(a)).toBeCloseTo(cpGeneres(a), 0);
+    expect(appliquerRegleCP2024(a, repartirCPAuto)).toBe(false);
+  });
+});

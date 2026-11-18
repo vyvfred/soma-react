@@ -17,9 +17,9 @@ describe('Congés des non-roulants (sans remplacement)', () => {
   it('acquis : 25 j par non-roulant à temps plein, au prorata de la part non roulante', () => {
     expect(cpNRAcquis(base())).toBeCloseTo(25 + 25 * 0.8, 0);
   });
-  it('l\'absentéisme réduit les jours acquis', () => {
+  it('l\'absentéisme réduit un peu les jours acquis (loi 2024 : 80 % du rythme pendant les arrêts)', () => {
     const a = base(); a.sick = Array(12).fill(10);
-    expect(cpNRAcquis(a)).toBeCloseTo(45 * 0.9, 0);
+    expect(cpNRAcquis(a)).toBeCloseTo(45 * (1 - 0.1 * 0.2), 0);
   });
   it('aucun coût : les charges de personnel ne bougent pas', () => {
     const a = base();

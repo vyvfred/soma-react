@@ -131,9 +131,13 @@ function coutHoraireImproductif(a){
 
 // Congés payés : 25 jours ouvrés par an (5 semaines légales = 175 h pour un temps plein), soit 25/12 par mois.
 const CP_JOURS_MOIS = 25/12;
+// Arrêt maladie (loi du 22 avril 2024) : les congés continuent de s'acquérir, à 2 jours ouvrables par mois au lieu de 2,5,
+// soit 80 % du rythme normal. L'accident du travail acquiert à 100 %, mais l'absentéisme saisi regroupe maladie et AT :
+// la règle maladie (la plus prudente) s'applique à tout le taux.
+const CP_ACQUIS_MALADIE = 0.8;
 function cpGeneres(a) {
   // CP générés, en jours de 7 h retirés de la présence ROULANTE (audit nov. 2026) :
-  // 25/12 j par mois de présence hors maladie, au prorata du temps de travail (heures / 35) et de la part roulante.
+  // 25/12 j par mois, 80 % de ce rythme pendant les arrêts (loi 2024), au prorata du temps de travail (heures / 35) et de la part roulante.
   // Les non-roulants n'entrent pas : leurs congés n'enlèvent pas de capacité de production.
   let salaries = a.employees.filter(estRoulantPart);
   if (!salaries.length) return 0;
@@ -143,7 +147,7 @@ function cpGeneres(a) {
     let dateRef = '2027-' + String(m+1).padStart(2,'0') + '-15';
     salaries.forEach(function(e){
       if(!empPresent(e, dateRef)) return;
-      totalJ += CP_JOURS_MOIS * (1 - tauxMal) * ((+e.hours||0) / 35) * partRoulant(e);
+      totalJ += CP_JOURS_MOIS * (1 - tauxMal * (1 - CP_ACQUIS_MALADIE)) * ((+e.hours||0) / 35) * partRoulant(e);
     });
   });
   return Math.round(totalJ * 10) / 10;
@@ -152,7 +156,7 @@ function cpGeneres(a) {
 // suivis avec un compteur acquis / posés. Aucun coût : leur salaire est déjà dans la ligne non-roulants
 // du CG (un congé est payé) et ils ne sont pas remplacés (décision de la direction des opérations).
 function salariesNR(a){return (a.employees||[]).filter(function(e){return !isRoulant(e.qual)&&(1-partRoulant(e))>0;});}
-function cpNRAcquisMois(a,m){let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal)*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
+function cpNRAcquisMois(a,m){let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
 function cpNRAcquis(a){return Math.round(M.reduce(function(s,_,m){return s+cpNRAcquisMois(a,m);},0)*10)/10;}
 function cpNRSaisis(a){let j=a.cpNR&&a.cpNR.jours;return j?Math.round(j.reduce(function(s,v){return s+(+v||0);},0)*10)/10:0;}
 function cpNRVide(){return {jours:Array(12).fill(null)};}
@@ -828,6 +832,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_ACQUIS_MALADIE, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
