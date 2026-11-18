@@ -109,6 +109,8 @@ export function deverrouillerMois(a, m) {
 }
 export function reinitialiserCP(a) {
   Object.keys(a.presence || {}).forEach((w) => { if (a.presence[w]) a.presence[w] = { ...a.presence[w], cp: 0 }; });
+  // Plus de répartition : la référence « optimale », le reliquat et les enveloppes affichées n'ont plus de sens
+  delete a.cpOptimal; delete a.cpOptimalHSCost; delete a.cpReliquat; delete a.cpEnveloppes;
   return a;
 }
 // Saisie d'une semaine (CP ou autres absences, en jours)

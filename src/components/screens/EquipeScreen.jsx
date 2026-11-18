@@ -9,6 +9,8 @@ import { isRoulant, M } from '../../domain/calculations.js';
 import { parseEquipe } from '../../domain/imports.js';
 import { TRIS_EQUIPE, majOrdreEquipe } from '../../domain/triEquipe.js';
 import { lireClasseur } from '../../lib/importExcel.js';
+import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
+import { repartirCPAuto } from '../../domain/repartitionCP.js';
 
 const QUALS = ['DEA', 'AA', 'TAXI', 'TPMR', 'REGULATEUR', 'REX'];
 const CONTRACTS = ['CDI', 'CDD', 'APPRENTI', 'INTERIM'];
@@ -63,16 +65,27 @@ export default function EquipeScreen() {
       if (r.erreur) { setImportMsg({ ok: false, t: r.erreur }); return; }
       if (!r.employees.length) { setImportMsg({ ok: false, t: 'Aucun salarié trouvé. Vérifiez le fichier.' }); return; }
       if (a.employees.length > 0 && !window.confirm(r.employees.length + ' salariés trouvés. Remplacer la liste existante ?')) return;
-      update((d) => { d.employees = r.employees; return d; });
+      majEquipe((d) => { d.employees = r.employees; return d; });
       setImportMsg({ ok: true, t: r.employees.length + ' salariés importés !' + (r.ignores ? ' (' + r.ignores + ' facturier(s) ignoré(s))' : '') });
     } catch (err) {
       setImportMsg({ ok: false, t: 'Erreur de lecture : ' + (err.message || err) });
     }
   }
 
+  // Toute modification de l'équipe peut changer les congés acquis : les répartitions de CP sont remises à jour
+  // (copie de la présence et des CP non-roulants avant de les modifier, l'état précédent reste intact pour l'annulation).
+  function majEquipe(fn) {
+    update((draft) => {
+      const av = etatConges(draft);
+      fn(draft);
+      const d = { ...draft, presence: Object.fromEntries(Object.entries(draft.presence || {}).map(([k, v]) => [k, { ...v }])), cpNR: draft.cpNR ? { ...draft.cpNR } : draft.cpNR };
+      rafraichirConges(d, av, repartirCPAuto);
+      return d;
+    });
+  }
   // Mutations — reproduisent setEmp / delEmp / addEmployee / setDR de l'app actuelle.
   function setEmp(i, field, value) {
-    update((draft) => {
+    majEquipe((draft) => {
       const emps = draft.employees.slice();
       const e = { ...emps[i] };
       const avantRoulant = isRoulant(e.qual);
@@ -90,16 +103,16 @@ export default function EquipeScreen() {
     });
   }
   function delEmp(i) {
-    update((draft) => { draft.employees = draft.employees.filter((_, idx) => idx !== i); return draft; });
+    majEquipe((draft) => { draft.employees = draft.employees.filter((_, idx) => idx !== i); return draft; });
   }
   function addEmployee() {
-    update((draft) => {
+    majEquipe((draft) => {
       draft.employees = draft.employees.concat({ name: 'Nouveau salarié', qual: 'DEA', contract: 'CDI', hours: 35, hoursM: 0, hsTarget: 3, pctRoulant: 100, joursSem: 5, coutJour: 0, dateEntree: '', dateSortie: '' });
       return draft;
     });
   }
   function addPoste() {
-    update((draft) => {
+    majEquipe((draft) => {
       draft.employees = draft.employees.concat({ name: 'Poste prévisionnel', qual: 'DEA', contract: 'CDD', hours: 35, hoursM: 0, hsTarget: 3, pctRoulant: 100, joursSem: 5, coutJour: 0, dateEntree: '2027-06-01', dateSortie: '2027-09-30' });
       return draft;
     });

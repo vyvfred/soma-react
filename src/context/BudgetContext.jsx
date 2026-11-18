@@ -1,3 +1,5 @@
+import { etatConges, rafraichirConges } from '../domain/rafraichirConges.js';
+import { repartirCPAuto } from '../domain/repartitionCP.js';
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
 import { appliquerRefCG, descriptionCopie } from '../domain/refCG.js';
@@ -334,7 +336,14 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     const src = agenceDeVersion(agenceNom, data, source);
     const alerte = alerteRepriseBlocs(agencyRef.current, src, ids);
     if (alerte && confirmer && !confirmer(alerte)) return { ok: false, annule: true, message: 'Reprise annulée' };
-    update((a) => reprendreBlocs(a, src, ids));
+    update((a) => {
+      const av = etatConges(a);
+      const r = reprendreBlocs(a, src, ids);
+      // Équipe reprise sans la présence : les congés acquis changent, les répartitions sont remises à jour
+      // (reprendreBlocs renvoie une copie complète, l'état précédent reste intact)
+      if (ids.indexOf('presence') < 0) rafraichirConges(r, av, repartirCPAuto);
+      return r;
+    });
     return { ok: true, message: 'Données de la ' + VERSION_LABELS[source] + ' reprises dans la ' + VERSION_LABELS[versionRef.current] + ' (↶ pour annuler)' };
   }, [agenceNom, editable, flush, update]);
 

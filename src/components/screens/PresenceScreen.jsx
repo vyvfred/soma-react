@@ -4,6 +4,7 @@ import { useBudget } from '../../context/BudgetContext.jsx';
 import { SEUIL_MS_CA, hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto } from '../../domain/repartitionCP.js';
+import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
 import { presenceInsight } from '../../domain/presenceInsight.js';
 import {
   progressionMois, etatMois, semainesMois, impactMois, semainesCritiques, verrouillerMois, deverrouillerMois,
@@ -172,14 +173,13 @@ export default function PresenceScreen() {
     muter((x) => reinitialiserCP(x));
     toast('Congés remis à zéro', 'info');
   };
-  // Absentéisme modifié : les CP acquis changent, la répartition des mois non validés est refaite automatiquement
-  // (seulement si des congés étaient déjà posés ; les mois validés ne bougent pas).
-  const majCPApresAbsenteisme = (x) => { if (cpPlanifies(x) > 0 && +x.targetCA > 0 && +x.targetTXR > 0) repartirCPAuto(x); };
+  // Absentéisme modifié : les CP acquis (roulants et non-roulants) changent, les répartitions sont refaites
+  // automatiquement (roulants : si des congés étaient posés ; non-roulants : si la répartition était automatique).
   const setSick = (m) => (e) => {
     const v = e.target.value;
-    muter((x) => { x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; majCPApresAbsenteisme(x); });
+    muter((x) => { const av = etatConges(x); x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; rafraichirConges(x, av, repartirCPAuto); });
   };
-  const rebalance = () => muter((x) => { x.sick = reequilibrerSick(x.sick, +x.targetAbsRate || 0); majCPApresAbsenteisme(x); });
+  const rebalance = () => muter((x) => { const av = etatConges(x); x.sick = reequilibrerSick(x.sick, +x.targetAbsRate || 0); rafraichirConges(x, av, repartirCPAuto); });
   const setHS50 = (m) => (e) => {
     const v = e.target.value;
     update((draft) => { draft.hs50 = (draft.hs50 || Array(12).fill(null)).slice(); draft.hs50[m] = v === '' ? null : Math.max(0, Math.min(100, +v)); return draft; });
@@ -298,7 +298,7 @@ export default function PresenceScreen() {
       <p className="hint" style={{ fontSize: 12, margin: '-10px 0 16px' }}>
         La répartition automatique pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales
         (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai). Vous pouvez ensuite déplacer des congés semaine par semaine :
-        le compteur suit vos choix. Si vous modifiez l'absentéisme, SOMA refait automatiquement la répartition sur les mois non validés (les congés déplacés à la main sur ces mois sont recalculés).
+        le compteur suit vos choix. Si les jours acquis changent (absentéisme, équipe, dates d'entrée ou de sortie, temps de travail, part roulante), SOMA refait automatiquement la répartition sur les mois non validés (les congés déplacés à la main sur ces mois sont recalculés).
       </p>
 
       {/* ── Mois par mois ── */}
@@ -500,7 +500,7 @@ function CongesNonRoulants({ a, editable, muter }) {
   const acquis = cpNRAcquis(a);
   const saisis = cpNRSaisis(a);
   const reste = Math.round((acquis - saisis) * 10) / 10;
-  const setJour = (i, v) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; x.cpNR.jours[i] = v === '' ? null : +String(v).replace(',', '.'); });
+  const setJour = (i, v) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, auto: false, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; x.cpNR.jours[i] = v === '' ? null : +String(v).replace(',', '.'); });
   const cellule = { padding: '4px 6px' };
   return (
     <div data-testid="repli-cp-nr" style={{ marginBottom: 18 }}>

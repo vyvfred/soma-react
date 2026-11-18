@@ -163,7 +163,7 @@ function repartirCPNRAuto(a){
   // Reliquat d'arrondi (demi-journées) reporté sur août, pour poser exactement les jours acquis
   let ecart=Math.round(tot*2)/2-j.reduce(function(s,v){return s+v;},0);j[7]=Math.max(0,Math.round((j[7]+ecart)*10)/10);
   if(!a.cpNR)a.cpNR=cpNRVide();
-  a.cpNR.jours=j;return a;
+  a.cpNR.jours=j;a.cpNR.auto=true;return a;
 }
 // Heures roulantes disponibles sur l'année hors heures supplémentaires : base contractuelle moins
 // la maladie (taux moyen saisi, sinon cible) et les congés générés. Ne dépend pas du placement des CP.
@@ -603,9 +603,21 @@ function coutDuChoixREX(a){
   if(!a.cpOptimal){
     return { mesurable:false, surcout:0, hsSup:0, semaines:[] };
   }
+  // Référence périmée : les congés acquis ont changé depuis la dernière répartition automatique
+  // (équipe, dates, part roulante, absentéisme…) → comparer n'aurait pas de sens (audit CP nov. 2026).
+  let totOpt = Object.keys(a.cpOptimal).reduce(function(s,k){ return s + (+a.cpOptimal[k] || 0); }, 0);
+  let gen = cpGeneres(a);
+  if(Math.abs(totOpt - gen) > Math.max(0.5, gen * 0.05)){
+    return { mesurable:false, perimee:true, surcout:0, hsSup:0, semaines:[] };
+  }
   // Coût HS actuel (avec les choix du REX)
   let coutActuel = coutHSTotal(a);
-  let coutOptimal = a.cpOptimalHSCost || 0;
+  // Coût HS de la répartition optimale recalculé sur les données ACTUELLES (même équipe, même objectif,
+  // même coût horaire) : seul le placement des congés diffère, le surcoût mesure donc uniquement le choix du REX.
+  let ref = Object.assign({}, a, { presence: {} });
+  Object.keys(a.presence || {}).forEach(function(w){ ref.presence[w] = Object.assign({}, a.presence[w], { cp: +a.cpOptimal[w] || 0 }); });
+  Object.keys(a.cpOptimal).forEach(function(w){ if(!ref.presence[w]) ref.presence[w] = { cp: +a.cpOptimal[w] || 0, other: 0 }; });
+  let coutOptimal = coutHSTotal(ref);
   let surcout = Math.max(0, Math.round(coutActuel - coutOptimal));
 
   // Détail des semaines où le REX a dévié de l'optimum
