@@ -54,6 +54,13 @@ export default function AideScreen() {
         Aide pour votre profil : <b>{FAQ_ROLE_LABEL[key]}</b>
       </div>
 
+      {profile.role === 'rex' ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16, padding: '12px 14px', border: '1px solid var(--violet)' }}>
+          <span style={{ flex: 1, minWidth: 200, fontSize: 13 }}>🧭 <b>Visite guidée</b> : les 8 étapes du budget expliquées écran par écran, en 2 minutes.</span>
+          <button data-testid="relancer-visite" onClick={() => window.dispatchEvent(new CustomEvent('soma:visite'))} style={{ width: 'auto', margin: 0 }}>Revoir la visite guidée</button>
+        </div>
+      ) : null}
+
       {sections.map((s, si) => (
         <div key={si}>
           {s.titre ? <h3 style={{ margin: '20px 0 10px', color: 'var(--violet2)' }}>{s.titre}</h3> : null}

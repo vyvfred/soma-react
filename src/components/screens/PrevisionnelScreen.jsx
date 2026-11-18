@@ -82,7 +82,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
       <h2 style={{ marginBottom: 14 }}>Prévisionnel — {agenceNom}</h2>
       {vueCG ? <p className="hint" style={{ margin: '0 0 14px', fontSize: 13 }}>📊 <b>Prévisionnel de l'agence sélectionnée.</b> Ce tableau de résultat (SIG) est calculé automatiquement à partir des données du REX et des charges que vous avez saisies. Vue en lecture seule.</p> : null}
 
-      <div className="kpis" style={{ marginBottom: 16 }}>
+      <div className="kpis" data-visite="previsionnel" style={{ marginBottom: 16 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} />)}
       </div>
 

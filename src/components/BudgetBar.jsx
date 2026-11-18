@@ -156,7 +156,7 @@ export default function BudgetBar() {
       ) : null}
 
       {budgetId ? (
-        <div style={{ padding: '12px 14px', border: '1px solid var(--border)', background: 'var(--bg2)', marginBottom: 10 }}>
+        <div data-visite="versions" style={{ padding: '12px 14px', border: '1px solid var(--border)', background: 'var(--bg2)', marginBottom: 10 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ink65)' }}>Version</span>
             {VERSIONS.map((v) => {
@@ -187,7 +187,7 @@ export default function BudgetBar() {
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', border: '1px solid var(--border)' }}>
+      <div data-visite="soumettre" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px', border: '1px solid var(--border)' }}>
         <span style={{ fontSize: 13 }}>Statut du budget :</span>
         <span className={'statut ' + statut} data-testid="statut-badge">{statutLabel(statut)}</span>
         <span style={{ flex: 1 }} />

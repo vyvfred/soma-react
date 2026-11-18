@@ -73,7 +73,7 @@ export default function RefsScreen() {
       {activeActs.map((act) => {
         const refs = (a.refs && a.refs[act.key]) || Array.from({ length: 12 }, () => ({}));
         return (
-          <div key={act.key} style={{ marginBottom: 22 }}>
+          <div key={act.key} data-visite="refs" style={{ marginBottom: 22 }}>
             <h3 style={{ fontSize: 14, marginBottom: 8 }}>{act.label} — CA par jour (€)</h3>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>

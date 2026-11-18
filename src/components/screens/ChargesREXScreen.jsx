@@ -69,7 +69,7 @@ export default function ChargesREXScreen() {
         Les cases sont pré-remplies avec les valeurs du contrôle de gestion quand il y en a : ajustez-les. Le bouton ⇉ recopie la valeur de janvier sur les 12 mois. Les autres charges restent saisies par le contrôle de gestion.
       </p>
       <h3 style={{ margin: '6px 0 8px' }}>En % du chiffre d'affaires du mois</h3>
-      <div style={{ overflowX: 'auto' }}>
+      <div data-visite="charges" style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
           {entete('Poste')}
           <tbody>

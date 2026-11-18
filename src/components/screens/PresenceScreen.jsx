@@ -130,7 +130,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
                 <td style={cell}>{Math.round(s.av)}</td>
                 <td style={cell}>{Math.round(s.besoin)}</td>
                 <td style={{ ...cell, fontWeight: 700, color: s.hs > 0.5 ? 'var(--orange, #c45300)' : 'var(--ink65)' }}>{Math.round(s.hs)}</td>
-                <td style={cell}>{s.hsParPers || '—'}</td>
+                <td style={cell}>{s.hsParPers != null ? <b>{(+s.hsParPers).toFixed(1)}</b> : '—'}</td>
                 <td style={{ ...cell, color: COUL_IMPACT[s.impactNiveau], fontWeight: 600 }}>{s.impact > 0 ? '+' : ''}{euro(s.impact)}</td>
                 <td style={{ ...cell, textAlign: 'left', color: 'var(--ink65)' }}>{s.charge}</td>
               </tr>
@@ -196,7 +196,7 @@ export default function PresenceScreen() {
             ? 'Les congés et les heures supplémentaires se calculent à partir des salariés roulants : renseignez d\'abord l\'équipe pour les voir apparaître. L\'absentéisme peut déjà être saisi ci-dessous.'
             : 'Les congés et les heures supplémentaires se calculent à partir de l\'objectif de chiffre d\'affaires et du TXR : renseignez l\'objectif pour les voir apparaître. L\'absentéisme peut déjà être saisi ci-dessous.'}
         </p>
-        <BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} />
+        <div data-visite="absenteisme"><BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} /></div>
       </div>
     );
   }
@@ -258,12 +258,12 @@ export default function PresenceScreen() {
       ) : null}
 
       {/* ── Absentéisme ── */}
-      <BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} />
+      <div data-visite="absenteisme"><BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} /></div>
 
       {/* ── Congés payés : répartition, enveloppes, compteur ── */}
       <h3 style={{ fontSize: 15, margin: '18px 0 4px' }}>2. Congés payés</h3>
       {editable ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
+        <div data-visite="conges" style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
           <button onClick={distribuerCP} style={{ width: 'auto', margin: 0 }}>Répartir les congés automatiquement</button>
           <button data-testid="reset-cp" onClick={resetCP} style={btnSec}>Remettre les CP à zéro</button>
           <span className="hint" style={{ fontSize: 12 }}>SOMA pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales. Les mois validés ne sont pas modifiés.</span>
@@ -314,7 +314,7 @@ export default function PresenceScreen() {
         💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les absences payées ou non payées, puis <b>validez-le</b> : il passe en lecture seule
         et SOMA répartit à nouveau les congés restants sur les mois encore libres. <Pourquoi k="conges" />
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
+      <div data-visite="mois" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
         {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
       </div>
 

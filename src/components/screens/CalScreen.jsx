@@ -121,7 +121,7 @@ function BandeauTotaux({ a, month, onMonth }) {
   const cell = { padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
   const sel = { background: 'rgba(139,127,255,.14)' };
   return (
-    <div data-testid="cal-totaux-mensuels" style={{ marginBottom: 16, border: '1px solid var(--border)', background: 'var(--bg3, var(--card))', padding: 12 }}>
+    <div data-testid="cal-totaux-mensuels" data-visite="cal-totaux" style={{ marginBottom: 16, border: '1px solid var(--border)', background: 'var(--bg3, var(--card))', padding: 12 }}>
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Récapitulatif — {M[month]}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {kpis.map(([l, v, fort]) => (

@@ -66,7 +66,7 @@ function RatioMSMensuel({ a }) {
   const cel = { padding: '6px 8px', textAlign: 'right', whiteSpace: 'nowrap' };
   const fmtR = (r) => (r === null ? '—' : pct(r));
   return (
-    <div data-testid="ratio-ms-mensuel" style={{ marginBottom: 18, border: '1px solid var(--border)', padding: '12px 14px' }}>
+    <div data-testid="ratio-ms-mensuel" data-visite="ms-ca" style={{ marginBottom: 18, border: '1px solid var(--border)', padding: '12px 14px' }}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Masse salariale / CA, mois par mois</div>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>

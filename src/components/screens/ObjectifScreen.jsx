@@ -80,7 +80,7 @@ export default function ObjectifScreen() {
         </span>
       </div>
 
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', margin: '14px 0 20px' }}>
+      <div data-visite="objectif" style={{ display: 'flex', gap: 20, flexWrap: 'wrap', margin: '14px 0 20px' }}>
         <label style={{ flex: 1, minWidth: 220 }}>
           <span style={{ display: 'block', fontSize: 12, color: 'var(--ink65)', marginBottom: 6 }}>Objectif de chiffre d'affaires</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

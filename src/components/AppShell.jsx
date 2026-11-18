@@ -1,5 +1,5 @@
 import { aDesSaisiesDR } from '../domain/saisiesDR.js';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PANELS_REX } from '../config/panels.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { BudgetProvider } from '../context/BudgetContext.jsx';
@@ -13,6 +13,7 @@ import CgGuide from './CgGuide.jsx';
 import StepNav from './StepNav.jsx';
 import ChangePasswordModal from './ChangePasswordModal.jsx';
 import { VisionOverlay, visionDejaVue } from './Vision.jsx';
+import { ETAPES_VISITE_REX, visiteDejaVue, marquerVisiteVue, lancerVisite } from '../domain/visiteGuidee.js';
 import AideOnglet from './AideOnglet.jsx';
 import CgAlertes from './CgAlertes.jsx';
 import ToastHost from './Toast.jsx';
@@ -41,7 +42,7 @@ function BoutonsHistorique() {
   const n = histInfo.annuler, r = histInfo.retablir;
   return (
     <>
-      <button className="soma-btn-ghost" data-testid="btn-annuler" disabled={!n} title={n ? 'Annuler la dernière modification (Ctrl+Z) — ' + n + ' possible' + (n > 1 ? 's' : '') : 'Rien à annuler'}
+      <button className="soma-btn-ghost" data-testid="btn-annuler" data-visite="historique" disabled={!n} title={n ? 'Annuler la dernière modification (Ctrl+Z) — ' + n + ' possible' + (n > 1 ? 's' : '') : 'Rien à annuler'}
         onClick={() => { if (annuler()) toast('Modification annulée', 'info'); }} style={{ opacity: n ? 1 : 0.4 }}>↶</button>
       <button className="soma-btn-ghost" data-testid="btn-retablir" disabled={!r} title={r ? 'Rétablir (Ctrl+Y) — ' + r + ' possible' + (r > 1 ? 's' : '') : 'Rien à rétablir'}
         onClick={() => { if (retablir()) toast('Modification rétablie', 'info'); }} style={{ opacity: r ? 1 : 0.4 }}>↷</button>
@@ -123,6 +124,22 @@ function VersionBorder({ children }) {
 // Panneaux qui portent sur UNE agence (donc concernés par la sélection d'agence CG).
 const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'charges', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
 
+// Visite guidée du REX : à la première connexion (après la page « vision »), relançable depuis l'écran Aide.
+// Rendu à l'intérieur du BudgetProvider pour attendre que le budget soit chargé.
+function VisiteREX({ role, userId, vision, aller }) {
+  const { agency } = useBudget();
+  const pret = !!agency;
+  useEffect(() => {
+    if (role !== 'rex') return undefined;
+    const lancer = () => lancerVisite(ETAPES_VISITE_REX, aller, () => marquerVisiteVue(userId));
+    window.addEventListener('soma:visite', lancer);
+    let t = null;
+    if (!vision && pret && !visiteDejaVue(userId)) t = setTimeout(lancer, 700);
+    return () => { window.removeEventListener('soma:visite', lancer); if (t) clearTimeout(t); };
+  }, [role, userId, vision, pret, aller]);
+  return null;
+}
+
 export default function AppShell() {
   const { profile, logout, simRole, simuler, recuperation } = useAuth();
   const [mdpOuvert, setMdpOuvert] = useState(false);
@@ -143,6 +160,7 @@ export default function AppShell() {
     ? { panels: PANELS_REX.filter((p) => p[0] !== 'aide'), landing: 'finance', group: 'Consultation — ' + consult }
     : saisiePour ? { panels: PANELS_REX, landing: 'objectif', group: 'Saisie pour le REX — ' + saisiePour } : navRole;
   const [active, setActive] = useState(landing);
+  const allerVisite = useCallback((id) => { setMenuMobile(false); setActive(id); }, []);
   const basculerVue = (rex) => { setVueRex(rex); setActive(rex ? 'finance' : 'cgdash'); };
   // Changement de rôle simulé : revenir à l'écran d'atterrissage du rôle
   useEffect(() => { setActive(landing); setVueRex(false); }, [profile.role]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -180,6 +198,7 @@ export default function AppShell() {
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
     <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult} saisieDR={!!saisiePour}>
+      <VisiteREX role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} />
     <div className="soma-shell">
       {consult ? (
         <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>
@@ -233,7 +252,7 @@ export default function AppShell() {
 
       <div className="soma-body">
         {menuMobile ? <div className="soma-nav-voile" onClick={() => setMenuMobile(false)} aria-hidden="true" /> : null}
-        <nav className={'soma-nav' + (menuMobile ? ' ouvert' : '') + (navReduite ? ' reduite' : '')} aria-label="Navigation principale" style={navReduite ? { width: 44, minWidth: 44, padding: '8px 4px', overflow: 'hidden' } : undefined}>
+        <nav data-visite="menu" className={'soma-nav' + (menuMobile ? ' ouvert' : '') + (navReduite ? ' reduite' : '')} aria-label="Navigation principale" style={navReduite ? { width: 44, minWidth: 44, padding: '8px 4px', overflow: 'hidden' } : undefined}>
           <button data-testid="nav-toggle" onClick={() => setNavReduite(!navReduite)} title={navReduite ? 'Agrandir le menu' : 'Réduire le menu'}
             style={{ width: 'auto', margin: '0 0 8px', padding: '4px 10px', fontSize: 12, background: 'transparent', border: '1px solid var(--border)', color: 'var(--ink65)', alignSelf: navReduite ? 'center' : 'flex-end' }}>{navReduite ? '»' : '«'}</button>
           {navReduite ? null : <>
@@ -241,6 +260,7 @@ export default function AppShell() {
           {panels.map(([id, label]) => (
             <button
               key={id}
+              data-visite={'nav-' + id}
               className={'soma-navbtn' + (id === active ? ' current' : '')}
               onClick={() => { setActive(id); setMenuMobile(false); }}
             >
