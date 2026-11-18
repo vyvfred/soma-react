@@ -129,9 +129,9 @@ export default function BudgetBar() {
     toast(r.message, r.ok ? 'success' : 'warn');
     if (r.ok) setReprise(false);
   });
-  const onDelete = run(async () => {
-    if (!window.confirm('Supprimer définitivement la version ' + VERSION_LABELS[activeVersion] + ' et toutes ses saisies ? Cette action ne peut pas être annulée.')) return;
-    const r = await deleteVersion(activeVersion);
+  const onDelete = run(async (v) => {
+    if (!window.confirm('Supprimer définitivement la version ' + VERSION_LABELS[v] + ' et toutes ses saisies ? Cette action ne peut pas être annulée.')) return;
+    const r = await deleteVersion(v);
     toast(r.message, r.ok ? 'success' : 'warn');
   });
   const onChoose = run(async () => { await chooseSubmittedVersion(); toast('Version ' + VERSION_LABELS[activeVersion] + ' choisie pour la soumission', 'success'); });
@@ -172,7 +172,11 @@ export default function BudgetBar() {
             <button onClick={onDup} disabled={busy || !editable} style={btn}>⎘ Dupliquer la version active</button>
             <button onClick={onCompare} disabled={busy} style={btn}>⇄ Comparer les versions</button>
             {autresRemplies.length ? <button onClick={() => setReprise(true)} disabled={busy || !editable} style={btn} data-testid="reprise-ouvrir">↧ Reprendre d'une autre version</button> : null}
-            {VERSIONS_SUPPRIMABLES.includes(activeVersion) && versionsRemplies[activeVersion] ? <button onClick={onDelete} disabled={busy || !editable || meta.submittedVersion === activeVersion} title={meta.submittedVersion === activeVersion ? 'Version choisie pour la soumission : choisissez-en une autre avant de la supprimer' : ''} style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid="version-supprimer">🗑 Supprimer la {VERSION_LABELS[activeVersion]}</button> : null}
+            {VERSIONS_SUPPRIMABLES.filter((v) => versionsRemplies[v]).map((v) => (
+              <button key={v} onClick={() => onDelete(v)} disabled={busy || !editable || meta.submittedVersion === v}
+                title={meta.submittedVersion === v ? 'Version choisie pour la soumission : choisissez-en une autre avant de la supprimer' : 'Supprimer définitivement la ' + VERSION_LABELS[v]}
+                style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid={'version-supprimer-' + v}>🗑 Supprimer la {VERSION_LABELS[v]}</button>
+            ))}
           </div>
           <input type="text" value={(meta.descriptions && meta.descriptions[activeVersion]) || ''} onChange={(e) => setVersionDesc(e.target.value)} disabled={!editable}
             placeholder={'Description de la version ' + VERSION_LABELS[activeVersion] + ' (ex. : scénario avec renfort estival)'} style={{ width: '100%', marginBottom: 8 }} />

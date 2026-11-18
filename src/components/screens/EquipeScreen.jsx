@@ -1,6 +1,7 @@
 import { champSaisiDR } from '../../domain/saisiesDR.js';
 import { partRoulant, estRoulantPart } from '../../domain/calculations.js';
 import { useRef, useState } from 'react';
+import { VERSIONS, VERSION_LABELS } from '../../domain/versions.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { teamInsight, etpParMois } from '../../domain/teamInsight.js';
 import { isRoulant, M } from '../../domain/calculations.js';
@@ -26,7 +27,8 @@ const AIDE_COLONNES = {
 };
 
 export default function EquipeScreen() {
-  const { agency: a, loading, error, editable, update, agenceNom } = useBudget();
+  const { agency: a, loading, error, editable, update, agenceNom, activeVersion, versionsRemplies, reprendreVersion } = useBudget();
+  const [repriseMsg, setRepriseMsg] = useState(null);
   const fichier = useRef(null);
   const [importMsg, setImportMsg] = useState(null);
   // Tri d'affichage (mémorisé sur ce navigateur) ; l'ordre est figé pendant la saisie
@@ -39,6 +41,7 @@ export default function EquipeScreen() {
   if (error) return <div className="card"><h2>Équipe</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
   if (!a) return <div className="card"><h2>Équipe — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
+  const sourcesEquipe = VERSIONS.filter((v) => v !== activeVersion && versionsRemplies && versionsRemplies[v]);
   etatTri.current = majOrdreEquipe(etatTri.current, a.employees, tri, agenceNom);
   const ordre = etatTri.current.ordre;
   const { nbSal, etpTotal, capaciteAn, phrase } = teamInsight(a);
@@ -100,6 +103,17 @@ export default function EquipeScreen() {
   return (
     <div className="card">
       <h2 style={{ marginBottom: 14 }}>Équipe — {agenceNom}</h2>
+
+      {editable && !a.employees.length && sourcesEquipe.length ? (
+        <div data-testid="equipe-vide" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '12px 14px', border: '1px solid var(--orange)', background: 'var(--orange-light, rgba(196,83,0,.10))', fontSize: 13 }}>
+          <span style={{ flex: 1, minWidth: 220 }}>⚠ Cette version ({VERSION_LABELS[activeVersion]}) ne contient aucun salarié.</span>
+          {sourcesEquipe.map((v) => (
+            <button key={v} data-testid={'equipe-reprendre-' + v} style={{ width: 'auto', margin: 0 }}
+              onClick={async () => { const r = await reprendreVersion(v, ['equipe']); setRepriseMsg(r.message); }}>Reprendre l'équipe de la {VERSION_LABELS[v]}</button>
+          ))}
+        </div>
+      ) : null}
+      {repriseMsg ? <p className="hint" data-testid="equipe-reprise-msg" style={{ marginTop: -6 }}>{repriseMsg}</p> : null}
 
       <div className="teamKpiRow" style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
         <Kpi label="Salariés" value={nbSal} sub={nbSal > 1 ? 'personnes' : 'personne'} />
