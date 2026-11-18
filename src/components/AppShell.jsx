@@ -1,3 +1,4 @@
+import BoutonTheme from './BoutonTheme.jsx';
 import { aDesSaisiesDR } from '../domain/saisiesDR.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PANELS_REX } from '../config/panels.js';
@@ -245,6 +246,7 @@ export default function AppShell() {
           </div>
         ) : null}
         <div className="soma-user">
+          <BoutonTheme />
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
           {mesAgences.length > 1 && !consult ? (

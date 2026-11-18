@@ -21,7 +21,7 @@ function evoCASvg(rows) {
     svg += '<line x1="' + leftAxis + '" y1="' + yy + '" x2="' + (W - 20) + '" y2="' + yy + '" stroke="rgba(255,255,255,.06)"/>';
     svg += '<text x="' + (leftAxis - 8) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="10" fill="var(--ink65)">' + Math.round(val / 1000) + 'k</text>';
   }
-  const colors = ['#4A4B68', '#4A9EFF', '#472683'];
+  const colors = ['var(--ink30)', 'var(--accent-blue)', 'var(--violet)'];
   const keys = ['ca2025', 'ca2026', 'caB2027'];
   rows.forEach((r, i) => {
     const gx = leftAxis + i * (groupW + groupGap) + groupGap / 2;
@@ -67,7 +67,7 @@ function scatterSvg(rows) {
   svg += '<text x="18" y="' + (H / 2) + '" text-anchor="middle" font-size="12" fill="var(--ink)" transform="rotate(-90 18 ' + (H / 2) + ')">Taux de charge</text>';
   pts.forEach((p) => {
     const x = px(p.txr), yy = py(p.txCharge);
-    const col = p.txCharge > 115 ? 'var(--orange)' : p.txCharge > 100 ? '#FF8F00' : 'var(--accent-blue)';
+    const col = p.txCharge > 115 ? 'var(--orange)' : p.txCharge > 100 ? 'var(--amber)' : 'var(--accent-blue)';
     svg += '<circle cx="' + x + '" cy="' + yy + '" r="6" fill="' + col + '" opacity="0.85"><title>' + p.nom + ' — TXR ' + p.txr + ' €/h, charge ' + p.txCharge + '%</title></circle>';
     svg += '<text x="' + (x + 9) + '" y="' + (yy + 3) + '" font-size="9" fill="var(--ink65)">' + p.nom.slice(0, 12) + '</text>';
   });
@@ -99,9 +99,9 @@ export default function GraphiquesScreen() {
       <h3 style={{ fontSize: 14, marginBottom: 8 }}>Évolution du chiffre d'affaires par agence</h3>
       <div style={{ overflowX: 'auto' }} dangerouslySetInnerHTML={{ __html: evoCASvg(rows) }} />
       <div style={{ display: 'flex', gap: 18, margin: '10px 0 24px', fontSize: 12, flexWrap: 'wrap' }}>
-        <span><span style={{ display: 'inline-block', width: 12, height: 12, background: '#4A4B68', marginRight: 5 }} />CA 2025</span>
-        <span><span style={{ display: 'inline-block', width: 12, height: 12, background: '#4A9EFF', marginRight: 5 }} />CA 2026</span>
-        <span><span style={{ display: 'inline-block', width: 12, height: 12, background: '#472683', marginRight: 5 }} />CA budgété 2027</span>
+        <span><span style={{ display: 'inline-block', width: 12, height: 12, background: 'var(--ink30)', marginRight: 5 }} />CA 2025</span>
+        <span><span style={{ display: 'inline-block', width: 12, height: 12, background: 'var(--accent-blue)', marginRight: 5 }} />CA 2026</span>
+        <span><span style={{ display: 'inline-block', width: 12, height: 12, background: 'var(--violet)', marginRight: 5 }} />CA budgété 2027</span>
       </div>
 
       <h3 style={{ fontSize: 14, marginBottom: 8 }}>Productivité (TXR) vs taux de charge</h3>

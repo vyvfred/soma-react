@@ -10,9 +10,9 @@ const WD = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
 const TYPE_STYLE = {
   ferie: { bg: 'rgba(196,83,0,.18)', border: 'var(--orange, #c45300)', badge: 'Férié', badgeBg: 'var(--orange, #c45300)' },
-  vacances: { bg: 'rgba(255,143,0,.15)', border: 'rgba(255,143,0,.4)', badge: 'Vacances', badgeBg: '#FF8F00' },
-  samedi: { bg: 'rgba(139,127,255,.15)', border: 'rgba(139,127,255,.45)', badge: 'Samedi', badgeBg: '#8B7FFF' },
-  dimanche: { bg: 'rgba(139,127,255,.15)', border: 'rgba(139,127,255,.45)', badge: 'Dimanche', badgeBg: '#8B7FFF' }
+  vacances: { bg: 'rgba(255,143,0,.15)', border: 'rgba(255,143,0,.4)', badge: 'Vacances', badgeBg: 'var(--amber)' },
+  samedi: { bg: 'rgba(139,127,255,.15)', border: 'rgba(139,127,255,.45)', badge: 'Samedi', badgeBg: 'var(--violet)' },
+  dimanche: { bg: 'rgba(139,127,255,.15)', border: 'rgba(139,127,255,.45)', badge: 'Dimanche', badgeBg: 'var(--violet)' }
 };
 
 export default function CalScreen() {

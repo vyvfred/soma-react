@@ -17,7 +17,7 @@ const BANNER_STYLE = {
   info: { border: 'var(--blue2, #3d6fd6)', bg: 'var(--blue-light, rgba(61,111,214,.10))', color: 'var(--blue2, #3d6fd6)' },
   warn: { border: 'var(--orange, #c45300)', bg: 'rgba(196,83,0,.10)', color: 'var(--orange, #c45300)' }
 };
-const COULEUR_NIVEAU = { critique: 'var(--orange)', tendu: '#FF8F00', coherent: 'var(--accent-blue, var(--blue2))', confortable: 'var(--green)' };
+const COULEUR_NIVEAU = { critique: 'var(--orange)', tendu: 'var(--amber)', coherent: 'var(--accent-blue, var(--blue2))', confortable: 'var(--green)' };
 const lbl = { display: 'block', fontSize: 12, color: 'var(--ink65)', margin: '10px 0 6px' };
 
 function SaveIndicator({ status }) {

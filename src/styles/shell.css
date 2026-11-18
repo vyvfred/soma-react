@@ -85,7 +85,7 @@
   font-family: inherit; transition: background .12s ease;
 }
 .soma-navbtn:hover { background: var(--card2); }
-.soma-navbtn.current { background: var(--violet-light); color: #fff; font-weight: 600; }
+.soma-navbtn.current { background: var(--violet-light); color: var(--ink); font-weight: 700; box-shadow: inset 3px 0 0 var(--violet); }
 
 .soma-main { flex: 1; overflow-y: auto; padding: 32px; }
 

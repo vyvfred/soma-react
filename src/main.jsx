@@ -7,6 +7,10 @@ import App from './App.jsx';
 // puis styles propres au socle React.
 import './styles/legacy.css';
 import './styles/shell.css';
+import { appliquerTheme, themeCourant } from './lib/theme.js';
+
+// Thème avant le premier affichage (pas de flash) : clair par défaut, sombre si choisi sur cet appareil
+appliquerTheme(themeCourant());
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

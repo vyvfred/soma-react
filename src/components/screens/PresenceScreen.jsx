@@ -21,8 +21,8 @@ const M = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', '
 const MOIS_LONGS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const fmt1 = (v) => (Math.round((+v || 0) * 10) / 10).toLocaleString('fr-FR');
-const COUL_TENSION = { forte: 'var(--orange, #c45300)', moyenne: '#d4a017', faible: 'var(--green, #2e7d6f)' };
-const COUL_IMPACT = { faible: 'var(--green, #2e7d6f)', moyen: '#d4a017', fort: 'var(--orange, #c45300)' };
+const COUL_TENSION = { forte: 'var(--orange, #c45300)', moyenne: 'var(--amber)', faible: 'var(--green, #2e7d6f)' };
+const COUL_IMPACT = { faible: 'var(--green, #2e7d6f)', moyen: 'var(--amber)', fort: 'var(--orange, #c45300)' };
 const COUL_ETAT = { 'Validé': 'var(--green, #2e7d6f)', 'À équilibrer': 'var(--orange, #c45300)', 'À valider': 'var(--blue2, #3d6fd6)' };
 
 function Kpi({ label, value, note }) {

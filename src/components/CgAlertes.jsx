@@ -4,7 +4,7 @@ import { alertesBudgetSoumis } from '../domain/alertesCG.js';
 
 // Anomalies affichées au CG à l'ouverture d'un budget soumis (port de afficherAlertesCG) :
 // fermeture manuelle ou automatique après 15 secondes.
-const COUL = { crit: 'var(--orange)', warn: '#FF8F00', info: 'var(--blue2)' };
+const COUL = { crit: 'var(--orange)', warn: 'var(--amber)', info: 'var(--blue2)' };
 export default function CgAlertes() {
   const { agency, agenceNom, statut, loading } = useBudget();
   const [vue, setVue] = useState(null);

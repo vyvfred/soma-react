@@ -9,7 +9,7 @@ export function toast(message, type = 'info') {
 const COULEURS = {
   success: 'var(--green, #2e7d6f)',
   info: 'var(--blue2, #3d6fd6)',
-  warn: '#FF8F00',
+  warn: 'var(--amber)',
   error: 'var(--orange, #c45300)'
 };
 

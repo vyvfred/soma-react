@@ -58,7 +58,7 @@ export default function ChargeCurve({ agency: a }) {
   // Points colorés selon la charge.
   const seuilWarn = moy * 1.4, seuilCrit = moy * 1.8;
   pts.forEach((p, i) => {
-    const col = p.ratio > seuilCrit ? 'var(--orange)' : (p.ratio > seuilWarn ? '#F59E0B' : 'var(--violet)');
+    const col = p.ratio > seuilCrit ? 'var(--orange)' : (p.ratio > seuilWarn ? 'var(--amber)' : 'var(--violet)');
     const r = p.ratio > seuilWarn ? 3.5 : 2.5;
     svg += '<circle cx="' + cx(i).toFixed(1) + '" cy="' + cy(p.ratio).toFixed(1) + '" r="' + r + '" fill="' + col + '"><title>Semaine ' + p.week + ' — ' + p.ratio.toFixed(1) + ' h/pers (' + Math.round(p.hs) + ' h au total)</title></circle>';
   });

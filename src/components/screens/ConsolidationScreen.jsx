@@ -27,7 +27,7 @@ function Kpi({ label, value, note }) {
 function Avancement({ av, statut }) {
   const fini = statut && statut !== 'brouillon';
   const p = fini ? 100 : av.pct;
-  const col = p >= 90 ? 'var(--green, #2e7d6f)' : p >= 50 ? '#FF8F00' : 'var(--orange, #c45300)';
+  const col = p >= 90 ? 'var(--green, #2e7d6f)' : p >= 50 ? 'var(--amber)' : 'var(--orange, #c45300)';
   return (
     <div title={detailAvancement(av)} data-testid="avancement" style={{ minWidth: 160 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -40,7 +40,7 @@ function Avancement({ av, statut }) {
   );
 }
 
-const ALERT_COLOR = { crit: 'var(--orange, #c45300)', warn: '#FF8F00', info: 'var(--blue2, #3d6fd6)' };
+const ALERT_COLOR = { crit: 'var(--orange, #c45300)', warn: 'var(--amber)', info: 'var(--blue2, #3d6fd6)' };
 
 export default function ConsolidationScreen() {
   const [state, setState] = useState({ loading: true, error: null, map: null });
@@ -90,7 +90,7 @@ export default function ConsolidationScreen() {
     insight += 'Aucune agence en surcharge critique.';
   }
 
-  const txChargeColor = (t) => (t > 115 ? 'var(--orange, #c45300)' : t > 100 ? '#FF8F00' : t > 85 ? 'var(--accent-blue, #3d6fd6)' : 'var(--green, #2e7d6f)');
+  const txChargeColor = (t) => (t > 115 ? 'var(--orange, #c45300)' : t > 100 ? 'var(--amber)' : t > 85 ? 'var(--accent-blue, #3d6fd6)' : 'var(--green, #2e7d6f)');
 
   return (
     <div className="card">
