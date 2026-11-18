@@ -3,7 +3,7 @@
 // deverrouillerMois, resetCP, renderIndemnites, renderHSImproductif.
 import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
-  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine
+  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois
 } from './calculations.js';
 import { repartirCPAuto } from './repartitionCP.js';
 
@@ -20,8 +20,9 @@ export function progressionMois(a) {
 export function etatMois(a, m, rows = hsRows(a)) {
   const sem = semainesDe(a, rows, m);
   const jours = a.cal.filter((d) => d.month === m);
-  const hsM = sem.reduce((s, r) => s + (r.hs || 0), 0);
-  const baseM = sem.reduce((s, r) => s + pres(a, r.week).base, 0);
+  // Semaine à cheval sur deux mois : HS et capacité comptées au prorata des jours du mois (pas en double)
+  const hsM = sem.reduce((s, r) => s + (r.hs || 0) * partSemaineMois(a, r.week, m), 0);
+  const baseM = sem.reduce((s, r) => s + pres(a, r.week).base * partSemaineMois(a, r.week, m), 0);
   const txHsM = baseM > 0 ? hsM / baseM : 0;
   const tensions = sem.filter((r) => r.t === 'critique').length;
   const warnings = sem.filter((r) => r.t === 'warning').length;
@@ -67,7 +68,7 @@ export function semainesMois(a, m, rows = hsRows(a)) {
 // Bandeau « Impact de ce mois »
 export function impactMois(a, m, rows = hsRows(a)) {
   const sem = semainesDe(a, rows, m);
-  const hsM = sem.reduce((s, r) => s + (r.hs || 0), 0);
+  const hsM = sem.reduce((s, r) => s + (r.hs || 0) * partSemaineMois(a, r.week, m), 0);
   const caMois = monthCA(a, m);
   const msMois = payrollMonth(a, m);
   return {

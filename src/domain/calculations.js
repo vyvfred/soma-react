@@ -57,12 +57,18 @@ function baseH(a){
 }
 
 function baseHWeek(a, week){
-  let dateRef = week!==undefined ? weekRefDate(a, week) : null;
+  // Heures contractuelles de la semaine, au prorata des jours de présence de chaque salarié (calendrier, nov. 2026) :
+  // une entrée ou une sortie en milieu de semaine compte pour les seuls jours où le salarié est là.
+  let jours = week!==undefined ? joursSemaine(a, week) : [];
   return a.employees.filter(estRoulantPart).reduce((s,e)=>{
-    if(dateRef && !empPresent(e, dateRef)) return s;
-    return s+(+e.hours||0)*partRoulant(e);
+    let h=(+e.hours||0)*partRoulant(e);
+    if(!jours.length || (!e.dateEntree && !e.dateSortie)) return s+h;
+    let presents=jours.filter(function(d){ return empPresent(e, cleJour(d.month, d.day)); }).length;
+    return s+h*presents/jours.length;
   },0);
 }
+// Part d'une semaine qui tombe dans le mois m (jours du calendrier) : 1 pour une semaine entière du mois, 4/7 et 3/7 pour une semaine à cheval
+function partSemaineMois(a,w,m){let j=joursSemaine(a,w);if(!j.length)return 0;return j.filter(function(d){return d.month===m;}).length/j.length;}
 
 function between(d,s,e){return d>=s&&d<=e}
 
@@ -96,7 +102,7 @@ function coefHSMoyen(a){
   let totHS = 0, totCoef = 0;
   let hsR = hsRows(a);
   for(let m=0;m<12;m++){
-    let hsM = hsR.filter(function(r){return mainMonth(a,r.week)===m;}).reduce(function(s,r){return s+(r.hs||0);},0);
+    let hsM = hsR.reduce(function(s,r){return s+(r.hs||0)*partSemaineMois(a,r.week,m);},0); // semaine à cheval : HS réparties au prorata des jours
     if(hsM>0){ totHS += hsM; totCoef += hsM * coefHSMois(a, m); }
   }
   if(totHS>0) return totCoef/totHS;
@@ -110,7 +116,7 @@ function coutHSTotal(a){
   let ch = (+a.costHour||0);
   let total = 0;
   for(let m=0;m<12;m++){
-    let hsM = hsR.filter(function(r){return mainMonth(a,r.week)===m;}).reduce(function(s,r){return s+(r.hs||0);},0);
+    let hsM = hsR.reduce(function(s,r){return s+(r.hs||0)*partSemaineMois(a,r.week,m);},0); // semaine à cheval : HS réparties au prorata des jours
     total += hsM * chMois(a, m) * coefHSMois(a, m);
   }
   return total;
@@ -513,7 +519,9 @@ function pres(a,w){
   let nbj=joursSemaine(a,w).length; if(nbj && nbj<7) base=base*nbj/7;
   let p=a.presence[w]||{cp:0,other:0};
   let m=mainMonth(a,w);
-  let rate=a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
+  // Maladie : taux de chaque jour selon son mois (semaine à cheval = moyenne des deux mois pondérée par les jours)
+  let jrs=joursSemaine(a,w),tx=function(mm){return a.sick[mm]!==null&&a.sick[mm]!==undefined?+a.sick[mm]:0;};
+  let rate=jrs.length?jrs.reduce(function(s,d){return s+tx(d.month);},0)/jrs.length:tx(m);
   // CP en jours ouvrables (6 par semaine, 1 J = 35/6 h) ; autres absences en jours de 7 h.
   // Autres absences (décision nov. 2026) : « payées » (formation, événements familiaux,
   // récupération…) coûtées au taux horaire comme les congés ; « non payées » (sans solde) non coûtées.
@@ -778,7 +786,7 @@ function coutRoulantSemaine(a, r, mTaux){
   let ch = chMois(a, mTaux===undefined ? m : mTaux);
   // Heures travaillées + heures supplémentaires + maintien sur arrêts + indemnité de congés payés (salaire maintenu)
   // + absences payées (formation, événements familiaux, récupération…) au taux horaire comme les congés
-  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a,m)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch);
+  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a, mTaux===undefined ? m : mTaux)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch);
   return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
 }
 
@@ -860,6 +868,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
