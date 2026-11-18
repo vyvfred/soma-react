@@ -23,3 +23,27 @@ describe('visite guidée REX', () => {
     expect(positionBulle({ left: 1150, top: 10, width: 40, height: 20, bottom: 30 }, 1200, 800, 380, 180).left).toBe(808);
   });
 });
+
+import { ETAPES_VISITE_DR, ETAPES_VISITE_DIRECTION, etapesVisitePour, cleVisite } from './visiteGuidee.js';
+import { PANELS_DR, PANELS_DG, PANELS_DF } from '../config/panels.js';
+
+describe('visites DR et Directions', () => {
+  it('chaque étape ouvre un écran du profil et reste courte', () => {
+    const verif = (etapes, panels) => etapes.forEach((e) => {
+      expect(panels.map((p) => p[0])).toContain(e.ecran);
+      expect(e.texte.split(/\s+/).length).toBeLessThanOrEqual(45);
+    });
+    verif(ETAPES_VISITE_DR, PANELS_DR);
+    verif(ETAPES_VISITE_DIRECTION, PANELS_DG);
+    verif(ETAPES_VISITE_DIRECTION, PANELS_DF);
+  });
+  it('choisit la visite selon le profil et garde une clé par profil', () => {
+    expect(etapesVisitePour('rex')).toBe(ETAPES_VISITE_REX);
+    expect(etapesVisitePour('dr')).toBe(ETAPES_VISITE_DR);
+    ['df', 'dg', 'pdg'].forEach((r) => expect(etapesVisitePour(r)).toBe(ETAPES_VISITE_DIRECTION));
+    expect(etapesVisitePour('cg')).toBe(null);
+    expect(cleVisite('u1', 'rex')).toBe('soma.visiteREX.vue.u1');
+    expect(cleVisite('u1')).toBe('soma.visiteREX.vue.u1');
+    expect(cleVisite('u1', 'dr')).toBe('soma.visite.dr.vue.u1');
+  });
+});

@@ -32,7 +32,7 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter }) {
   }
 
   return (
-    <div className="valCard" data-testid={'val-card-' + agence}>
+    <div className="valCard" data-testid={'val-card-' + agence} data-visite="val-fiche">
       <div className="valCardHead">
         <div className="valCardTitle">{agence} 2027</div>
         <button className="valCardDetail" data-testid="voir-ecrans" onClick={() => onConsulter(agence)}>▸ Voir tous les écrans</button>
@@ -62,7 +62,7 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter }) {
       <label className="valCardCommentLabel">Commentaire (obligatoire)</label>
       <textarea className="valCardComment" rows={2} placeholder="Justifiez votre décision…" value={comment} disabled={busy} onChange={(e) => setComment(e.target.value)} />
       {msg ? <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', margin: '6px 0' }}>{msg}</div> : null}
-      <div className="valCardActions">
+      <div className="valCardActions" data-visite="val-decision">
         <button className="valBtnValider" data-testid="val-ok" disabled={busy || !comment.trim()} onClick={() => decide('valide')}>✓ Valider</button>
         <button className="valBtnRefuser" data-testid="val-no" disabled={busy || !comment.trim()} onClick={() => decide('refuse')}>✗ Refuser</button>
       </div>
@@ -120,7 +120,7 @@ export default function ValidationScreen() {
       <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--ink65)' }}>
         Vous validez à l'étape : {monEtage ? monEtage.label : '—'}{VALIDATOR_LABELS[profile.role] && (!monEtage || VALIDATOR_LABELS[profile.role] !== monEtage.label) ? ' (' + VALIDATOR_LABELS[profile.role] + ')' : ''}
       </p>
-      <div className="kpis" style={{ marginBottom: 16 }} data-testid="val-kpis">
+      <div className="kpis" style={{ marginBottom: 16 }} data-testid="val-kpis" data-visite="val-kpis">
         {[['À valider', state.aValider.length, state.aValider.length ? 'en attente de vous' : '✓ rien'], ['Validés par vous', nbValides, ''], ['Refusés par vous', nbRefuses, '']].map(([l, v, n]) => (
           <div className="kpi" key={l}><div className="label">{l}</div><div className="value">{v}</div><div className="note">{n}</div></div>
         ))}

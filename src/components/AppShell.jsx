@@ -13,7 +13,7 @@ import CgGuide from './CgGuide.jsx';
 import StepNav from './StepNav.jsx';
 import ChangePasswordModal from './ChangePasswordModal.jsx';
 import { VisionOverlay, visionDejaVue } from './Vision.jsx';
-import { ETAPES_VISITE_REX, visiteDejaVue, marquerVisiteVue, lancerVisite } from '../domain/visiteGuidee.js';
+import { ETAPES_VISITE_REX, etapesVisitePour, visiteDejaVue, marquerVisiteVue, lancerVisite } from '../domain/visiteGuidee.js';
 import AideOnglet from './AideOnglet.jsx';
 import CgAlertes from './CgAlertes.jsx';
 import ToastHost from './Toast.jsx';
@@ -124,19 +124,26 @@ function VersionBorder({ children }) {
 // Panneaux qui portent sur UNE agence (donc concernés par la sélection d'agence CG).
 const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'charges', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
 
-// Visite guidée du REX : à la première connexion (après la page « vision »), relançable depuis l'écran Aide.
-// Rendu à l'intérieur du BudgetProvider pour attendre que le budget soit chargé.
-function VisiteREX({ role, userId, vision, aller }) {
+// Visites guidées : à la première connexion (après la page « vision ») selon le profil — REX, DR, Directions —,
+// relançables depuis l'écran Aide. La visite des écrans REX est aussi offerte au DR quand il saisit pour un REX.
+// Rendu à l'intérieur du BudgetProvider pour attendre, côté REX, que le budget soit chargé.
+function VisiteGuidee({ role, userId, vision, aller, ecransREX }) {
   const { agency } = useBudget();
-  const pret = !!agency;
+  const pret = role === 'rex' ? !!agency : true;
   useEffect(() => {
-    if (role !== 'rex') return undefined;
-    const lancer = () => lancerVisite(ETAPES_VISITE_REX, aller, () => marquerVisiteVue(userId));
+    const etapes = etapesVisitePour(role);
+    const lancer = (ev) => {
+      if (ev && ev.detail === 'rex') {
+        if (role === 'rex' || ecransREX) lancerVisite(ETAPES_VISITE_REX, aller, role === 'rex' ? () => marquerVisiteVue(userId, 'rex') : null);
+        return;
+      }
+      if (etapes) lancerVisite(etapes, aller, () => marquerVisiteVue(userId, role));
+    };
     window.addEventListener('soma:visite', lancer);
     let t = null;
-    if (!vision && pret && !visiteDejaVue(userId)) t = setTimeout(lancer, 700);
+    if (etapes && !vision && pret && !ecransREX && !visiteDejaVue(userId, role)) t = setTimeout(() => lancer(), 700);
     return () => { window.removeEventListener('soma:visite', lancer); if (t) clearTimeout(t); };
-  }, [role, userId, vision, pret, aller]);
+  }, [role, userId, vision, pret, aller, ecransREX]);
   return null;
 }
 
@@ -198,7 +205,7 @@ export default function AppShell() {
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
     <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult} saisieDR={!!saisiePour}>
-      <VisiteREX role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} />
+      <VisiteGuidee role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} ecransREX={!!saisiePour} />
     <div className="soma-shell">
       {consult ? (
         <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>

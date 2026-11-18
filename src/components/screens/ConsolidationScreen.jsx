@@ -107,7 +107,7 @@ export default function ConsolidationScreen() {
         </button></div>
       </div>
 
-      <div className="kpis" style={{ marginBottom: 16 }}>
+      <div className="kpis" data-visite="conso-kpis" style={{ marginBottom: 16 }}>
         <Kpi label={region ? 'Agences de la région' : 'Agences réseau'} value={c.total} />
         <Kpi label="Budgets déposés" value={c.deposes} note={Math.round((c.deposes / c.total) * 100) + '%'} />
         <Kpi label="En brouillon" value={c.brouillons} />
@@ -119,7 +119,7 @@ export default function ConsolidationScreen() {
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}
         dangerouslySetInnerHTML={{ __html: insight }} />
 
-      <div style={{ overflowX: 'auto' }}>
+      <div data-visite="conso-table" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>

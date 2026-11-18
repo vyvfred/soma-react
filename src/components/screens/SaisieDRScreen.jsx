@@ -32,7 +32,7 @@ export default function SaisieDRScreen() {
       {!etat.loading && !etat.error && !etat.agences.length ? <p className="hint">Aucune agence n'est rattachée à votre région. Le contrôleur de gestion fait l'affectation.</p> : null}
       {etat.agences.length ? (
         <div style={{ overflowX: 'auto' }}>
-          <table data-testid="saisie-dr-agences" style={{ borderCollapse: 'collapse', minWidth: 460 }}>
+          <table data-testid="saisie-dr-agences" data-visite="saisie-agences" style={{ borderCollapse: 'collapse', minWidth: 460 }}>
             <thead><tr>{['Agence', 'Statut', ''].map((h) => <th key={h} style={{ textAlign: 'left', padding: '6px 10px' }}>{h}</th>)}</tr></thead>
             <tbody>
               {etat.agences.map((nom) => {

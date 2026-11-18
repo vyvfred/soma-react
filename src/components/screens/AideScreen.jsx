@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { SUPPORTS_FORMATION } from '../../domain/visiteGuidee.js';
+import { useBudget } from '../../context/BudgetContext.jsx';
 import { FAQ, FAQ_CG_SECTIONS, faqKeyForRole, FAQ_ROLE_LABEL, prendreAideCible } from '../../domain/faq.js';
 
 // Écran Aide — FAQ adaptée au profil connecté. Pour le CG, les questions sont
@@ -7,6 +9,7 @@ import { FAQ, FAQ_CG_SECTIONS, faqKeyForRole, FAQ_ROLE_LABEL, prendreAideCible }
 // visée est dépliée et amenée à l'écran.
 export default function AideScreen() {
   const { profile } = useAuth();
+  const { saisieDR } = useBudget();
   const key = faqKeyForRole(profile.role);
   const sections = (key === 'cg'
     ? FAQ_CG_SECTIONS.map((s) => ({ titre: s.t, items: s.items }))
@@ -54,10 +57,23 @@ export default function AideScreen() {
         Aide pour votre profil : <b>{FAQ_ROLE_LABEL[key]}</b>
       </div>
 
-      {profile.role === 'rex' ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16, padding: '12px 14px', border: '1px solid var(--violet)' }}>
-          <span style={{ flex: 1, minWidth: 200, fontSize: 13 }}>🧭 <b>Visite guidée</b> : les 8 étapes du budget expliquées écran par écran, en 2 minutes.</span>
-          <button data-testid="relancer-visite" onClick={() => window.dispatchEvent(new CustomEvent('soma:visite'))} style={{ width: 'auto', margin: 0 }}>Revoir la visite guidée</button>
+      {['rex', 'dr', 'df', 'dg', 'pdg'].includes(profile.role) ? (
+        <div data-testid="supports-formation" style={{ marginBottom: 16, padding: '14px 16px', border: '1px solid var(--violet)' }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>🧭 Supports de formation</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+            <button data-testid="relancer-visite" onClick={() => window.dispatchEvent(new CustomEvent('soma:visite'))} style={{ width: 'auto', margin: 0 }}>
+              {profile.role === 'rex' ? 'Revoir la visite guidée' : 'Revoir la visite de vos écrans'}
+            </button>
+            {profile.role !== 'rex' && saisieDR ? (
+              <button data-testid="visite-ecrans-rex" onClick={() => window.dispatchEvent(new CustomEvent('soma:visite', { detail: 'rex' }))} style={{ width: 'auto', margin: 0 }}>Visite des écrans REX</button>
+            ) : null}
+            <a data-testid="support-pdf" href={SUPPORTS_FORMATION.pdf} target="_blank" rel="noreferrer" style={{ alignSelf: 'center', fontSize: 13 }}>📄 Présentation de formation REX (PDF)</a>
+          </div>
+          {profile.role === 'dr' && !saisieDR ? <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>La visite des écrans REX est proposée ici quand vous ouvrez une agence avec « Saisir pour un REX ».</p> : null}
+          <details data-testid="support-video">
+            <summary style={{ cursor: 'pointer', fontSize: 13 }}>▶ Vidéo : le parcours du REX en 8 étapes (2 min 35)</summary>
+            <video controls preload="none" src={SUPPORTS_FORMATION.video} style={{ width: '100%', maxWidth: 760, marginTop: 10, background: '#000' }} />
+          </details>
         </div>
       ) : null}
 

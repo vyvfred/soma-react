@@ -21,8 +21,35 @@ const ETAPES_VISITE_REX=[
   {ecran:'objectif',cible:'soumettre',titre:'Soumettre au DR',texte:'Quand tout est prêt, « Soumettre au DR ». Votre budget passe en lecture seule ; s\'il vous est renvoyé, le motif s\'affiche ici. Date limite : 27 novembre.'},
   {ecran:'objectif',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient la FAQ du REX et le bouton pour revoir cette visite. Bonne construction !'}
 ];
-function visiteDejaVue(uid){try{return localStorage.getItem(CLE_VISITE_REX+'.'+uid)==='1';}catch(e){return true;}}
-function marquerVisiteVue(uid){try{localStorage.setItem(CLE_VISITE_REX+'.'+uid,'1');}catch(e){}}
+// Visite du DR : ses trois écrans (validation, saisie pour un REX, consolidation de la région)
+const ETAPES_VISITE_DR=[
+  {ecran:'validation',cible:null,titre:'Bienvenue dans SOMA',texte:'Vous validez en premier les budgets des agences de votre région. Voici vos écrans en une minute. Vous pourrez revoir cette visite depuis l\'écran Aide.'},
+  {ecran:'validation',cible:'menu',titre:'Vos écrans',texte:'Budgets à valider, Saisir pour un REX, Consolidation région. L\'écran Aide contient votre FAQ et les supports de formation des REX.'},
+  {ecran:'validation',cible:'val-kpis',titre:'Budgets à valider',texte:'Les compteurs donnent les budgets qui attendent votre décision, ceux que vous avez validés et ceux que vous avez refusés.'},
+  {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'Pour chaque budget soumis : CA, masse salariale / CA, résultat et choix de congés, avec un verdict. « Voir tous les écrans » ouvre le budget en lecture.'},
+  {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Validé, le budget passe au contrôle de gestion et au DF ; refusé, il revient au REX avec votre motif.'},
+  {ecran:'saisie',cible:'saisie-agences',titre:'Saisir pour un REX',texte:'Ouvrez le budget d\'une agence pour le saisir à la place du REX, pendant un accompagnement. Vos saisies s\'affichent en orange pour lui.'},
+  {ecran:'consolidation',cible:'conso-kpis',titre:'Consolidation région',texte:'L\'état de chaque agence de votre région : non commencé, brouillon, soumis, validé, et le CA consolidé.'},
+  {ecran:'consolidation',cible:'conso-table',titre:'Suivre et relancer',texte:'Le tableau donne l\'avancement de chaque budget. Relancez les agences qui n\'avancent plus : les REX doivent soumettre avant le 27 novembre.'},
+  {ecran:'consolidation',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient votre FAQ, la vidéo et la présentation de formation des REX, et le bouton pour revoir cette visite. Bonne validation !'}
+];
+// Visite des Directions (DF, DG, PDG) : validation après le DR et suivi du réseau
+const ETAPES_VISITE_DIRECTION=[
+  {ecran:'validation',cible:null,titre:'Bienvenue dans SOMA',texte:'Vous validez les budgets après le DR : le DF avec le contrôle de gestion, puis le DG et le PDG. Voici vos écrans en une minute.'},
+  {ecran:'validation',cible:'menu',titre:'Vos écrans',texte:'Budgets à valider et Consolidation réseau. L\'écran Aide contient votre FAQ et les supports de formation des REX.'},
+  {ecran:'validation',cible:'val-kpis',titre:'Budgets à valider',texte:'N\'apparaissent ici que les budgets validés par l\'étage précédent. Les compteurs donnent ceux qui attendent votre décision.'},
+  {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'CA, masse salariale / CA, résultat et choix de congés de l\'agence, avec un verdict. « Voir tous les écrans » ouvre le budget en lecture.'},
+  {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Un refus renvoie le budget au REX et le circuit repart du DR. La validation du dernier étage rend le budget définitif.'},
+  {ecran:'consolidation',cible:'conso-kpis',titre:'Consolidation réseau',texte:'L\'état de chaque agence du réseau, le CA consolidé et l\'avancement des budgets. Date limite de soumission des REX : 27 novembre.'},
+  {ecran:'consolidation',cible:'conso-table',titre:'Suivre l\'avancement',texte:'Le tableau détaille chaque agence. Le seuil de masse salariale est de 62 % du CA sur l\'année.'},
+  {ecran:'consolidation',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient votre FAQ, la vidéo et la présentation de formation des REX, et le bouton pour revoir cette visite.'}
+];
+function etapesVisitePour(role){return role==='rex'?ETAPES_VISITE_REX:role==='dr'?ETAPES_VISITE_DR:(role==='df'||role==='dg'||role==='pdg')?ETAPES_VISITE_DIRECTION:null;}
+function cleVisite(uid,role){return (!role||role==='rex')?CLE_VISITE_REX+'.'+uid:'soma.visite.'+role+'.vue.'+uid;}
+function visiteDejaVue(uid,role){try{return localStorage.getItem(cleVisite(uid,role))==='1';}catch(e){return true;}}
+function marquerVisiteVue(uid,role){try{localStorage.setItem(cleVisite(uid,role),'1');}catch(e){}}
+// Supports de formation des REX, servis par l'application React (adresse absolue : le mono-fichier s'en sert aussi)
+const SUPPORTS_FORMATION={video:'https://vyv2027-react.netlify.app/formation/soma-formation-rex.mp4',pdf:'https://vyv2027-react.netlify.app/formation/soma-formation-rex.pdf'};
 // Position de la bulle : sous la cible si la place le permet, sinon au-dessus, sinon centrée.
 function positionBulle(r,vw,vh,bw,bh){
   let m=12;
@@ -65,7 +92,7 @@ function lancerVisite(etapes,aller,surFin){
     if(t!==jeton)return;
     let el=nom?document.querySelector('[data-visite="'+nom+'"]'):null;
     let visible=el&&el.getBoundingClientRect().width>0;
-    if(nom&&!visible&&essais>0){setTimeout(function(){trouver(nom,t,essais-1);},100);return;}
+    if(nom&&!visible&&essais>0){if(essais===30){cible=null;afficher();}setTimeout(function(){trouver(nom,t,essais-1);},100);return;}
     cible=visible?el:null;
     if(cible)cible.scrollIntoView({block:'center',behavior:'auto'});
     setTimeout(function(){if(t===jeton)afficher();},60);
@@ -98,4 +125,4 @@ function lancerVisite(etapes,aller,surFin){
   return VISITE_EN_COURS;
 }
 
-export { CLE_VISITE_REX, ETAPES_VISITE_REX, visiteDejaVue, marquerVisiteVue, positionBulle, lancerVisite };
+export { CLE_VISITE_REX, ETAPES_VISITE_REX, ETAPES_VISITE_DR, ETAPES_VISITE_DIRECTION, etapesVisitePour, cleVisite, visiteDejaVue, marquerVisiteVue, SUPPORTS_FORMATION, positionBulle, lancerVisite };
