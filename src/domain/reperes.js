@@ -36,9 +36,11 @@ function lireTableauDeBord(feuilles,agences){
     if(cols.filter(function(x){return x!==undefined;}).length<12)return;
     let ag=agenceDuTDB(tete[0],agences);
     if(!ag){let n=normRep(tete[0]);if(n&&!/VYV/.test(n))inconnues.push(String(tete[0]).trim());return;}
+    // Réalisé du mois : colonne juste avant le budget, ou deux avant quand une colonne « % CA » les sépare (Siège, Exceptionnel : sans % CA)
+    let rc=cols.map(function(j){return /%/.test(String(tete[j-1]||''))?j-2:j-1;});
     let reel={},budget={};
     rows.slice(1).forEach(function(r){let lab=String(r[0]||'').trim();if(!lab)return;
-      reel[lab]=cols.map(function(j){return valRep(r[j-2]);});budget[lab]=cols.map(function(j){return valRep(r[j]);});});
+      reel[lab]=rc.map(function(j){return valRep(r[j]);});budget[lab]=cols.map(function(j){return valRep(r[j]);});});
     // Mois clos : dernier mois avec un réalisé (CA, charges de personnel ou REX ; le Siège n'a pas de CA)
     let mc=0;["Chiffre d'affaires",'Charges de personnel',"RESULTAT D'EXPLOITATION"].forEach(function(l){let s=reel[l]||[];for(let m=0;m<12;m++)if(s[m]!==null&&s[m]!==undefined&&s[m]!==0&&m+1>mc)mc=m+1;});
     parAgence[ag]={nomTDB:String(tete[0]).trim(),moisClos:mc,reel:reel,budget:budget};

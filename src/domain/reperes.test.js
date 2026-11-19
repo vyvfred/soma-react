@@ -70,4 +70,12 @@ describe('Exercice 2025, moyenne du réseau et comparaisons (nov. 2026)', () => 
     expect(l.r2026).toBeCloseTo(5, 6);
     expect(l.res2026).toBe(null);
   });
+  it('onglet sans colonnes « % CA » (Siège, Exceptionnel) : réalisé juste avant le budget', () => {
+    const tete = ['EXCEPTIONNEL'], l = ["Chiffre d'affaires"];
+    for (let m = 0; m < 12; m++) { tete.push('date', 'B ' + String(m + 1).padStart(2, '0') + '-26'); l.push(m < 10 ? 1000 + m : '', 900); }
+    const p = lireTableauDeBord({ Except: [tete, l] }, ['EXCEPTIONNEL']).parAgence.EXCEPTIONNEL;
+    expect(p.moisClos).toBe(10);
+    expect(p.reel["Chiffre d'affaires"].slice(0, 2)).toEqual([1000, 1001]);
+    expect(p.budget["Chiffre d'affaires"][0]).toBe(900);
+  });
 });
