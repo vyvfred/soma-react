@@ -178,7 +178,7 @@ export default function SyntheseScreen() {
                 {env.alertes.map((t) => <div key={t} style={{ fontSize: 12, color: 'var(--ink65)', marginTop: 8 }}>⚖ {t}</div>)}
                 {env.reliquat ? (
                   <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', marginTop: 8 }}>
-                    ⚠ <b>{env.reliquat} jours de CP</b> n'ont pas pu être répartis automatiquement (les semaines disponibles ont atteint leur niveau d'équilibre). Déverrouillez un mois ou placez-les manuellement.
+                    ⚠ <b>{env.reliquat} jours de CP</b> n'ont pas pu être répartis automatiquement (plus de semaine libre avec assez de salariés présents). Déverrouillez un mois ou placez-les manuellement.
                   </div>
                 ) : null}
               </div>

@@ -70,6 +70,7 @@ export function bilanEnveloppesCP(a) {
     const ecart = Math.round((poses - cible) * 10) / 10;
     const conforme = Math.abs(ecart) < 1;
     if (!conforme && env.verrouille > 0) alertes.push(def.nom + ' : les mois verrouillés portent ' + env.verrouille + ' j — la répartition automatique a compensé sur les autres périodes.');
+    if (env.reporte > 0.05) alertes.push(def.nom + ' : tous les mois sont validés, les ' + env.reporte + ' j qui restaient à y poser ont été placés sur les autres périodes.');
     return { nom: def.nom, cible, poses, ecart, conforme, ecartTxt: conforme ? 'conforme' : (ecart > 0 ? '+' + ecart + ' j' : ecart + ' j') };
   });
   return { lignes, alertes, reliquat: a.cpReliquat > 0 ? a.cpReliquat : 0 };
