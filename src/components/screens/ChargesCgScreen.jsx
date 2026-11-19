@@ -10,8 +10,9 @@ import ClasseurChargesCard from '../ClasseurChargesCard.jsx';
 // Lignes de charges éditables (on exclut CA, charges de personnel et les sous-totaux).
 // Lignes saisissables : les structures saisissent aussi leur CA et leurs charges de personnel ;
 // l'IS et la participation n'existent que pour le Siège.
+// Nov. 2026 : le CA et la masse salariale des structures se saisissent en lignes nommées (écran « Ouvrir une agence »).
 const lignesSaisie = (a) => T.filter((r) => r.type !== 'subtotal'
-  && (estStructure(a) || (r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel'))
+  && (r.label !== "Chiffre d'affaires" && r.label !== 'Charges de personnel')
   && (estSiege(a) || LIGNES_SIEGE.indexOf(r.label) < 0)
   && (!estStructure(a) || LIGNES_QUOTE_PART.indexOf(r.label) < 0));
 
@@ -119,7 +120,7 @@ function ChargesAgence() {
 
       {estStructure(a) ? (
         <div data-testid="structure-note" style={{ marginBottom: 14, padding: '10px 14px', background: 'rgba(74,158,255,.08)', border: '1px solid var(--blue2)', fontSize: 13, color: 'var(--blue2)' }}>
-          ℹ <b>{a.name}</b> est une structure hors agence : vous saisissez tout son compte de résultat ligne par ligne, <b>chiffre d'affaires et charges de personnel compris</b> (pas de calendrier ni d'équipe).
+          ℹ <b>{a.name}</b> est une structure hors agence : vous saisissez ici ses charges poste par poste. Son <b>chiffre d'affaires</b> et sa <b>masse salariale</b> se saisissent en lignes nommées, mois par mois, dans « Ouvrir une agence » (pas de calendrier ni d'équipe).
           {estSiege(a) ? <> Le Siège porte aussi l'<b>impôt sur les sociétés</b> et la <b>participation aux bénéfices</b> : résultat net = résultat courant avant impôt + résultat exceptionnel − IS − participation.</> : null}
         </div>
       ) : null}

@@ -7,6 +7,8 @@ import { objectifInsight, coherenceCapacite } from '../../domain/objectifInsight
 import { annualCA, hsTot, genCal, caFunAnnuel } from '../../domain/calculations.js';
 import { euro } from '../../domain/format.js';
 import BudgetBar from '../BudgetBar.jsx';
+import StructureScreen from './StructureScreen.jsx';
+import { estStructure } from '../../domain/calculations.js';
 
 // Écran Objectif — port de la section « objectif » de la version mono-fichier :
 // objectif CA et TXR, interprétation et bandeau de cohérence, activités de l'agence,
@@ -37,6 +39,8 @@ export default function ObjectifScreen() {
   if (loading) return <div className="card"><h2>Objectif</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Objectif</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
   if (!a) return <div className="card"><h2>Objectif — {agenceNom}</h2><p className="hint">Budget indisponible.</p></div>;
+  // Structures (Siège, formation, réseau, exceptionnel) : lignes de CA et de masse salariale saisies par le CG
+  if (estStructure(a)) return <StructureScreen />;
 
   const insight = objectifInsight(a);
   const coh = coherenceCapacite(a);

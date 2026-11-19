@@ -295,7 +295,7 @@ export default function AppShell() {
               <select value={activeAgence || ''} onChange={(e) => setCgAgence(e.target.value || null)} style={{ minWidth: 200 }}>
                 <option value="">— Choisir une agence —</option>
                 {agencesOps().map((ag) => <option key={ag.nom} value={ag.nom}>{ag.nom}</option>)}
-                {['cg', 'admin'].includes(profile.role) ? (
+                {['cg', 'admin', 'df'].includes(profile.role) ? (
                   <optgroup label="Structures">
                     {STRUCTURES.map((n) => <option key={n} value={n}>{LIB_STRUCTURES[n]} ({n})</option>)}
                   </optgroup>

@@ -127,7 +127,7 @@ export const FAQ_CG_SECTIONS = [
       ],
       [
         "Comment saisir Formation, Exceptionnel, Réseau adhérent et Siège ?",
-        "Ces quatre structures se gèrent comme une agence que vous complétez entièrement : ouvrez-la avec « Ouvrir une agence » (elles sont en fin de liste), puis saisissez dans « Charges CG » tout son compte de résultat, chiffre d'affaires et charges de personnel compris, mois par mois ou en montant annuel. Elles n'ont ni équipe, ni calendrier, ni REX. Elles entrent dans le compte de résultat consolidé du réseau (écran Consolidation)."
+        "Ces quatre structures se gèrent comme une agence que vous complétez entièrement : ouvrez-la avec « Ouvrir une agence » (elles sont en fin de liste), l'écran affiche alors le <b>Budget 2027</b> de la structure : créez une ou plusieurs lignes de <b>chiffre d'affaires</b> (une par source, nom libre) et une ou plusieurs lignes de <b>masse salariale</b> (nom libre), et saisissez chaque montant mois par mois (bouton « ÷12 » pour répartir un montant annuel). Les autres charges se saisissent dans « Charges CG ». Elles n'ont ni activités (sanitaire, assis, saisonnier, funéraire), ni équipe, ni calendrier, ni REX : c'est vous qui préparez leur budget. Le directeur financier les consulte en lecture seule. Elles entrent dans le compte de résultat consolidé du réseau (écran Consolidation)."
       ],
       [
         "Où saisir l'impôt sur les sociétés et la participation ?",

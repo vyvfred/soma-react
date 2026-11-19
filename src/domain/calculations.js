@@ -26,7 +26,13 @@ function vueExploitation(a,role){return role==='rex'&&!estStructure(a)}
 function resultatAffiche(a,role){return vueExploitation(a,role)?{lib:"Résultat d'exploitation",libMin:"résultat d'exploitation",val:ann(a,"RESULTAT D'EXPLOITATION")}:{lib:'Résultat net',libMin:'résultat',val:ann(a,"RESULTAT NET")}}
 function lignesSIG(a,role,consolide){let l=T.filter(function(r){return (consolide||estSiege(a)||LIGNES_SIEGE.indexOf(r.label)<0)&&(consolide||!estStructure(a)||LIGNES_QUOTE_PART.indexOf(r.label)<0);});if(!consolide&&vueExploitation(a,role)){let i=l.findIndex(function(r){return r.label==="RESULTAT D'EXPLOITATION";});l=l.slice(0,i+1);}return l}
 // CA d'une structure : saisi (mensuel ou annuel). Le mode « % du CA » n'a pas de sens pour le CA lui-même.
-function caStructure(a,m){let x=a.rex&&a.rex["Chiffre d'affaires"];if(!x)return 0;if(x.mode==='annual')return (+x.annual||0)/12;if(x.mode==='month')return x.values&&x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0;return 0}
+// Structures (Siège, centre de formation, réseau adhérent, exceptionnel ; nov. 2026) : le CG saisit le CA et la masse
+// salariale en une ou plusieurs lignes nommées, valeur mois par mois (a.lignesCA, a.lignesMS). Sans ligne : ancienne saisie par poste.
+function lignesStructure(a,cle){return a&&Array.isArray(a[cle])?a[cle]:[];}
+function totalLignesMois(a,cle,m){return lignesStructure(a,cle).reduce(function(s,l){let v=l&&l.valeurs?l.valeurs[m]:null;return s+(v===null||v===undefined||v===''?0:(+v||0));},0);}
+function totalLigneAn(l){return (l&&l.valeurs?l.valeurs:[]).reduce(function(s,v){return s+(v===null||v===undefined||v===''?0:(+v||0));},0);}
+function ligneStructureVide(nom){return {id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),nom:nom||'',valeurs:Array(12).fill(null)};}
+function caStructure(a,m){if(lignesStructure(a,'lignesCA').length)return totalLignesMois(a,'lignesCA',m);let x=a.rex&&a.rex["Chiffre d'affaires"];if(!x)return 0;if(x.mode==='annual')return (+x.annual||0)/12;if(x.mode==='month')return x.values&&x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0;return 0}
 const feries=['2027-01-01','2027-03-29','2027-05-01','2027-05-06','2027-05-08','2027-05-17','2027-07-14','2027-08-15','2027-11-01','2027-11-11','2027-12-25'];
 const vac={
   A:[['2027-01-01','2027-01-03'],['2027-02-13','2027-02-28'],['2027-04-10','2027-04-25'],['2027-07-03','2027-09-01'],['2027-10-23','2027-11-07'],['2027-12-18','2027-12-31']],
@@ -323,7 +329,7 @@ function cpPrisMois(a,m){
 function variationStockCPMois(a,m){if(!a||estStructure(a)||!a.employees||!a.employees.length)return 0;return (cpAcquisMois(a,m)-cpPrisMois(a,m))*CP_HEURES_JOUR*chMois(a,m);}
 function payrollMonth(a,m){
   // Structure : charges de personnel saisies par le CG
-  if(estStructure(a)) return manual(a,'Charges de personnel',m);
+  if(estStructure(a)) return lignesStructure(a,'lignesMS').length ? totalLignesMois(a,'lignesMS',m) : manual(a,'Charges de personnel',m);
   // Si les périodes de paie sont configurées, utiliser le calcul comptable
   if(a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length){
     return payrollPayMonth(a, m);
@@ -917,6 +923,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, couvertParLigneNR, etpNR, coutJourCPNR, cpNRPrisMois, variationStockCPNRMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, couvertParLigneNR, lignesStructure, totalLignesMois, totalLigneAn, ligneStructureVide, etpNR, coutJourCPNR, cpNRPrisMois, variationStockCPNRMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };
