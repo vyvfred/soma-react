@@ -5,7 +5,8 @@ import { euro, pct } from '../../domain/format.js';
 import { Pourquoi } from '../Vision.jsx';
 import { totauxCalendrier } from '../../domain/calTotaux.js';
 import { montant } from '../../domain/memoSIG.js';
-import { M, SEUIL_MS_CA, caFunMois } from '../../domain/calculations.js';
+import { M, caFunMois } from '../../domain/calculations.js';
+import Comparaisons, { useReperesAgence, LignesMSHistoriques } from '../Comparaisons.jsx';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -57,8 +58,8 @@ function CAMensuel({ a, caMensuel, max }) {
 }
 
 // Masse salariale / CA mois par mois (charges de personnel, quotes-parts comprises, comme l'indicateur annuel)
-const couleurMS = (t) => (t > SEUIL_MS_CA ? 'var(--orange, #c45300)' : 'var(--green, #2e7d6f)');
-function RatioMSMensuel({ a }) {
+// Sans seuil d'alerte (nov. 2026) : le ratio se lit face à 2026, 2025 et à la moyenne du réseau
+function RatioMSMensuel({ a, rep }) {
   const ca = M.map((_, m) => montant(a, "Chiffre d'affaires", m));
   const ms = M.map((_, m) => montant(a, 'Charges de personnel', m));
   const caAn = ca.reduce((x, y) => x + y, 0), msAn = ms.reduce((x, y) => x + y, 0);
@@ -78,13 +79,14 @@ function RatioMSMensuel({ a }) {
             <tr style={{ borderTop: '1px solid var(--border)' }}><td style={{ ...cel, textAlign: 'left' }}>Masse salariale</td>{ms.map((v, m) => <td key={m} className="num" style={cel}>{kEuro(v)}</td>)}<td className="num" style={{ ...cel, fontWeight: 700 }}>{kEuro(msAn)}</td></tr>
             <tr style={{ borderTop: '1px solid var(--border)', fontWeight: 700 }}>
               <td style={{ ...cel, textAlign: 'left' }}>MS / CA</td>
-              {M.map((_, m) => { const r = ratio(ca[m], ms[m]); return <td key={m} className="num" data-testid={'ratio-ms-' + m} style={{ ...cel, color: r === null ? undefined : couleurMS(r) }}>{fmtR(r)}</td>; })}
-              <td className="num" style={{ ...cel, color: ratio(caAn, msAn) === null ? undefined : couleurMS(ratio(caAn, msAn)) }}>{fmtR(ratio(caAn, msAn))}</td>
+              {M.map((_, m) => { const r = ratio(ca[m], ms[m]); return <td key={m} className="num" data-testid={'ratio-ms-' + m} style={cel}>{fmtR(r)}</td>; })}
+              <td className="num" style={cel}>{fmtR(ratio(caAn, msAn))}</td>
             </tr>
+            {rep ? <LignesMSHistoriques r={rep.r} reseau={rep.reseau} /> : null}
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Vert jusqu'au seuil de {SEUIL_MS_CA} %, orange au-delà. Masse salariale = charges de personnel du mois (quotes-parts comprises).</div>
+      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Masse salariale = charges de personnel du mois (quotes-parts comprises). Les lignes grisées situent le budget face au réalisé 2026 (estimation du contrôle de gestion pour les mois non clos), à 2025 et à la moyenne du réseau.</div>
     </div>
   );
 }
@@ -95,6 +97,7 @@ const sommaire = { cursor: 'pointer', padding: '10px 14px', fontWeight: 600, fon
 export default function SyntheseScreen() {
   const { agency: a, loading, error, agenceNom } = useBudget();
   const { profile } = useAuth();
+  const rep = useReperesAgence(agenceNom);
 
   if (!agenceNom) return <div className="card"><h2>Synthèse</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Synthèse</h2><p className="hint">Chargement du budget…</p></div>;
@@ -122,7 +125,9 @@ export default function SyntheseScreen() {
 
       <div className="kpis" style={{ marginBottom: 16 }}>{s.kpis.map((k) => <KpiCard key={k.label} {...k} />)}</div>
 
-      <RatioMSMensuel a={a} />
+      <RatioMSMensuel a={a} rep={rep} />
+
+      <Comparaisons a={a} r={rep.r} reseau={rep.reseau} />
 
       {s.lecture ? (
         <div data-testid="synthese-lecture" style={{ display: 'flex', gap: 10, padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}>

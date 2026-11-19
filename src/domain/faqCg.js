@@ -120,7 +120,7 @@ export const FAQ_CG_SECTIONS = [
       ],
       [
         "Que comprend exactement la masse salariale du prévisionnel ?",
-        "Pour les roulants : les heures travaillées au coût horaire chargé du mois (taux du 1er janvier, puis du 1er juin), les heures supplémentaires selon leur majoration réelle (25% ou 50%), la part de salaire maintenue pendant les arrêts maladie et AT, et la provision de 10% de prime de précarité sur les heures en CDD. Pour les non-roulants : la ligne globale mensuelle telle que saisie, plus la variation du stock de leurs congés si le nombre d\'ETP non roulants est saisi. S'y ajoutent les heures supplémentaires des improductifs, les indemnités et, sur la paie de janvier, les variables de décembre 2026. C'est le coût complet du personnel, charges patronales comprises. Le seuil de référence du ratio masse salariale / CA est de 62 % sur l'année."
+        "Pour les roulants : les heures travaillées au coût horaire chargé du mois (taux du 1er janvier, puis du 1er juin), les heures supplémentaires selon leur majoration réelle (25% ou 50%), la part de salaire maintenue pendant les arrêts maladie et AT, et la provision de 10% de prime de précarité sur les heures en CDD. Pour les non-roulants : la ligne globale mensuelle telle que saisie, plus la variation du stock de leurs congés si le nombre d\'ETP non roulants est saisi. S'y ajoutent les heures supplémentaires des improductifs, les indemnités et, sur la paie de janvier, les variables de décembre 2026. C'est le coût complet du personnel, charges patronales comprises."
       ],
       [
         "À quoi sert l'écran Contrôles ?",

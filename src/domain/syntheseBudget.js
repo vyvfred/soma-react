@@ -1,7 +1,7 @@
 import { annuel, montant, resultatMemo } from './memoSIG.js';
 // Synthèse du budget — fonctions PURES, port de renderSynthese, renderCoutChoix,
 // renderEnveloppesCP et renderDashboard (graphiques et ratios).
-import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, vueExploitation, SEUIL_MS_CA, caFunAnnuel } from './calculations.js';
+import { hsTot, hsRows, needWeeks, mainMonth, cpGeneres, monthCA, coefHSMoyen, coutDuChoixREX, M, vueExploitation, caFunAnnuel } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const VALIDEURS = ['dr', 'df', 'dg', 'pdg'];
@@ -19,14 +19,13 @@ export function syntheseBudget(a, role = 'rex') {
   const kpis = [
     { label: 'CA budgété', value: euro(ca), note: caFunAnnuel(a) ? 'dont funéraire ' + euro(caFunAnnuel(a)) : '' },
     { label: res.lib, value: euro(net), note: ca ? pct((net / ca) * 100) : '' },
-    { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : tauxMS > SEUIL_MS_CA ? '⚠ au-dessus du seuil de ' + SEUIL_MS_CA + ' %' : 'sous le seuil de ' + SEUIL_MS_CA + ' %' },
+    { label: 'Masse salariale / CA', value: ca ? pct(tauxMS) : '—', note: !ca ? 'CA non calculé' : 'charges de personnel / CA' },
     { label: 'Écart à l\'objectif', value: (ecart >= 0 ? '+' : '') + euro(ecart), note: caObj ? (ecart >= 0 ? 'objectif atteint' : 'sous l\'objectif') : '' }
   ];
 
   const estValideur = VALIDEURS.includes(role);
   const problemes = [];
   if (net < 0) problemes.push(res.libMin + ' déficitaire');
-  if (tauxMS > SEUIL_MS_CA) problemes.push('masse salariale au-dessus de ' + SEUIL_MS_CA + ' % du CA');
   if (caObj && ecart < -caObj * 0.03) problemes.push('objectif de CA non atteint');
   const verdict = problemes.length === 0
     ? { ok: true, icone: '✓', titre: 'Budget équilibré et cohérent',
@@ -39,8 +38,7 @@ export function syntheseBudget(a, role = 'rex') {
     if (caObj) lecture += ecart >= -caObj * 0.03 ? 'Ce budget atteint l\'objectif de chiffre d\'affaires (' + euro(ca) + '). ' : 'Ce budget est en retrait de ' + euro(Math.abs(ecart)) + ' par rapport à l\'objectif. ';
     if (net > 0) lecture += 'Il dégage un ' + res.libMin + ' positif de <b>' + euro(net) + '</b>. ';
     else if (net < 0) lecture += 'Il présente un ' + res.libMin + ' déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
-    if (tauxMS > SEUIL_MS_CA) lecture += 'La masse salariale (' + pct(tauxMS) + ' du CA) dépasse le seuil de ' + SEUIL_MS_CA + ' %. ';
-    else if (tauxMS > 0) lecture += 'La masse salariale (' + pct(tauxMS) + ' du CA) reste sous le seuil de ' + SEUIL_MS_CA + ' %. ';
+    if (tauxMS > 0) lecture += 'La masse salariale représente ' + pct(tauxMS) + ' du CA (à comparer avec 2025, 2026 et la moyenne du réseau ci-dessous). ';
     lecture += nbCritiques > 0 ? nbCritiques + ' semaine' + (nbCritiques > 1 ? 's' : '') + ' de tension à surveiller.' : 'Aucune semaine en tension critique.';
   }
   return { ca, net, ms, caObj, ecart, tauxMS, nbCritiques, kpis, verdict, lecture };

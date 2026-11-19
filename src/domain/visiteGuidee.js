@@ -17,7 +17,7 @@ const ETAPES_VISITE_REX=[
   {ecran:'rh',cible:'mois',titre:'Mois par mois',texte:'Ouvrez chaque mois, ajustez les congés et absences semaine par semaine, regardez les heures supplémentaires, puis « Valider ce mois ».'},
   {ecran:'charges',cible:'charges',titre:'6. Charges',texte:'Six postes sont à vous : quatre en % du CA (matériel, carburant…), deux en montant fixe par mois. Les cases sont préremplies : ajustez-les.'},
   {ecran:'previsionnel',cible:'previsionnel',titre:'7. Prévisionnel',texte:'Le compte d\'exploitation de l\'agence se construit tout seul à partir de vos saisies, jusqu\'au résultat d\'exploitation.'},
-  {ecran:'finance',cible:'ms-ca',titre:'8. Synthèse',texte:'Contrôlez la masse salariale / CA mois par mois : vert jusqu\'à 62 %, orange au-delà. Les points à revoir sont signalés en haut de l\'écran.'},
+  {ecran:'finance',cible:'ms-ca',titre:'8. Synthèse',texte:'Situez la masse salariale / CA mois par mois face à 2026, 2025 et à la moyenne du réseau. Les points à revoir sont signalés en haut de l\'écran.'},
   {ecran:'finance',cible:'historique',titre:'Enregistrement automatique',texte:'Tout est enregistré quelques secondes après chaque saisie. Une erreur ? ↶ annule (Ctrl+Z), ↷ rétablit, jusqu\'à 50 actions.'},
   {ecran:'objectif',cible:'soumettre',titre:'Soumettre au DR',texte:'Quand tout est prêt, « Soumettre au DR ». Votre budget passe en lecture seule ; s\'il vous est renvoyé, le motif s\'affiche ici. Date limite : 27 novembre.'},
   {ecran:'objectif',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient la FAQ du REX et le bouton pour revoir cette visite. Bonne construction !'}
@@ -43,7 +43,7 @@ const ETAPES_VISITE_DIRECTION=[
   {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'CA, masse salariale / CA, résultat et choix de congés de l\'agence, avec un verdict. « Voir tous les écrans » ouvre le budget en lecture.'},
   {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Un refus renvoie le budget au REX et le circuit repart du DR. La validation du dernier étage rend le budget définitif.'},
   {ecran:'consolidation',cible:'conso-kpis',titre:'Consolidation réseau',texte:'L\'état de chaque agence du réseau, le CA consolidé et l\'avancement des budgets. Date limite de soumission des REX : 27 novembre.'},
-  {ecran:'consolidation',cible:'conso-table',titre:'Suivre l\'avancement',texte:'Le tableau détaille chaque agence. Le seuil de masse salariale est de 62 % du CA sur l\'année.'},
+  {ecran:'consolidation',cible:'conso-table',titre:'Suivre l\'avancement',texte:'Le tableau détaille chaque agence.'},
   {ecran:'consolidation',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient votre FAQ, la vidéo et la présentation de formation des REX, et le bouton pour revoir cette visite.'}
 ];
 function etapesVisitePour(role){return role==='rex'?ETAPES_VISITE_REX:role==='dr'?ETAPES_VISITE_DR:(role==='df'||role==='dg'||role==='pdg')?ETAPES_VISITE_DIRECTION:null;}

@@ -1,4 +1,4 @@
-import { ann, monthCA } from './calculations.js';
+import { ann, monthCA, STRUCTURES } from './calculations.js';
 // Repères 2026 issus du tableau de bord du contrôle de gestion (nov. 2026) : réalisé 2025, réalisé 2026 des mois clos,
 // estimation des derniers mois par le CG, budget 2026. Ils INFORMENT les valideurs (et le REX sur son agence) ;
 // ils ne pré-remplissent jamais le budget 2027.
@@ -28,11 +28,11 @@ function agenceDuTDB(nom,agences){
 // Lecture du classeur : feuilles = { nomOnglet: lignes[][] }. Onglet par agence : A1 = nom, colonnes « B mm-26 » = budget,
 // deux colonnes avant = réalisé du mois. Onglet « 26 Vs 25 » : CA, charges externes, charges de personnel et REX 2025.
 function lireTableauDeBord(feuilles,agences){
-  let parAgence={},inconnues=[];
+  let parAgence={},inconnues=[],annee=null;
   Object.keys(feuilles).forEach(function(onglet){
     let rows=feuilles[onglet]||[];if(!rows.length)return;
     let tete=rows[0]||[];
-    let cols=[];tete.forEach(function(h,j){let mt=/^B\s*(\d{1,2})-26/.exec(String(h||'').trim());if(mt)cols[+mt[1]-1]=j;});
+    let cols=[];tete.forEach(function(h,j){let mt=/^B\s*(\d{1,2})-(\d\d)/.exec(String(h||'').trim());if(mt){cols[+mt[1]-1]=j;annee=2000+(+mt[2]);}});
     if(cols.filter(function(x){return x!==undefined;}).length<12)return;
     let ag=agenceDuTDB(tete[0],agences);
     if(!ag){let n=normRep(tete[0]);if(n&&!/VYV/.test(n))inconnues.push(String(tete[0]).trim());return;}
@@ -43,7 +43,8 @@ function lireTableauDeBord(feuilles,agences){
     let mc=0;["Chiffre d'affaires",'Charges de personnel',"RESULTAT D'EXPLOITATION"].forEach(function(l){let s=reel[l]||[];for(let m=0;m<12;m++)if(s[m]!==null&&s[m]!==undefined&&s[m]!==0&&m+1>mc)mc=m+1;});
     parAgence[ag]={nomTDB:String(tete[0]).trim(),moisClos:mc,reel:reel,budget:budget};
   });
-  let comp=Object.keys(feuilles).find(function(o){return /26\s*VS\s*25/i.test(o);});
+  // Onglet de comparaison « 26 Vs 25 » (ou « 25 Vs 24 en € ») : année précédente, quatre indicateurs
+  let comp=Object.keys(feuilles).find(function(o){return /\d\d\s*VS\s*\d\d/i.test(o)&&!/%/.test(o);});
   if(comp){
     let rows=feuilles[comp],tete=rows[0]||[],col={};
     tete.forEach(function(h,j){let i=MOIS_TDB.indexOf(normRep(h).toLowerCase());if(i>=0)col[i]=j+1;});
@@ -55,7 +56,42 @@ function lireTableauDeBord(feuilles,agences){
       parAgence[cour].n1[k]=MOIS_TDB.map(function(_,m){return col[m]!==undefined?valRep(r[col[m]]):null;});
     });
   }
-  return {parAgence:parAgence,inconnues:inconnues};
+  return {annee:annee||2026,parAgence:parAgence,inconnues:inconnues};
+}
+// Moyenne du réseau (agences opérationnelles, hors structures) : somme des réalisés, budgets et estimations,
+// enregistrée sous l'agence « __RESEAU__ » et lisible par tous les profils. Les ratios au CA donnent la moyenne pondérée.
+const AGENCE_RESEAU='__RESEAU__';
+function agregerReseau(rows){
+  let ag={moisClos:12,reel:{},budget:{},estim:{},nbAgences:0};
+  Object.keys(rows).forEach(function(nom){
+    let r=rows[nom];if(nom===AGENCE_RESEAU||STRUCTURES.indexOf(nom)>=0||!r||!r.reel)return;
+    ag.nbAgences++;ag.moisClos=Math.min(ag.moisClos,r.moisClos||0);
+    ['reel','budget'].forEach(function(q){Object.keys(r[q]||{}).forEach(function(l){let t=ag[q][l]||(ag[q][l]=Array(12).fill(0));for(let m=0;m<12;m++)t[m]+=valRep(r[q][l][m])||0;});});
+    INDICATEURS_REPERES.forEach(function(ind){let t=ag.estim[ind.cle]||(ag.estim[ind.cle]=Array(12).fill(0)),b=serieRep(r,'budget',ind.cle);for(let m=0;m<12;m++){let e=estimRep(r,ind.cle,m);t[m]+=e===null?(valRep(b[m])||0):e;}});
+  });
+  return ag;
+}
+// Ligne d'une année : 2026 = la ligne courante, 2025 = l'historique importé (classeur de l'exercice 2025)
+function anneeRep(r,annee){if(!r)return null;if(annee===2026)return r.reel?r:null;return r.histo&&r.histo[annee]&&r.histo[annee].reel?r.histo[annee]:null;}
+// Part d'une ligne dans le CA sur les mois clos (2026 : janvier à octobre ; 2025 : l'année)
+function ratioLigneRep(row,label){
+  if(!row||!row.reel)return null;let mc=row.moisClos||0,ca=row.reel["Chiffre d'affaires"],s=row.reel[label];
+  if(!mc||!ca||!s)return null;let c=sommeRep(ca,0,mc);return c?sommeRep(s,0,mc)/c*100:null;
+}
+// Ratio d'un mois (masse salariale / CA…) : réalisé, ou estimation du CG pour les mois non clos
+function ratioMoisRep(row,cleNum,m){
+  if(!row||!row.reel)return null;
+  let v=function(cle){let ind=indRep(cle);if(m<(row.moisClos||0))return valRep((row.reel[ind.label]||[])[m]);let e=estimRep(row,cle,m);return e;};
+  let n=v(cleNum),c=v('ca');return n===null||!c?null:n/c*100;
+}
+// Lignes du compte de résultat comparées en % du CA dans la Synthèse
+const LIGNES_COMPARAISON=['Carburant','Crédit bail et location véhicules','Entretiens véhicules - batîment','Location immobilières et charges locatives','Assurance','Péages','Honoraires et prestations de services','Matériels ambulances','Autres Achats et charges externes','Impôts, taxes et versements assimilés','Charges de personnel',"EXCEDENT BRUT D'EXPLOITATION",'Dotations amortissements et provisions',"RESULTAT D'EXPLOITATION"];
+function comparaisonsLignes(a,r,reseau){
+  let ca27=budget2027Rep(a,'ca');
+  return LIGNES_COMPARAISON.map(function(l){
+    return {label:l,r2025:ratioLigneRep(anneeRep(r,2025),l),r2026:ratioLigneRep(anneeRep(r,2026),l),r2027:ca27?ann(a,l)/ca27*100:null,
+      res2025:ratioLigneRep(anneeRep(reseau,2025),l),res2026:ratioLigneRep(anneeRep(reseau,2026),l)};
+  });
 }
 function indRep(cle){return INDICATEURS_REPERES.find(function(i){return i.cle===cle;});}
 function serieRep(r,quoi,cle){let ind=indRep(cle);if(!r||!ind)return [];if(quoi==='n1')return (r.n1&&r.n1[cle])||[];let s=r[quoi]&&r[quoi][ind.label];return s||[];}
@@ -67,7 +103,7 @@ function atterrissage2026(r,cle){
   for(let m=mc;m<12;m++){let e=estimRep(r,cle,m);if(e===null){manquants++;e=valRep(bu[m])||0;}tot+=e;}
   return {val:tot,manquants:manquants,moisClos:mc};
 }
-function annuel2025(r,cle){let s=serieRep(r,'n1',cle);return s.length?sommeRep(s,0,12):null;}
+function annuel2025(r,cle){let h=anneeRep(r,2025);if(h){let s=serieRep(h,'reel',cle);if(s.length)return sommeRep(s,0,12);}let s=serieRep(r,'n1',cle);return s.length?sommeRep(s,0,12):null;}
 function budget2027Rep(a,cle){
   if(!a)return 0;
   if(cle==='ca'){let t=0;for(let m=0;m<12;m++)t+=monthCA(a,m);return t;}
@@ -79,7 +115,7 @@ function fmtPctRep(v){return (Math.round(v*10)/10).toLocaleString('fr-FR')+' %';
 function fmtKRep(v){return Math.round(v/1000).toLocaleString('fr-FR')+' k€';}
 // Repères d'une agence pour la décision : tableau 2025 / atterrissage 2026 / budget 2027, fiabilité du budget 2026, alertes
 function reperesAgence(a,r){
-  if(!r)return null;
+  if(!r||!r.reel)return null;
   let lignes=INDICATEURS_REPERES.map(function(ind){
     let at=atterrissage2026(r,ind.cle),v27=budget2027Rep(a,ind.cle);
     return {cle:ind.cle,lib:ind.lib,v2025:annuel2025(r,ind.cle),v2026:at.val,v2027:v27,manquants:at.manquants};
@@ -112,4 +148,4 @@ function reperesAgence(a,r){
   let ordre={alerte:0,attention:1,info:2};al.sort(function(x,y){return ordre[x.niveau]-ordre[y.niveau];});
   return {lignes:lignes,ratios:ratios,fiabilite:fiab,alertes:al,moisClos:mc};
 }
-export { INDICATEURS_REPERES, SEUILS_REPERES, valRep, agenceDuTDB, lireTableauDeBord, serieRep, estimRep, atterrissage2026, annuel2025, budget2027Rep, reperesAgence };
+export { AGENCE_RESEAU, agregerReseau, anneeRep, ratioLigneRep, ratioMoisRep, LIGNES_COMPARAISON, comparaisonsLignes, INDICATEURS_REPERES, SEUILS_REPERES, valRep, agenceDuTDB, lireTableauDeBord, serieRep, estimRep, atterrissage2026, annuel2025, budget2027Rep, reperesAgence };

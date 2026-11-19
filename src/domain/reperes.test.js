@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { lireTableauDeBord, atterrissage2026, annuel2025, reperesAgence, agenceDuTDB } from './reperes.js';
+import { lireTableauDeBord, atterrissage2026, annuel2025, reperesAgence, agenceDuTDB, agregerReseau, comparaisonsLignes, ratioLigneRep } from './reperes.js';
 import { agency } from './calculations.js';
 
 const AG = ['POITIERS', 'SAINT GILLES CROIX DE VIE', 'CENTRE DE FORMATION', 'SIEGE', 'CAHORS'];
-function onglet(nom, ca, rex, mc) {
+function onglet(nom, ca, rex, mc, an = '26') {
   const tete = [nom]; const cols = [];
-  for (let m = 0; m < 12; m++) { tete.push('date', '% CA', 'B ' + String(m + 1).padStart(2, '0') + '-26', '% CA'); cols.push(1 + m * 4); }
+  for (let m = 0; m < 12; m++) { tete.push('date', '% CA', 'B ' + String(m + 1).padStart(2, '0') + '-' + an, '% CA'); cols.push(1 + m * 4); }
   const ligne = (lab, reel, bud) => { const r = [lab]; for (let m = 0; m < 12; m++) r.push(m < mc ? reel : '', 1, bud, 1); return r; };
   return [tete, ligne("Chiffre d'affaires", ca, ca), ligne('Autres Achats et charges externes', ca * 0.25, ca * 0.25), ligne('Charges de personnel', ca * 0.65, ca * 0.65), ligne("RESULTAT D'EXPLOITATION", rex, rex * 2)];
 }
@@ -46,5 +46,28 @@ describe('Atterrissage et alertes', () => {
     const x = reperesAgence(agency('CAHORS'), r());
     expect(x.alertes.some((al) => /Budget 2026 non tenu/.test(al.texte))).toBe(true);
     expect(x.alertes.some((al) => /Atterrissage provisoire/.test(al.texte))).toBe(true);
+  });
+});
+
+describe('Exercice 2025, moyenne du réseau et comparaisons (nov. 2026)', () => {
+  it('l\'exercice est reconnu par les colonnes « B mm-AA »', () => {
+    expect(lireTableauDeBord({ x: onglet('POITIERS', 100000, 5000, 12, '25') }, AG).annee).toBe(2025);
+    expect(lireTableauDeBord({ x: onglet('POITIERS', 100000, 5000, 10) }, AG).annee).toBe(2026);
+  });
+  it('moyenne du réseau : agences seulement, ratios pondérés par le CA', () => {
+    const t = lireTableauDeBord({ a: onglet('POITIERS', 100000, 5000, 12, '25'), b: onglet('CAHORS', 300000, 30000, 12, '25'), c: onglet('Siège', 0, -9000, 12, '25') }, AG).parAgence;
+    const res = agregerReseau(t);
+    expect(res.nbAgences).toBe(2);
+    expect(ratioLigneRep(res, "RESULTAT D'EXPLOITATION")).toBeCloseTo((5000 + 30000) / (100000 + 300000) * 100, 6);
+    expect(ratioLigneRep(res, 'Charges de personnel')).toBeCloseTo(65, 6);
+  });
+  it('2025 complet : utilisé pour le réalisé 2025 et les comparaisons en % du CA', () => {
+    const t25 = lireTableauDeBord({ a: onglet('CAHORS', 150000, 3000, 12, '25') }, AG).parAgence.CAHORS;
+    const r = { ...lireTableauDeBord({ x: onglet('CAHORS', 160000, 8000, 10) }, AG).parAgence.CAHORS, histo: { 2025: t25 } };
+    expect(annuel2025(r, 'ca')).toBe(1800000);
+    const l = comparaisonsLignes(agency('CAHORS'), r, null).find((x) => x.label === "RESULTAT D'EXPLOITATION");
+    expect(l.r2025).toBeCloseTo(2, 6);
+    expect(l.r2026).toBeCloseTo(5, 6);
+    expect(l.res2026).toBe(null);
   });
 });

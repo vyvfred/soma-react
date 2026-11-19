@@ -7,7 +7,7 @@ import { sb } from '../../lib/supabase.js';
 import { migrateAgency } from '../../domain/budgetMapper.js';
 import { agency, M, avecCacheMoteur } from '../../domain/calculations.js';
 import { AGENCES } from '../../config/agences.js';
-import { INDICATEURS_REPERES, lireTableauDeBord, reperesAgence, serieRep, estimRep, valRep } from '../../domain/reperes.js';
+import { AGENCE_RESEAU, INDICATEURS_REPERES, lireTableauDeBord, reperesAgence, serieRep, estimRep, valRep } from '../../domain/reperes.js';
 import ReperesBloc, { periodeReperes } from '../ReperesBloc.jsx';
 
 // Écran « Tableau de bord 2026 » (nov. 2026) : le CG importe le tableau de bord et estime les derniers mois ;
@@ -69,12 +69,12 @@ export default function ReperesScreen() {
   // DR : sa région seulement (la base l'impose déjà ; filtre aussi ici)
   const region = () => (profile.role === 'dr' ? (profile.region_id ? sb.from('agences').select('nom').eq('region_id', profile.region_id).then(({ data }) => (data || []).map((x) => x.nom)) : Promise.resolve([])) : Promise.resolve(null));
   const recharger = () => Promise.all([chargerReperes(), loadNetworkBudgets().catch(() => ({})), region()]).then(([reperes, budgets, noms]) => {
-    if (noms) Object.keys(reperes).forEach((n) => { if (!noms.includes(n)) delete reperes[n]; });
+    if (noms) Object.keys(reperes).forEach((n) => { if (n !== AGENCE_RESEAU && !noms.includes(n)) delete reperes[n]; });
     setEtat({ chargement: false, reperes, budgets });
   });
   useEffect(() => { recharger(); }, []);
 
-  const lignes = useMemo(() => avecCacheMoteur(() => Object.keys(etat.reperes).map((nom) => {
+  const lignes = useMemo(() => avecCacheMoteur(() => Object.keys(etat.reperes).filter((nom) => nom !== AGENCE_RESEAU && etat.reperes[nom].reel).map((nom) => {
     const b = etat.budgets[nom];
     let a = null;
     try { a = migrateAgency({ ...agency(nom), ...(b ? JSON.parse(JSON.stringify(b.data || {})) : {}), name: nom }); } catch (e) { a = agency(nom); }
@@ -91,8 +91,8 @@ export default function ReperesScreen() {
       const res = lireTableauDeBord(await lireToutesFeuilles(f), AGENCES.map((x) => x.nom));
       const nb = Object.keys(res.parAgence).length;
       if (!nb) { setMsg('Aucun onglet d\'agence reconnu dans ce fichier.'); setImport(false); return; }
-      const r = await enregistrerImportTDB(res.parAgence, f.name);
-      setMsg(r.ok + ' agence(s) et structure(s) importée(s)' + (r.echecs.length ? ' ; échec : ' + r.echecs.join(', ') : '') + (res.inconnues.length ? ' ; onglets non reconnus : ' + res.inconnues.join(', ') : '') + '.');
+      const r = await enregistrerImportTDB(res.parAgence, f.name, res.annee);
+      setMsg('Exercice ' + res.annee + ' : ' + r.ok + ' agence(s) et structure(s) importée(s)' + (r.echecs.length ? ' ; échec : ' + r.echecs.join(', ') : '') + (res.inconnues.length ? ' ; onglets non reconnus : ' + res.inconnues.join(', ') : '') + '.');
       await recharger();
     } catch (e) { setMsg('Lecture impossible : ' + (e.message || e)); }
     setImport(false);
@@ -112,7 +112,7 @@ export default function ReperesScreen() {
           <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input ref={fichier} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} data-testid="tdb-fichier" onChange={(e) => importer(e.target.files[0])} />
             <button type="button" data-testid="tdb-importer" disabled={import_} onClick={() => fichier.current && fichier.current.click()} style={{ width: 'auto', margin: 0, fontSize: 12, padding: '8px 14px' }}>{import_ ? 'Import…' : '⇪ Importer le tableau de bord (Excel)'}</button>
-            <span className="hint" style={{ fontSize: 12 }}>Un onglet par agence (nom en A1, colonnes « B mm-26 » pour le budget) et l'onglet « 26 Vs 25 » pour 2025. Réimportez après chaque clôture : vos estimations sont conservées.</span>
+            <span className="hint" style={{ fontSize: 12 }}>Le classeur 2026 (en cours) et le classeur de l'exercice 2025 (complet) : un onglet par agence (nom en A1, colonnes « B mm-AA » pour le budget) et l'onglet de comparaison avec l'année précédente. L'exercice est reconnu tout seul. Réimportez après chaque clôture : vos estimations sont conservées.</span>
           </div>
         ) : null}
         {msg ? <div data-testid="tdb-message" style={{ marginTop: 8, fontSize: 12, color: 'var(--ink65)' }}>{msg}</div> : null}
