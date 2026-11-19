@@ -10,8 +10,10 @@ import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
 import { presenceInsight } from '../../domain/presenceInsight.js';
 import {
   progressionMois, etatMois, semainesMois, impactMois, semainesCritiques, verrouillerMois, deverrouillerMois,
-  reinitialiserCP, setPresenceSemaine, messageValidation, setMontantSemaine, indemnites, hsImproductives, moyenneHS50
+  reinitialiserCP, setPresenceSemaine, messageValidation, setMontantSemaine, indemnites, hsImproductives, moyenneHS50,
+  relancerRepartitionCP, moisModifiesHorsPropo
 } from '../../domain/presenceMois.js';
+import { cpProposeMois, reprendrePropositionMois } from '../../domain/repartitionCP.js';
 import { euro, pct } from '../../domain/format.js';
 import { toast } from '../Toast.jsx';
 import ChargeCurve from './ChargeCurve.jsx';
@@ -50,6 +52,59 @@ const btnSec = { width: 'auto', margin: 0, background: 'transparent', color: 'va
 const btnPrim = { width: 'auto', margin: 0, background: 'linear-gradient(135deg,var(--violet),var(--violet2))', color: '#fff', border: 'none', padding: '7px 14px', fontSize: 12, fontWeight: 700 };
 const cell = { padding: '4px 6px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 
+// ── Enveloppes de la règle 60 / 20 / 20 : cible, déjà figé sur les mois validés, posé par la répartition ──
+function EnveloppesCP({ env }) {
+  return (
+    <div data-testid="cp-enveloppes" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 8, marginBottom: 12 }}>
+      {env.map((e, i) => {
+        const total = (e.verrouille || 0) + (e.budget || 0);
+        return (
+          <div key={i} style={{ padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ color: 'var(--ink65)' }}>{e.nom} <span style={{ color: 'var(--ink30)' }}>· {Math.round(e.pct * 100)} %</span></div>
+            <div><b style={{ fontSize: 15 }}>{fmt1(total)} J</b> <span style={{ color: 'var(--ink65)' }}>pour une cible de {fmt1(e.cible)} J</span></div>
+            {e.verrouille > 0 ? <div style={{ color: 'var(--ink65)' }}>dont {fmt1(e.verrouille)} J sur des mois validés</div> : null}
+            {e.reporte > 0.05 ? <div style={{ color: 'var(--orange, #c45300)' }}>{fmt1(e.reporte)} J reportés ailleurs : tous ses mois sont validés</div> : null}
+            {e.recu > 0.05 ? <div style={{ color: 'var(--ink65)' }}>+{fmt1(e.recu)} J reçus d'une période close</div> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Ce que le dernier recalcul a changé (après une validation de mois ou une relance) ──
+function BilanCP({ b, onFermer }) {
+  if (!b) return null;
+  const dCout = (b.coutApres || 0) - (b.coutAvant || 0);
+  const ecart = b.type === 'validation' && b.propose != null ? Math.round(((b.pose || 0) - b.propose) * 10) / 10 : null;
+  return (
+    <div data-testid="cp-bilan" style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.08))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 12.5, lineHeight: 1.6 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+        <b style={{ flex: 1 }}>{b.type === 'validation' ? MOIS_LONGS[b.mois] + ' validé : ce que la répartition a changé' : 'Répartition recalculée : ce qui a changé'}</b>
+        <button onClick={onFermer} aria-label="Masquer" style={{ ...btnSec, padding: '0 8px', border: 'none' }}>✕</button>
+      </div>
+      {ecart !== null ? (
+        <div>
+          {fmt1(b.pose)} J posés en {MOIS_LONGS[b.mois].toLowerCase()} (proposition de SOMA : {fmt1(b.propose)} J).{' '}
+          {Math.abs(ecart) >= 0.5 ? (ecart < 0 ? 'Les ' + fmt1(-ecart) + ' J non posés ont été ajoutés sur les mois non validés.' : 'Les ' + fmt1(ecart) + ' J posés en plus ont été retirés des mois non validés.') : 'Pas d\'écart avec la proposition.'}
+        </div>
+      ) : null}
+      {b.deplacements && b.deplacements.length ? (
+        <div style={{ display: 'flex', gap: '4px 12px', flexWrap: 'wrap', margin: '4px 0' }}>
+          {b.deplacements.map((d) => (
+            <span key={d.m} style={{ color: d.delta > 0 ? 'var(--ink)' : 'var(--ink65)' }}>{M[d.m]} <b>{d.delta > 0 ? '+' : ''}{fmt1(d.delta)} J</b></span>
+          ))}
+        </div>
+      ) : <div style={{ color: 'var(--ink65)' }}>Aucun mois n'a changé.</div>}
+      <div>
+        Coût des heures supplémentaires : {euro(b.coutAvant)} → <b>{euro(b.coutApres)}</b>
+        {Math.abs(dCout) >= 1 ? <span style={{ color: dCout > 0 ? 'var(--orange, #c45300)' : 'var(--green, #2e7d6f)' }}> ({dCout > 0 ? '+' : ''}{euro(dCout)})</span> : null}
+      </div>
+      {b.report && b.report.length ? <div style={{ color: 'var(--ink65)' }}>{b.report.map((r) => fmt1(r.jours) + ' J de la période ' + r.nom.toLowerCase()).join(', ')} : tous ses mois sont validés, ces jours ont été placés sur les autres périodes.</div> : null}
+    </div>
+  );
+}
+
 // ── Carte d'un mois ──
 function CarteMois({ e, ouvert, onOuvrir }) {
   return (
@@ -72,12 +127,15 @@ function CarteMois({ e, ouvert, onOuvrir }) {
 }
 
 // ── Détail des semaines d'un mois ──
-function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDeverrouiller }) {
+function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDeverrouiller, onReprendre }) {
   const rows = hsRows(a);
   const e = etatMois(a, m, rows);
   const imp = impactMois(a, m, rows);
   const sem = semainesMois(a, m, rows);
   const saisie = editable && !e.verrouille;
+  const propose = cpProposeMois(a, m);
+  const ecart = propose == null ? 0 : Math.round((imp.cpM - propose) * 10) / 10;
+  const autres = saisie ? moisModifiesHorsPropo(a, m) : [];
   return (
     <div data-testid="detail-mois" style={{ border: '1px solid var(--violet2)', padding: 14, marginTop: 12, background: 'var(--bg)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -102,6 +160,24 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
       </div>
 
       {e.verrouille ? <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>🔒 Mois validé : les congés sont figés. Déverrouillez-le pour les modifier.</p> : null}
+      {saisie && propose != null ? (
+        <div data-testid="cp-proposition-mois" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: '8px 12px', border: '1px solid var(--border)', fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
+          <span>Proposition de SOMA : <b>{fmt1(propose)} J</b> · posés : <b>{fmt1(imp.cpM)} J</b></span>
+          <span style={{ flex: 1, minWidth: 220, color: 'var(--ink65)' }}>
+            {Math.abs(ecart) < 0.5
+              ? 'Vous suivez la proposition. En validant, les autres mois ne bougent pas.'
+              : ecart > 0
+                ? 'En validant, les ' + fmt1(ecart) + ' J posés en plus seront retirés des mois non validés.'
+                : 'En validant, les ' + fmt1(-ecart) + ' J non posés seront ajoutés sur les mois non validés.'}
+          </span>
+          {Math.abs(ecart) >= 0.5 ? <button data-testid="reprendre-proposition" style={btnSec} onClick={onReprendre}>Reprendre la proposition</button> : null}
+        </div>
+      ) : null}
+      {autres.length ? (
+        <p data-testid="cp-autres-modifies" className="hint" style={{ fontSize: 12, margin: '0 0 10px', color: 'var(--orange, #c45300)' }}>
+          Vous avez aussi changé les congés de {autres.map((i) => MOIS_LONGS[i].toLowerCase()).join(', ')}, qui ne {autres.length > 1 ? 'sont' : 'est'} pas validé{autres.length > 1 ? 's' : ''} : la validation de ce mois {autres.length > 1 ? 'les' : 'le'} recalculera. Validez d'abord {autres.length > 1 ? 'ces mois' : 'ce mois'} pour garder vos choix.
+        </p>
+      ) : null}
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
@@ -170,7 +246,9 @@ export default function PresenceScreen() {
   // m : mois affiché — une semaine à cheval reçoit la part de ce mois, le total de la semaine est la somme des parts
   const setSem = (w, champ, v, m) => muter((x) => (m === undefined ? setPresenceSemaine(x, w, champ, v) : setAbsPartMois(x, w, champ, m, v)));
   const setMontant = (cle, w, v) => muter((x) => setMontantSemaine(x, cle, w, v));
-  const distribuerCP = () => muter((x) => repartirCPAuto(x));
+  const distribuerCP = () => muter((x) => relancerRepartitionCP(x));
+  const reprendre = (m) => { muter((x) => reprendrePropositionMois(x, m)); toast('Proposition de SOMA remise sur ' + MOIS_LONGS[m].toLowerCase(), 'info'); };
+  const fermerBilan = () => muter((x) => { x.cpDernierRecalcul = null; });
   const resetCP = () => {
     if (!window.confirm('Remettre à zéro tous les congés payés planifiés ?')) return;
     muter((x) => reinitialiserCP(x));
@@ -269,25 +347,16 @@ export default function PresenceScreen() {
         <div data-visite="conges" style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
           <button onClick={distribuerCP} style={{ width: 'auto', margin: 0 }}>Répartir les congés automatiquement</button>
           <button data-testid="reset-cp" onClick={resetCP} style={btnSec}>Remettre les CP à zéro</button>
-          <span className="hint" style={{ fontSize: 12 }}>SOMA pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales. Les mois validés ne sont pas modifiés.</span>
+          <span className="hint" style={{ fontSize: 12 }}>Recalcule les congés de tous les mois non validés. Les mois validés ne bougent pas.</span>
         </div>
       ) : null}
 
-      {a.cpEnveloppes && a.cpEnveloppes.length ? (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-          {a.cpEnveloppes.map((e, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 150, padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 12 }}>
-              <div style={{ color: 'var(--ink65)' }}>{e.nom} <span style={{ color: 'var(--ink30)' }}>({Math.round(e.pct * 100)}%)</span></div>
-              <div style={{ fontWeight: 700 }}>{e.budget.toFixed(1)} J</div>
-              {e.verrouille > 0 ? <div style={{ color: 'var(--ink30)' }}>dont {e.verrouille.toFixed(1)} verrouillés</div> : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {editable ? <BilanCP b={a.cpDernierRecalcul} onFermer={fermerBilan} /> : null}
+      {a.cpEnveloppes && a.cpEnveloppes.length ? <EnveloppesCP env={a.cpEnveloppes} /> : null}
 
       {a.cpReliquat > 0.05 ? (
         <div style={{ marginBottom: 12, padding: '8px 14px', background: 'rgba(196,83,0,.10)', border: '1px solid var(--orange, #c45300)', fontSize: 12, color: 'var(--orange, #c45300)' }}>
-          ⚠ {a.cpReliquat.toFixed(1)} jours n'ont pas pu être placés (capacité insuffisante sur certaines semaines).
+          ⚠ {a.cpReliquat.toFixed(1)} jours n'ont pas pu être placés : il ne reste plus de semaine libre avec assez de salariés présents. Déverrouillez un mois ou posez-les à la main.
         </div>
       ) : null}
 
@@ -299,9 +368,10 @@ export default function PresenceScreen() {
         <span style={{ marginLeft: 'auto' }}>{cpEtat}</span>
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '-10px 0 16px' }}>
-        La répartition automatique pose exactement les jours acquis, en lissant la charge et en respectant les enveloppes légales
-        (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai). Vous pouvez ensuite déplacer des congés semaine par semaine :
-        le compteur suit vos choix. Si les jours acquis changent (absentéisme, équipe, dates d'entrée ou de sortie, temps de travail, part roulante), SOMA refait automatiquement la répartition sur les mois non validés (les congés déplacés à la main sur ces mois sont recalculés).
+        <b>Comment SOMA propose les congés.</b> Il pose exactement les jours acquis, en respectant les périodes (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai).
+        Dans chaque période, il les place d'abord sur les semaines où l'équipe est plus nombreuse que le besoin, sans créer d'heure supplémentaire, en les étalant ;
+        s'il en reste, il les met là où les heures supplémentaires par personne sont les plus basses, pour garder une charge régulière.
+        Si les jours acquis changent (absentéisme, équipe, dates d'entrée ou de sortie, temps de travail, part roulante), la répartition est refaite sur les mois non validés.
       </p>
 
       {/* ── Mois par mois ── */}
@@ -314,8 +384,8 @@ export default function PresenceScreen() {
         <span title="Jours acquis moins les jours déjà posés sur les mois validés : c'est ce que la répartition place sur les mois encore ouverts">Congés à poser sur les mois non validés : <b>{fmt1(prog.cpLibres)} J</b></span>
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
-        💡 Ouvrez un mois pour voir ses semaines, ajuster les congés et les absences payées ou non payées, puis <b>validez-le</b> : il passe en lecture seule
-        et SOMA répartit à nouveau les congés restants sur les mois encore libres. <Pourquoi k="conges" />
+        💡 Ouvrez un mois, ajustez les congés et les absences semaine par semaine, puis <b>validez-le</b> : il est figé, et l'écart avec la proposition
+        (jours en plus ou en moins) est reporté sur les mois non validés. Un bilan montre ensuite les mois qui ont bougé et l'effet sur le coût des heures supplémentaires. <Pourquoi k="conges" />
       </p>
       <div data-visite="mois" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
         {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
@@ -327,7 +397,8 @@ export default function PresenceScreen() {
           onFermer={() => setOuvert(null)}
           onSet={setSem}
           onValider={() => valider(ouvert)}
-          onDeverrouiller={() => deverrouiller(ouvert)} />
+          onDeverrouiller={() => deverrouiller(ouvert)}
+          onReprendre={() => reprendre(ouvert)} />
       ) : null}
 
       {critiques.length ? (

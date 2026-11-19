@@ -5,7 +5,8 @@ import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
   chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois
 } from './calculations.js';
-import { repartirCPAuto } from './repartitionCP.js';
+import { repartirCPAuto, cpParMois, bilanRecalculCP, cpProposeMois } from './repartitionCP.js';
+import { coutHSTotal } from './calculations.js';
 
 const semainesDe = (a, rows, m) => rows.filter((r) => a.cal.some((d) => d.week === r.week && d.month === m));
 
@@ -91,12 +92,17 @@ export function semainesCritiques(a, rows = hsRows(a)) {
 // Valide un mois (lecture seule) et relance la répartition des CP sur les mois libres.
 // Mute `a` ; renvoie le message d'encouragement.
 export function verrouillerMois(a, m) {
+  const proposeAvant = (a.moisVerrouilles || []).indexOf(m) < 0 ? cpProposeMois(a, m) : null; // avant de figer le mois
   if (!a.moisVerrouilles) a.moisVerrouilles = [];
   if (a.moisVerrouilles.indexOf(m) < 0) a.moisVerrouilles.push(m);
   a.moisActif = null;
   const nb = a.moisVerrouilles.length;
   const libres = M.map((_, i) => i).filter((i) => a.moisVerrouilles.indexOf(i) < 0);
-  if (libres.length) repartirCPAuto(a, libres);
+  if (libres.length) {
+    const avant = cpParMois(a), cout = coutHSTotal(a), propose = proposeAvant;
+    repartirCPAuto(a, libres);
+    a.cpDernierRecalcul = bilanRecalculCP(avant, cout, a, { type: 'validation', mois: m, pose: avant[m], propose });
+  } else a.cpDernierRecalcul = null;
   return messageValidation(nb, m);
 }
 // Message d'encouragement après la validation du nb-ième mois
@@ -114,7 +120,7 @@ export function deverrouillerMois(a, m) {
 export function reinitialiserCP(a) {
   Object.keys(a.presence || {}).forEach((w) => { if (a.presence[w]) { a.presence[w] = { ...a.presence[w], cp: 0 }; delete a.presence[w].cpMois; } });
   // Plus de répartition : la référence « optimale », le reliquat et les enveloppes affichées n'ont plus de sens
-  delete a.cpOptimal; delete a.cpOptimalHSCost; delete a.cpReliquat; delete a.cpEnveloppes;
+  delete a.cpOptimal; delete a.cpOptimalHSCost; delete a.cpReliquat; delete a.cpEnveloppes; delete a.cpDernierRecalcul;
   return a;
 }
 // Saisie d'une semaine (CP ou autres absences, en jours)
@@ -163,4 +169,18 @@ export function hsImproductives(a) {
 export function moyenneHS50(a) {
   const v = (a.hs50 || []).filter((x) => x !== null && x !== undefined);
   return v.length ? v.reduce((s, x) => s + (+x || 0), 0) / v.length : 0;
+}
+
+// Relance manuelle de la répartition (bouton) : même bilan qu'après une validation
+export function relancerRepartitionCP(a) {
+  const avant = cpParMois(a), cout = coutHSTotal(a);
+  repartirCPAuto(a);
+  a.cpDernierRecalcul = bilanRecalculCP(avant, cout, a, { type: 'relance' });
+  return a;
+}
+// Mois non validés (autres que m) modifiés à la main par rapport à la proposition : ils seront recalculés à la validation de m
+export function moisModifiesHorsPropo(a, m) {
+  if (!a.cpOptimal) return [];
+  const verr = a.moisVerrouilles || [], parMois = cpParMois(a);
+  return M.map((_, i) => i).filter((i) => i !== m && verr.indexOf(i) < 0 && Math.abs(parMois[i] - (cpProposeMois(a, i) || 0)) >= 0.5);
 }

@@ -1,143 +1,166 @@
-// Répartition automatique des congés — port fidèle de repartirCPAuto().
-// La SEULE transformation par rapport à l'original : la fonction prend l'agence
-// `a` en paramètre (au lieu de A()) et ne déclenche pas de re-render — elle mute
-// `a` (presence, cpEnveloppes, cpReliquat, cpOptimal) et le renvoie. Tout le
-// calcul d'optimisation est identique.
-import { M, needWeeks, mainMonth, cpGeneres, hsParPersonne, memoriserRepartitionOptimale, genCal } from './calculations.js';
+// Répartition automatique des congés des roulants (refonte nov. 2026).
+// Le cœur du calcul (repartirCPAgence) est le même texte dans le mono-fichier ; ici, repartirCPAuto(a, moisLibres)
+// mute `a` (presence, cpEnveloppes, cpReliquat, cpReport, cpOptimal) et le renvoie.
+import { M, needWeeks, mainMonth, cpGeneres, memoriserRepartitionOptimale, genCal, moisDeSemaine, pres, CP_HEURES_JOUR, coutHSTotal, absPartMois } from './calculations.js';
 
-export function repartirCPAuto(a, moissLibres){
-  if(!a.cal.length) genCal(a);
+// Enveloppes de la règle de l'entreprise : 60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai.
+const ENVELOPPES_CP = [
+  { nom: 'Juin – octobre', pct: 0.60, months: [5, 6, 7, 8, 9] },
+  { nom: 'Novembre – janvier', pct: 0.20, months: [10, 11, 0] },
+  { nom: 'Février – mai', pct: 0.20, months: [1, 2, 3, 4] }
+];
+// Arrondi au dixième
+function r1(v) { return Math.round(v * 10) / 10; }
 
-  // Mois libres (non verrouillés)
-  let libres = moissLibres || M.map(function(_,i){return i;}).filter(function(m){
-    return (a.moisVerrouilles||[]).indexOf(m) < 0;
+// Répartition en deux temps, dans chaque enveloppe :
+// 1) capacité gratuite : les congés vont d'abord sur les semaines où l'équipe disponible dépasse le besoin, sans créer
+//    d'heure supplémentaire, en répartissant de façon égale (part de l'équipe en congé la plus basse d'abord) ;
+// 2) quand il n'y a plus de marge : chaque jour va sur la semaine où les HS par personne présente sont les plus basses,
+//    ce qui garde la charge aussi plate que possible.
+// Mois validés : ils ne bougent jamais. Une semaine à cheval sur un mois validé reste figée en entier.
+// Enveloppe sans semaine libre (tous ses mois validés) : ce qu'il reste à y poser est reporté sur les autres enveloppes.
+function repartirCPAgence(a, moisLibres) {
+  if (!a.cal || !a.cal.length) genCal(a);
+  let libres = moisLibres || M.map(function (_, i) { return i; }).filter(function (m) { return (a.moisVerrouilles || []).indexOf(m) < 0; });
+  let semaines = needWeeks(a);
+  let estLibre = function (w) { return moisDeSemaine(a, w.week).every(function (m) { return libres.indexOf(m) >= 0; }); };
+
+  // Vider les congés des semaines libres (les parts par mois des semaines à cheval sont recalculées au prorata)
+  semaines.forEach(function (w) {
+    if (estLibre(w) && a.presence[w.week]) { a.presence[w.week].cp = 0; delete a.presence[w.week].cpMois; }
   });
-
-  // Vider les CP des semaines des mois libres
-  needWeeks(a).forEach(function(w){
-    let mois = mainMonth(a, w.week);
-    if(libres.indexOf(mois) >= 0){
-      if(a.presence[w.week]){ a.presence[w.week].cp = 0; delete a.presence[w.week].cpMois; } // parts par mois (semaine à cheval) recalculées au prorata
-    }
-  });
-
-  // CP déjà posés sur les mois verrouillés
-  let cpVerrouilles = needWeeks(a).reduce(function(s, w){
-    let mois = mainMonth(a, w.week);
-    if((a.moisVerrouilles||[]).indexOf(mois) >= 0){
-      return s + (+((a.presence[w.week]||{}).cp) || 0);
-    }
-    return s;
-  }, 0);
 
   let generes = cpGeneres(a);
-  let restant = Math.round((generes - cpVerrouilles) * 10) / 10;
-  if(restant <= 0){ return; } // rien à répartir (dans le mono-fichier : render() puis sortie)
-
-  // ── COUCHE 1 : enveloppes légales CONSCIENTES des mois verrouillés ──
-  // Cible de chaque enveloppe = pct × total généré.
-  // Budget des mois libres = cible − CP déjà posés sur les mois verrouillés de l'enveloppe.
-  // Si un mois verrouillé DÉPASSE la cible de son enveloppe, l'excédent est
-  // compensé en réduisant proportionnellement les autres enveloppes.
-  let envelopes = [
-    { nom: 'Juin – octobre',    pct: 0.60, months: [5,6,7,8,9]  },
-    { nom: 'Novembre – janvier', pct: 0.20, months: [10,11,0]    },
-    { nom: 'Février – mai',      pct: 0.20, months: [1,2,3,4]    }
-  ];
-
-  // CP verrouillés par enveloppe
-  envelopes.forEach(function(env){
-    env.cpVerrouilles = needWeeks(a).reduce(function(s, w){
-      let mois = mainMonth(a, w.week);
-      if(env.months.indexOf(mois) >= 0 && libres.indexOf(mois) < 0){
-        return s + (+((a.presence[w.week]||{}).cp) || 0);
-      }
-      return s;
-    }, 0);
-    env.cible = Math.round(generes * env.pct * 10) / 10;
-    // Budget brut des mois libres = cible − verrouillé (peut être négatif si dépassement)
-    env.budgetBrut = Math.round((env.cible - env.cpVerrouilles) * 10) / 10;
+  let envelopes = ENVELOPPES_CP.map(function (e) { return { nom: e.nom, pct: e.pct, months: e.months }; });
+  envelopes.forEach(function (env) {
+    let dans = function (w) { return env.months.indexOf(mainMonth(a, w.week)) >= 0; };
+    env.cpVerrouilles = r1(semaines.reduce(function (s, w) { return dans(w) && !estLibre(w) ? s + (+((a.presence[w.week] || {}).cp) || 0) : s; }, 0));
+    env.semaines = semaines.filter(function (w) { return dans(w) && estLibre(w); });
+    env.cible = r1(generes * env.pct);
+    env.budgetBrut = r1(env.cible - env.cpVerrouilles);
   });
 
-  // Compensation : les excédents (budgets négatifs) réduisent proportionnellement
-  // les enveloppes qui ont encore de la place.
-  let excedent = envelopes.reduce(function(s, env){ return s + (env.budgetBrut < 0 ? -env.budgetBrut : 0); }, 0);
-  let capaciteRestante = envelopes.reduce(function(s, env){ return s + (env.budgetBrut > 0 ? env.budgetBrut : 0); }, 0);
-  envelopes.forEach(function(env){
-    if(env.budgetBrut <= 0){ env.budget = 0; return; }
-    let reduction = capaciteRestante > 0 ? excedent * (env.budgetBrut / capaciteRestante) : 0;
-    env.budget = Math.max(0, Math.round((env.budgetBrut - reduction) * 10) / 10);
-  });
-  // Mémoriser le bilan des enveloppes pour l'affichage en synthèse
-  a.cpEnveloppes = envelopes.map(function(env){
-    return { nom: env.nom, pct: env.pct, cible: env.cible, verrouille: env.cpVerrouilles, budget: env.budget };
+  // Mois validés au-delà de la cible de leur enveloppe : l'excédent réduit les autres enveloppes au prorata de leur place
+  let excedent = envelopes.reduce(function (s, env) { return s + (env.budgetBrut < 0 ? -env.budgetBrut : 0); }, 0);
+  let capacite = envelopes.reduce(function (s, env) { return s + (env.budgetBrut > 0 ? env.budgetBrut : 0); }, 0);
+  envelopes.forEach(function (env) {
+    if (env.budgetBrut <= 0) { env.budget = 0; return; }
+    env.budget = Math.max(0, r1(env.budgetBrut - (capacite > 0 ? excedent * env.budgetBrut / capacite : 0)));
   });
 
-  // ── COUCHE 2 : dans chaque enveloppe, ÉGALISER les HS/personne ──
-  // Principe : on ne pose JAMAIS de CP sur une semaine structurellement forte.
-  // On remplit les creuses jusqu'à rejoindre le niveau des fortes → ligne plate.
-  let reliquatTotal = 0;
-  envelopes.forEach(function(env){
-    let semaines = needWeeks(a).filter(function(w){
-      let mois = mainMonth(a, w.week);
-      return env.months.indexOf(mois) >= 0 && libres.indexOf(mois) >= 0;
-    });
-    if(!semaines.length){ reliquatTotal += env.budget; return; }
+  // Report : une enveloppe dont tous les mois sont validés ne peut plus rien recevoir
+  let aReporter = 0;
+  envelopes.forEach(function (env) { env.recu = 0; env.reporte = 0; if (!env.semaines.length && env.budget > 0.05) { env.reporte = env.budget; aReporter += env.budget; env.budget = 0; } });
+  let receveurs = envelopes.filter(function (env) { return env.semaines.length; });
+  let poidsRec = receveurs.reduce(function (s, env) { return s + env.pct; }, 0);
+  if (aReporter > 0.05 && poidsRec > 0) receveurs.forEach(function (env) { env.recu = r1(aReporter * env.pct / poidsRec); env.budget = r1(env.budget + env.recu); });
 
-    let budgetEnv = env.budget;
-    if(budgetEnv <= 0) return;
-
-    // Remplissage itératif : à chaque pas, la semaine au plus BAS HS/personne
-    // reçoit du CP. On place la TOTALITÉ du budget de l'enveloppe (les congés
-    // générés doivent être posés), en gardant la charge aussi plate que possible :
-    // remplir toujours la semaine la plus creuse fait monter la ligne uniformément
-    // et ne charge les semaines fortes qu'en dernier recours.
-    // Pas ADAPTATIF : large au début (rapide), affiné en fin (précis).
-    let placeTotal = 0;
-    let secu = 0;
-    // Charge par semaine mise en cache : seule la semaine qui reçoit des CP change à chaque pas
-    // (même résultat, 50 fois moins de calculs ; ~2 s → ~0,05 s pour une agence de 160 salariés)
-    let cacheHP = {};
-    let hpDe = function(w){ if(!(w.week in cacheHP)) cacheHP[w.week] = hsParPersonne(a, w.week); return cacheHP[w.week]; };
-    while(budgetEnv - placeTotal > 0.05 && secu < 5000){
-      secu++;
-      // 1) ratio HS/personne minimal parmi les semaines éligibles
-      let minR = Infinity;
-      semaines.forEach(function(w){
-        let hp = hpDe(w);
-        if(hp.etp <= 0.5) return;
-        if(hp.ratio < minR) minR = hp.ratio;
-      });
-      if(minR === Infinity) break; // aucune semaine éligible (sécurité effectif)
-      // 2) parmi les semaines les plus creuses, celle qui porte le MOINS de CP
-      //    (densité CP/ETP) → répartition égale même sans écart d'HS.
-      let best = null, bestDens = Infinity;
-      semaines.forEach(function(w){
-        let hp = hpDe(w);
-        if(hp.etp <= 0.5) return;
-        if(hp.ratio > minR + 0.01) return; // uniquement les semaines au plus bas niveau
-        let cpNow = +((a.presence[w.week]||{}).cp) || 0;
-        let dens = hp.etp > 0 ? cpNow / hp.etp : cpNow;
-        if(dens < bestDens){ bestDens = dens; best = w; }
-      });
-      if(!best) break;
-      let restAPlacer = budgetEnv - placeTotal;
-      // Pas adaptatif : 2 jours tant qu'il reste beaucoup, 0.5 en finition
-      let pas = restAPlacer > 10 ? 2 : 0.5;
-      let ajout = Math.min(pas, restAPlacer);
-      if(!a.presence[best.week]) a.presence[best.week] = {cp:0, other:0};
-      a.presence[best.week].cp = Math.round(((+a.presence[best.week].cp||0) + ajout) * 10) / 10;
-      delete cacheHP[best.week];
-      placeTotal = Math.round((placeTotal + ajout) * 10) / 10;
+  // Placement
+  let reliquat = receveurs.length ? 0 : aReporter;
+  let cache = {};
+  let etat = function (w) {
+    if (!cache[w.week]) {
+      let p = pres(a, w.week);
+      cache[w.week] = { gap: w.hours - p.av, etp: p.etp, base: p.base, cpH: p.cpH };
     }
-    // Reliquat éventuel (uniquement si la sécurité effectif bloque toutes les semaines)
-    if(budgetEnv - placeTotal > 0.05) reliquatTotal += Math.round((budgetEnv - placeTotal) * 10) / 10;
+    return cache[w.week];
+  };
+  envelopes.forEach(function (env) {
+    let budget = env.budget, place = 0, secu = 0;
+    if (budget <= 0.05) return;
+    let elig = env.semaines.filter(function (w) { return etat(w).etp > 0.5; });
+    while (budget - place > 0.05 && secu < 20000 && elig.length) {
+      secu++;
+      let reste = r1(budget - place);
+      let pas = Math.min(reste > 10 ? 2 : 0.5, reste);
+      // 1) capacité gratuite : semaine qui peut recevoir sans créer d'HS, la moins chargée en congés
+      let best = null, ajout = 0, cle = Infinity;
+      elig.forEach(function (w) {
+        let e = etat(w);
+        let possible = Math.min(pas, Math.floor((-e.gap / CP_HEURES_JOUR) * 2) / 2);
+        if (possible <= 0) return;
+        let part = e.base > 0 ? e.cpH / e.base : 0;
+        if (part < cle) { cle = part; best = w; ajout = possible; }
+      });
+      // 2) plus de marge : HS par personne présente les plus basses, puis la semaine la moins chargée en congés
+      if (!best) {
+        let minR = Infinity;
+        elig.forEach(function (w) { let e = etat(w); let r = Math.max(0, e.gap) / e.etp; if (r < minR) minR = r; });
+        cle = Infinity;
+        elig.forEach(function (w) {
+          let e = etat(w);
+          if (Math.max(0, e.gap) / e.etp > minR + 0.01) return;
+          let part = e.base > 0 ? e.cpH / e.base : 0;
+          if (part < cle) { cle = part; best = w; }
+        });
+        ajout = pas;
+      }
+      if (!best) break;
+      if (!a.presence[best.week]) a.presence[best.week] = { cp: 0, other: 0 };
+      a.presence[best.week].cp = r1((+a.presence[best.week].cp || 0) + ajout);
+      delete cache[best.week];
+      if (etat(best).etp <= 0.5) elig = elig.filter(function (w) { return w !== best; });
+      place = r1(place + ajout);
+    }
+    if (budget - place > 0.05) reliquat += r1(budget - place);
   });
 
-  // Mémoriser le reliquat pour le signaler au REX (fil conducteur / synthèse)
-  a.cpReliquat = Math.round(reliquatTotal * 10) / 10;
-
-  // Mémoriser cette répartition optimale comme RÉFÉRENCE (pour le coût du choix REX)
+  a.cpEnveloppes = envelopes.map(function (env) {
+    return { nom: env.nom, pct: env.pct, cible: env.cible, verrouille: env.cpVerrouilles, budget: env.budget, recu: env.recu, reporte: env.reporte };
+  });
+  a.cpReliquat = r1(reliquat);
   memoriserRepartitionOptimale(a);
   return a;
 }
+
+// Congés posés par mois (semaine à cheval : part du mois)
+function cpParMois(a) {
+  return M.map(function (_, m) {
+    return r1(needWeeks(a).reduce(function (s, w) { return s + absPartMois(a, w.week, 'cp', m); }, 0));
+  });
+}
+// Ce que la répartition a changé : congés par mois avant / après et coût des HS (affiché après une validation ou une relance)
+function bilanRecalculCP(avantMois, avantCout, a, contexte) {
+  let apres = cpParMois(a), coutApres = coutHSTotal(a);
+  let deplacements = [];
+  apres.forEach(function (v, m) { let d = r1(v - avantMois[m]); if (Math.abs(d) >= 0.5) deplacements.push({ m: m, delta: d }); });
+  return Object.assign({ deplacements: deplacements, coutAvant: Math.round(avantCout), coutApres: Math.round(coutApres), reliquat: a.cpReliquat || 0,
+    report: (a.cpEnveloppes || []).filter(function (e) { return e.reporte > 0.05; }).map(function (e) { return { nom: e.nom, jours: e.reporte }; }) }, contexte || {});
+}
+// Proposition de SOMA pour un mois (dernière répartition automatique) : somme des parts du mois
+// Semaine figée : elle touche un mois validé, la répartition ne la modifie pas
+function semaineFigee(a, w) {
+  let verr = a.moisVerrouilles || [];
+  return moisDeSemaine(a, w).some(function (m) { return verr.indexOf(m) >= 0; });
+}
+function cpProposeMois(a, m) {
+  if (!a.cpOptimal) return null;
+  let s = 0;
+  needWeeks(a).forEach(function (w) {
+    if (semaineFigee(a, w.week)) { s += absPartMois(a, w.week, 'cp', m); return; } // figée : ce qui est posé
+    let tot = +a.cpOptimal[w.week] || 0; if (!tot) return;
+    s += absPartMois({ cal: a.cal, presence: { [w.week]: { cp: tot } } }, w.week, 'cp', m);
+  });
+  return r1(s);
+}
+// Remettre la proposition de SOMA sur un mois non validé (semaines entièrement dans le mois ; à cheval : la part du mois)
+function reprendrePropositionMois(a, m) {
+  if (!a.cpOptimal) return a;
+  a.presence = Object.assign({}, a.presence);
+  needWeeks(a).forEach(function (w) {
+    let ms = moisDeSemaine(a, w.week); if (ms.indexOf(m) < 0 || semaineFigee(a, w.week)) return;
+    let tot = +a.cpOptimal[w.week] || 0;
+    let p = Object.assign({ cp: 0, other: 0 }, a.presence[w.week] || {});
+    if (ms.length < 2) { p.cp = tot; delete p.cpMois; }
+    else {
+      let parts = {};
+      ms.forEach(function (mm) { parts[mm] = mm === m ? absPartMois({ cal: a.cal, presence: { [w.week]: { cp: tot } } }, w.week, 'cp', mm) : absPartMois(a, w.week, 'cp', mm); });
+      p.cpMois = parts; p.cp = r1(ms.reduce(function (s, mm) { return s + parts[mm]; }, 0));
+    }
+    a.presence[w.week] = p;
+  });
+  return a;
+}
+
+export function repartirCPAuto(a, moisLibres) { return repartirCPAgence(a, moisLibres); }
+export { ENVELOPPES_CP, repartirCPAgence, cpParMois, bilanRecalculCP, cpProposeMois, reprendrePropositionMois };
