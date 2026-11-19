@@ -16,6 +16,7 @@ import ChargesCgScreen from './ChargesCgScreen.jsx';
 import ControleScreen from './ControleScreen.jsx';
 import GraphiquesScreen from './GraphiquesScreen.jsx';
 import PeriodesScreen from './PeriodesScreen.jsx';
+import JustifScreen from './JustifScreen.jsx';
 import AdminScreen from './AdminScreen.jsx';
 import RefsScreen from './RefsScreen.jsx';
 import CalScreen from './CalScreen.jsx';
@@ -47,6 +48,7 @@ export const SCREENS = {
   controle: ControleScreen,
   graphiques: GraphiquesScreen,
   periodes: PeriodesScreen,
+  justif: JustifScreen,
   admin: AdminScreen,
   journal: JournalScreen,
   suivi: SuiviREXScreen,

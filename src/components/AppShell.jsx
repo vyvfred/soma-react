@@ -123,7 +123,7 @@ function VersionBorder({ children }) {
 }
 
 // Panneaux qui portent sur UNE agence (donc concernés par la sélection d'agence CG).
-const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'charges', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle']);
+const PER_AGENCY_PANELS = new Set(['objectif', 'team', 'rh', 'charges', 'previsionnel', 'finance', 'rex', 'cg', 'refs', 'cal', 'periodes', 'controle', 'justif']);
 
 // Visites guidées : à la première connexion (après la page « vision ») selon le profil — REX, DR, Directions —,
 // relançables depuis l'écran Aide. La visite des écrans REX est aussi offerte au DR quand il saisit pour un REX.

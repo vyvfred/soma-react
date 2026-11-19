@@ -30,6 +30,7 @@ export const PANELS_CG = [
   ['cg', 'Charges CG'],
   ['rex', 'Prévisionnel'],
   ['finance', 'Synthèse'],
+  ['justif', 'Détail des calculs'],
   ['controle', 'Contrôles'],
   ['validation', 'Budgets à valider'],
   ['aide', 'Aide']
