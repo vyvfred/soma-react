@@ -3,7 +3,7 @@ import { anneeRep, atterrissage2026, annuel2025, completerAtterrissageCA, repere
 // Synthèse du budget (refonte nov. 2026), commune à tous les rôles : l'essentiel du budget 2027 face à 2026, 2025 et à la
 // moyenne du réseau, deux graphiques (CA mois par mois, passage du résultat 2026 au résultat 2027), les points à regarder.
 // Aucun seuil imposé ; couleurs neutres. Données (syntheseVue) et rendu HTML (syntheseVueHTML) identiques dans les deux versions.
-function svPct(v,b){return b?v/b*100:null;}
+function svPct(v,b){return b&&v!==null&&v!==undefined&&isFinite(v)?v/b*100:null;}
 function svEvol(x,y){return x&&y?(x/y-1)*100:null;}
 function syntheseVue(a,r0,reseau,opts){
   opts=opts||{};

@@ -25,3 +25,12 @@ describe('syntheseVue', () => {
     expect((h.match(/class="ok"/g) || []).length).toBe(5);
   });
 });
+
+describe('syntheseVue sans tableau de bord 2026', () => {
+  it('n\'affiche pas 0 % pour 2026 quand le réalisé est inconnu', () => {
+    const a = agency('NANTES'); a.rex = a.rex || {}; a.histCA = 4000000;
+    const v = syntheseVue(a, null, null, {});
+    const ms = v.kpis.find((k) => k.cle === 'ms');
+    expect(ms.comps[0].val).toBeNull();
+  });
+});
