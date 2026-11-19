@@ -286,7 +286,7 @@ function mainMonth(a,w){let ix=indexCal(a),k=+w;if(ix.moisPrincipal.has(k))retur
 
 function manual(a,l,m){let x=a.rex[l];if(!x)return 0;if(x.mode==='pct')return monthCA(a,m)*(+x.pct||0)/100;if(x.mode==='pctMois')return monthCA(a,m)*(+(x.pcts&&x.pcts[m])||0)/100;if(x.mode==='annual'){let annual=+x.annual||0;if(x.allocationKey==='ca')return annual*annualCAWeight(a,m);return annual/12}return x.values[m]!==null&&x.values[m]!==undefined?+x.values[m]:0}
 
-function monthCA(a,m){if(estStructure(a))return caStructure(a,m);if(!a.cal.length)genCal(a);return a.cal.filter(d=>d.month===m).reduce((s,d)=>s+d.total,0)+caFunMois(a,m)}
+function monthCA(a,m){if(estStructure(a))return caStructure(a,m);if(!a.cal||!a.cal.length){if(!a.refs)return caFunMois(a,m);genCal(a);}return a.cal.filter(d=>d.month===m).reduce((s,d)=>s+d.total,0)+caFunMois(a,m)}
 // Activité funéraire (nov. 2026, agence de Cahors) : CA commercial saisi par mois, réparti à parts égales sur les jours du mois.
 // Sans besoin d'équipage : il entre dans le CA (compte de résultat, charges en % du CA) mais ni dans les heures de besoin
 // (qui viennent du CA des jours du calendrier, a.cal[].total), ni dans le TXR, ni dans l'objectif de CA (transport).

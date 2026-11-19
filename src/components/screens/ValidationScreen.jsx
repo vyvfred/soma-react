@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { loadBudgetsForValidation, submitDecision } from '../../lib/budgetApi.js';
-import { budgetData } from '../../domain/budgetMapper.js';
+import { budgetData, migrateAgency } from '../../domain/budgetMapper.js';
+import { agency } from '../../domain/calculations.js';
 import {
   ensureValidation, enAttenteDe, VALIDATION_STAGES, VALIDATOR_LABELS
 } from '../../domain/validationEngine.js';
@@ -10,7 +11,7 @@ import { euro, pct } from '../../domain/format.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { toast as toaster } from '../Toast.jsx';
 
-function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter }) {
+function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consultatif }) {
   const { agence, v, d } = item;
   const f = ficheDecisions(d, autres);
   const lignes = lignesFiche(f);
@@ -59,6 +60,9 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter }) {
       {dernierRefus ? (
         <div className="valCardRefus">⚠ Déjà refusé le {new Date(dernierRefus.date).toLocaleDateString('fr-FR')} par {VALIDATOR_LABELS[dernierRefus.role] || dernierRefus.role} : « {dernierRefus.commentaire} »</div>
       ) : null}
+      {consultatif ? (
+        <div data-testid="val-consultatif" className="valCardMeta" style={{ marginTop: 10 }}>👁 Profil consultatif : vous voyez la fiche et tous les écrans, la décision appartient au directeur financier.</div>
+      ) : <>
       <label className="valCardCommentLabel">Commentaire (obligatoire)</label>
       <textarea className="valCardComment" rows={2} placeholder="Justifiez votre décision…" value={comment} disabled={busy} onChange={(e) => setComment(e.target.value)} />
       {msg ? <div style={{ fontSize: 12, color: 'var(--orange, #c45300)', margin: '6px 0' }}>{msg}</div> : null}
@@ -66,6 +70,7 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter }) {
         <button className="valBtnValider" data-testid="val-ok" disabled={busy || !comment.trim()} onClick={() => decide('valide')}>✓ Valider</button>
         <button className="valBtnRefuser" data-testid="val-no" disabled={busy || !comment.trim()} onClick={() => decide('refuse')}>✗ Refuser</button>
       </div>
+      </>}
     </div>
   );
 }
@@ -84,13 +89,15 @@ export default function ValidationScreen() {
         if (!active.on) return;
         const role = profile.role;
         const aValider = [], traites = [];
-        const tous = budgets.map((b) => ({ agence: b.agence, d: budgetData(b.data) }));
+        // Données normalisées (valeurs par défaut d'une agence) : un budget incomplet ne casse pas la fiche
+        const norm = (b) => { const d = budgetData(b.data); try { return migrateAgency({ ...agency(b.agence), ...JSON.parse(JSON.stringify(d)), name: b.agence }); } catch (e) { return d; } };
+        const tous = budgets.map((b) => ({ agence: b.agence, d: norm(b) }));
         budgets.forEach((b) => {
           // Jamais soumis (pas de data.validation) : rien à valider. Avant, une validation
           // neuve « en cours, étage 1 » le faisait apparaître « à valider » chez le DR.
           if (!b.data || !b.data.validation) return;
           const v = ensureValidation(b.data.validation);
-          const item = { agence: b.agence, v, d: budgetData(b.data), updated: b.updated_at };
+          const item = { agence: b.agence, v, d: norm(b), updated: b.updated_at };
           if (enAttenteDe(v, role)) aValider.push(item);
           else if (v.decisions[role] && v.decisions[role].decision) traites.push(item);
         });
@@ -126,11 +133,11 @@ export default function ValidationScreen() {
         ))}
       </div>
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--ink65)', marginBottom: 16 }}>
-        💬 {state.aValider.length ? <><b>{state.aValider.length} budget{state.aValider.length > 1 ? 's' : ''}</b> attend{state.aValider.length > 1 ? 'ent' : ''} votre décision.</> : 'Aucun budget n\'attend votre décision pour le moment. ' + (profile.role === 'dr' ? 'Les budgets de vos agences arrivent ici dès que leur responsable d\'exploitation les soumet. Suivez leur avancement dans « Consolidation région ».' : 'Un budget arrive ici quand l\'étape précédente du circuit l\'a validé. Suivez l\'avancement des agences dans « Consolidation ».')}
+        💬 {state.aValider.length ? <><b>{state.aValider.length} budget{state.aValider.length > 1 ? 's' : ''}</b> attend{state.aValider.length > 1 ? 'ent' : ''} {profile.consultatif ? 'la décision du directeur financier (profil consultatif : lecture seule)' : 'votre décision'}.</> : 'Aucun budget n\'attend votre décision pour le moment. ' + (profile.role === 'dr' ? 'Les budgets de vos agences arrivent ici dès que leur responsable d\'exploitation les soumet. Suivez leur avancement dans « Consolidation région ».' : 'Un budget arrive ici quand l\'étape précédente du circuit l\'a validé. Suivez l\'avancement des agences dans « Consolidation ».')}
       </div>
 
       {state.aValider.map((it) => (
-        <BudgetCard key={it.agence} item={it} role={profile.role} parNom={parNom} onDecided={onDecided}
+        <BudgetCard consultatif={!!profile.consultatif} key={it.agence} item={it} role={profile.role} parNom={parNom} onDecided={onDecided}
           autres={state.tous.filter((x) => x.agence !== it.agence).map((x) => x.d)}
           onConsulter={(ag) => navigate('__consulter', ag)} />
       ))}
