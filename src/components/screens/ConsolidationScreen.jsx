@@ -13,6 +13,7 @@ import { euro } from '../../domain/format.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { feuillesConsolidation, nomFichierConsolidation } from '../../domain/exportConsolidation.js';
 import { telechargerClasseur } from '../../lib/importExcel.js';
+import DossierOmnisian from '../DossierOmnisian.jsx';
 
 function Kpi({ label, value, note }) {
   return (
@@ -119,6 +120,8 @@ export default function ConsolidationScreen() {
         <Kpi label="Validés Direction" value={c.valides} />
         <Kpi label="En cours validation" value={c.enCours} />
       </div>
+
+      {!region && ['dg', 'df', 'pdg', 'admin'].includes(profile && profile.role) ? <DossierOmnisian profile={profile} /> : null}
 
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}
         dangerouslySetInnerHTML={{ __html: insight }} />
