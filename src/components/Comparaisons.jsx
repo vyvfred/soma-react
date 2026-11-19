@@ -51,8 +51,7 @@ export default function Comparaisons({ a, r: r0, reseau }) {
   const lignes = comparaisonsLignes(a, r, reseau);
   const nb = reseau && reseau.nbAgences;
   return (
-    <div data-testid="comparaisons" style={{ marginBottom: 18, border: '1px solid var(--border)', padding: '12px 14px' }}>
-      <div style={{ fontWeight: 700, marginBottom: 2 }}>Comparaisons : 2025, 2026 et moyenne du réseau</div>
+    <div data-testid="comparaisons" className="sv-carte">
       <div style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 10 }}>
         Pour situer votre budget, sans valeur imposée : réalisé 2025, atterrissage 2026 (réalisé des mois clos + estimation du contrôle de gestion), budget 2027{nb ? <> et moyenne des {nb} agences du réseau (pondérée par le CA)</> : null}.
       </div>
