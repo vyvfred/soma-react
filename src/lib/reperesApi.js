@@ -1,5 +1,6 @@
 import { sb } from './supabase.js';
-import { agregerReseau, AGENCE_RESEAU } from '../domain/reperes.js';
+import { agregerReseau, completerAtterrissageCA, AGENCE_RESEAU } from '../domain/reperes.js';
+import { budgetData } from '../domain/budgetMapper.js';
 
 // Repères du tableau de bord du contrôle de gestion, table « reperes » : une ligne par agence et par exercice
 // (2026 : réalisé des mois clos + estimation ; 2025 : exercice complet). « __RESEAU__ » = moyenne du réseau.
@@ -36,7 +37,9 @@ async function ecrireRepere(agence, annee, data, remplacer) {
 // Recalcule la moyenne du réseau d'un exercice à partir des lignes des agences
 async function majReseau(annee) {
   const { data } = await sb.from('reperes').select('agence,data').eq('annee', annee);
-  const rows = {}; (data || []).forEach((x) => { if (x.agence !== AGENCE_RESEAU) rows[x.agence] = x.data; });
+  const ca = {};
+  if (annee === 2026) { const { data: b } = await sb.from('budgets').select('agence,data').eq('annee', 2027); (b || []).forEach((x) => { const d = budgetData(x.data) || {}; ca[x.agence] = d.histCA; }); }
+  const rows = {}; (data || []).forEach((x) => { if (x.agence !== AGENCE_RESEAU) rows[x.agence] = completerAtterrissageCA(x.data, ca[x.agence]); });
   return ecrireRepere(AGENCE_RESEAU, annee, agregerReseau(rows), true);
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lireTableauDeBord, atterrissage2026, annuel2025, reperesAgence, agenceDuTDB, agregerReseau, comparaisonsLignes, ratioLigneRep } from './reperes.js';
+import { completerAtterrissageCA, lireTableauDeBord, atterrissage2026, annuel2025, reperesAgence, agenceDuTDB, agregerReseau, comparaisonsLignes, ratioLigneRep } from './reperes.js';
 import { agency } from './calculations.js';
 
 const AG = ['POITIERS', 'SAINT GILLES CROIX DE VIE', 'CENTRE DE FORMATION', 'SIEGE', 'CAHORS'];
@@ -77,5 +77,13 @@ describe('Exercice 2025, moyenne du réseau et comparaisons (nov. 2026)', () => 
     expect(p.moisClos).toBe(10);
     expect(p.reel["Chiffre d'affaires"].slice(0, 2)).toEqual([1000, 1001]);
     expect(p.budget["Chiffre d'affaires"][0]).toBe(900);
+  });
+  it('CA 2026 des Données agences = atterrissage du CA ; une estimation saisie reste prioritaire', () => {
+    const r = lireTableauDeBord({ x: onglet('CAHORS', 160000, 8000, 10) }, AG).parAgence.CAHORS;
+    expect(atterrissage2026(completerAtterrissageCA(r, 2000000), 'ca')).toEqual({ val: 2000000, manquants: 0, moisClos: 10 });
+    const a = agency('CAHORS'); a.histCA = 2000000;
+    expect(reperesAgence(a, r).lignes[0].v2026).toBeCloseTo(2000000, 6);
+    r.estim = { ca: Array(12).fill(null) }; r.estim.ca[10] = 150000; r.estim.ca[11] = 150000;
+    expect(atterrissage2026(completerAtterrissageCA(r, 2000000), 'ca').val).toBe(1900000);
   });
 });

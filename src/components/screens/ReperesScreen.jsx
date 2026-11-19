@@ -7,7 +7,7 @@ import { sb } from '../../lib/supabase.js';
 import { migrateAgency } from '../../domain/budgetMapper.js';
 import { agency, M, avecCacheMoteur } from '../../domain/calculations.js';
 import { AGENCES } from '../../config/agences.js';
-import { AGENCE_RESEAU, INDICATEURS_REPERES, lireTableauDeBord, reperesAgence, serieRep, estimRep, valRep } from '../../domain/reperes.js';
+import { completerAtterrissageCA, AGENCE_RESEAU, INDICATEURS_REPERES, lireTableauDeBord, reperesAgence, serieRep, estimRep, valRep } from '../../domain/reperes.js';
 import ReperesBloc, { periodeReperes } from '../ReperesBloc.jsx';
 
 // Écran « Tableau de bord 2026 » (nov. 2026) : le CG importe le tableau de bord et estime les derniers mois ;
@@ -15,7 +15,9 @@ import ReperesBloc, { periodeReperes } from '../ReperesBloc.jsx';
 const k = (v) => (v === null || v === undefined ? '—' : Math.round(v / 1000).toLocaleString('fr-FR') + ' k€');
 const p1 = (v) => (v === null || v === undefined || !isFinite(v) ? '—' : (Math.round(v * 10) / 10).toLocaleString('fr-FR') + ' %');
 
-function Estimation({ agence, r, onEnregistre }) {
+function Estimation({ agence, r, a, onEnregistre }) {
+  // Placeholder du CA : atterrissage du CG (Données agences) quand il est saisi, sinon budget 2026
+  const rc = completerAtterrissageCA(r, a && a.histCA);
   const mc = r.moisClos || 0;
   const init = () => { const o = {}; INDICATEURS_REPERES.forEach((ind) => { o[ind.cle] = M.map((_, m) => { const v = estimRep(r, ind.cle, m); return v === null ? '' : String(v); }); }); return o; };
   const [val, setVal] = useState(init);
@@ -32,7 +34,7 @@ function Estimation({ agence, r, onEnregistre }) {
   return (
     <div data-testid="estimation-cg" style={{ marginBottom: 10 }}>
       <h4 style={{ margin: '6px 0' }}>Estimation des derniers mois (contrôle de gestion)</h4>
-      <p className="hint" style={{ fontSize: 12, margin: '0 0 6px' }}>L'atterrissage 2026 = réalisé {M[0]}–{M[mc - 1]} + votre estimation pour {mois.map((m) => M[m]).join(', ')}. En gris : budget 2026 du mois, retenu tant que vous n'avez rien saisi.</p>
+      <p className="hint" style={{ fontSize: 12, margin: '0 0 6px' }}>L'atterrissage 2026 = réalisé {M[0]}–{M[mc - 1]} + votre estimation pour {mois.map((m) => M[m]).join(', ')}. En gris : ce qui est retenu tant que vous n'avez rien saisi (CA : votre « CA 2026 » des Données agences moins le réalisé, réparti comme le budget ; autres indicateurs : budget 2026 du mois).</p>
       <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
         <thead><tr><th style={{ textAlign: 'left', padding: '3px 6px' }}>Indicateur</th>{mois.map((m) => <th key={m} style={{ padding: '3px 6px' }}>{M[m]}</th>)}</tr></thead>
         <tbody>
@@ -41,7 +43,7 @@ function Estimation({ agence, r, onEnregistre }) {
               <td style={{ padding: '3px 6px' }}>{ind.lib}</td>
               {mois.map((m) => (
                 <td key={m} style={{ padding: '2px 3px' }}>
-                  <input type="number" data-testid={'estim-' + ind.cle + '-' + m} value={val[ind.cle][m]} placeholder={String(Math.round(valRep(serieRep(r, 'budget', ind.cle)[m]) || 0))}
+                  <input type="number" data-testid={'estim-' + ind.cle + '-' + m} value={val[ind.cle][m]} placeholder={String(Math.round((ind.cle === 'ca' && rc.caAtterrissageCG ? valRep(rc.estim.ca[m]) : valRep(serieRep(r, 'budget', ind.cle)[m])) || 0))}
                     onChange={(e) => setVal((v) => ({ ...v, [ind.cle]: v[ind.cle].map((x, i) => (i === m ? e.target.value : x)) }))} style={{ width: 110, textAlign: 'right', padding: '6px 4px' }} />
                 </td>
               ))}
@@ -150,7 +152,7 @@ export default function ReperesScreen() {
       {sel ? (
         <div className="card" data-testid="tdb-detail">
           <h3 style={{ marginTop: 0 }}>{sel.nom}</h3>
-          {cg ? <Estimation agence={sel.nom} r={sel.r} onEnregistre={recharger} /> : null}
+          {cg ? <Estimation agence={sel.nom} r={sel.r} a={sel.a} onEnregistre={recharger} /> : null}
           <ReperesBloc a={sel.a} r={sel.r} sansBudget={!sel.L.ca.v2027} />
         </div>
       ) : null}

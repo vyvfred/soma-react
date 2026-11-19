@@ -7,6 +7,7 @@ import { totauxCalendrier } from '../../domain/calTotaux.js';
 import { montant } from '../../domain/memoSIG.js';
 import { M, caFunMois } from '../../domain/calculations.js';
 import Comparaisons, { useReperesAgence, LignesMSHistoriques } from '../Comparaisons.jsx';
+import { completerAtterrissageCA } from '../../domain/reperes.js';
 
 // Écran Synthèse — port de renderSynthese, renderCoutChoix, renderEnveloppesCP,
 // renderDashboard et renderFinance.
@@ -82,7 +83,7 @@ function RatioMSMensuel({ a, rep }) {
               {M.map((_, m) => { const r = ratio(ca[m], ms[m]); return <td key={m} className="num" data-testid={'ratio-ms-' + m} style={cel}>{fmtR(r)}</td>; })}
               <td className="num" style={cel}>{fmtR(ratio(caAn, msAn))}</td>
             </tr>
-            {rep ? <LignesMSHistoriques r={rep.r} reseau={rep.reseau} /> : null}
+            {rep ? <LignesMSHistoriques r={completerAtterrissageCA(rep.r, a.histCA)} reseau={rep.reseau} /> : null}
           </tbody>
         </table>
       </div>

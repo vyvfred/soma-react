@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { chargerReperes } from '../lib/reperesApi.js';
-import { AGENCE_RESEAU, INDICATEURS_REPERES, anneeRep, annuel2025, atterrissage2026, budget2027Rep, comparaisonsLignes, ratioMoisRep } from '../domain/reperes.js';
+import { completerAtterrissageCA, AGENCE_RESEAU, INDICATEURS_REPERES, anneeRep, annuel2025, atterrissage2026, budget2027Rep, comparaisonsLignes, ratioMoisRep } from '../domain/reperes.js';
 import { M, libLigneSIG } from '../domain/calculations.js';
 
 // Comparaisons de la Synthèse (nov. 2026) : budget 2027 face à 2025 (N-2), 2026 (N-1) et à la moyenne du réseau.
@@ -42,8 +42,9 @@ function totalRatio(row) {
   return ca ? ms / ca * 100 : null;
 }
 
-export default function Comparaisons({ a, r, reseau }) {
-  if (!r && !reseau) return null;
+export default function Comparaisons({ a, r: r0, reseau }) {
+  if (!r0 && !reseau) return null;
+  const r = completerAtterrissageCA(r0, a && a.histCA);
   const at = (cle) => (anneeRep(r, 2026) ? atterrissage2026(r, cle).val : null);
   const an25 = (cle) => annuel2025(r, cle);
   const ca25 = an25('ca'), ca26 = at('ca');

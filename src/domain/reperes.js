@@ -105,6 +105,18 @@ function atterrissage2026(r,cle){
   for(let m=mc;m<12;m++){let e=estimRep(r,cle,m);if(e===null){manquants++;e=valRep(bu[m])||0;}tot+=e;}
   return {val:tot,manquants:manquants,moisClos:mc};
 }
+// Atterrissage du CA saisi par le contrôle de gestion dans Données agences (« CA 2026 », a.histCA) : les mois non clos
+// reçoivent la différence avec le réalisé, répartie comme le budget 2026 de ces mois. Une estimation du CA saisie dans
+// le tableau de bord reste prioritaire.
+function completerAtterrissageCA(r,caCG){
+  caCG=valRep(caCG);if(!r||!r.reel||!caCG||caCG<=0)return r;
+  let mc=r.moisClos||0;if(mc>=12)return r;
+  let e=r.estim&&r.estim.ca;if(e&&e.some(function(v,m){return m>=mc&&valRep(v)!==null;}))return r;
+  let reste=caCG-sommeRep(serieRep(r,'reel','ca'),0,mc);if(reste<=0)return r;
+  let b=serieRep(r,'budget','ca'),tb=sommeRep(b,mc,12),ca=Array(12).fill(null);
+  for(let m=mc;m<12;m++)ca[m]=tb>0?reste*(valRep(b[m])||0)/tb:reste/(12-mc);
+  return Object.assign({},r,{estim:Object.assign({},r.estim||{},{ca:ca}),caAtterrissageCG:caCG});
+}
 function annuel2025(r,cle){let h=anneeRep(r,2025);if(h){let s=serieRep(h,'reel',cle);if(s.length)return sommeRep(s,0,12);}let s=serieRep(r,'n1',cle);return s.length?sommeRep(s,0,12):null;}
 function budget2027Rep(a,cle){
   if(!a)return 0;
@@ -118,6 +130,7 @@ function fmtKRep(v){return Math.round(v/1000).toLocaleString('fr-FR')+' k€';}
 // Repères d'une agence pour la décision : tableau 2025 / atterrissage 2026 / budget 2027, fiabilité du budget 2026, alertes
 function reperesAgence(a,r){
   if(!r||!r.reel)return null;
+  r=completerAtterrissageCA(r,a&&a.histCA);
   let lignes=INDICATEURS_REPERES.map(function(ind){
     let at=atterrissage2026(r,ind.cle),v27=budget2027Rep(a,ind.cle);
     return {cle:ind.cle,lib:ind.lib,v2025:annuel2025(r,ind.cle),v2026:at.val,v2027:v27,manquants:at.manquants};
@@ -146,8 +159,9 @@ function reperesAgence(a,r){
     if(dRex<=-SEUILS_REPERES.fiabRex)al.push({niveau:'alerte',texte:'Budget 2026 non tenu : résultat d\'exploitation réalisé '+fmtKRep(fiab.rexReel)+' sur '+fiab.mois+' mois contre '+fmtKRep(fiab.rexBudget)+' budgétés ('+fmtPts(dRex)+' de CA)'});
     if(Math.abs(dCA)>SEUILS_REPERES.fiabCA)al.push({niveau:'info',texte:'CA 2026 réalisé '+(dCA>0?'+':'')+fmtPctRep(dCA)+' par rapport au budget 2026 sur '+fiab.mois+' mois'});
   }
+  if(r.caAtterrissageCG)al.push({niveau:'info',texte:'CA 2026 : atterrissage du contrôle de gestion (Données agences), novembre et décembre déduits du réalisé'});
   if(L.ca.manquants)al.push({niveau:'info',texte:'Atterrissage provisoire : estimation des '+L.ca.manquants+' derniers mois non saisie par le contrôle de gestion (budget 2026 retenu)'});
   let ordre={alerte:0,attention:1,info:2};al.sort(function(x,y){return ordre[x.niveau]-ordre[y.niveau];});
   return {lignes:lignes,ratios:ratios,fiabilite:fiab,alertes:al,moisClos:mc};
 }
-export { AGENCE_RESEAU, agregerReseau, anneeRep, ratioLigneRep, ratioMoisRep, LIGNES_COMPARAISON, comparaisonsLignes, INDICATEURS_REPERES, SEUILS_REPERES, valRep, agenceDuTDB, lireTableauDeBord, serieRep, estimRep, atterrissage2026, annuel2025, budget2027Rep, reperesAgence };
+export { completerAtterrissageCA, AGENCE_RESEAU, agregerReseau, anneeRep, ratioLigneRep, ratioMoisRep, LIGNES_COMPARAISON, comparaisonsLignes, INDICATEURS_REPERES, SEUILS_REPERES, valRep, agenceDuTDB, lireTableauDeBord, serieRep, estimRep, atterrissage2026, annuel2025, budget2027Rep, reperesAgence };
