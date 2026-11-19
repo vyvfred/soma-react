@@ -1,3 +1,4 @@
+import { variationStockCPMois } from './calculations.js';
 import { describe, it, expect } from 'vitest';
 import {
   partRoulant, transfertRoulantNR, payrollMonthCivil, payrollPayMonth, costHourJuin, chMois, ratioMaintien, partCDDSemaine, hsRows,
@@ -30,12 +31,13 @@ describe('taux horaire au 1er janvier et au 1er juin', () => {
     expect(civil(a)).toEqual(avant);
   });
   it('janvier à mai inchangés ; juillet passe exactement au taux de juin', () => {
-    const a = base(), sans = civil(a);
+    const a = base(), sans = civil(a), vSans = variationStockCPMois(a, 6);
     a.tauxHoraireBrutJuin = 20.35;
     const avec = civil(a);
     for (let m = 0; m < 5; m++) expect(avec[m]).toBeCloseTo(sans[m], 6);
     const roulJuin = roulantMois(a, 6, (r) => coutRoulantSemaine(a, r, 6));
-    expect(avec[6] - sans[6]).toBeCloseTo(roulJuin - roulJuin * 28.5 / 28.9, 4);
+    // + la variation du stock de congés payés, elle aussi valorisée au taux de juin
+    expect(avec[6] - sans[6]).toBeCloseTo(roulJuin - roulJuin * 28.5 / 28.9 + variationStockCPMois(a, 6) - vSans, 4);
   });
 });
 

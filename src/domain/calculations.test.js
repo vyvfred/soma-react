@@ -92,7 +92,7 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
 
   it('masse salariale de janvier', () => {
     // 1er-3 janvier (semaine 53) : 3/7 d'une semaine au lieu d'une semaine entière (−4/7 × 2 679 €)
-    expect(Math.round(payrollMonth(a, 0))).toBe(16276); // part roulante du régulateur transférée de la ligne non-roulants : quasi neutre
+    expect(Math.round(payrollMonth(a, 0))).toBe(17517); // 16 276 + 1 241 de provision CP (congés acquis, aucun posé sur l'agence de référence) ; // part roulante du régulateur transférée de la ligne non-roulants : quasi neutre
   });
 
   it('découpage en semaines ISO 2027', () => {
@@ -100,15 +100,15 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('compte de résultat de janvier — résultat net', () => {
-    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(65724);
+    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(64483); // − 1 241 de provision CP
   });
 
   it('agrégats annuels du compte de résultat (KPI Synthèse)', () => {
     expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(945400);
     // Semaines partielles au prorata : −4/7 (1er-3 janv.) − 2/7 (27-31 déc.) d'une semaine à 2 679 € = −2 296 €
-    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(193661);
-    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(751739);
-    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(751739);
+    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(208553); // + 14 891 : 89,6 j acquis non posés → le stock de congés augmente
+    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(736847);
+    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(736847);
     expect(Math.round(hsTot(a).hs)).toBe(0);
   });
 });

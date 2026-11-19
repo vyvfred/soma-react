@@ -1,4 +1,4 @@
-import { M, chMois, estRoulantPart, empPresent, partRoulant, CP_JOURS_MOIS, CP_ACQUIS_MALADIE, CP_HEURES_JOUR, needWeeks, hsRows, pres, absPartMois, partSemaineMois, moisDeSemaine, cpNRAcquisMois } from './calculations.js';
+import { M, chMois, CP_HEURES_JOUR, hsRows, pres, absPartMois, partSemaineMois, cpNRAcquisMois, cpAcquisMois, cpPrisMois } from './calculations.js';
 import { detailMSMois, feuillesDetailMS } from './detailMS.js';
 // Justification des calculs (écran « Détail des calculs », contrôleur de gestion et direction financière, nov. 2026).
 // Tous les montants viennent des mêmes fonctions que le reste de l'application : rien n'est recalculé autrement.
@@ -6,18 +6,6 @@ import { detailMSMois, feuillesDetailMS } from './detailMS.js';
 // Congés payés des roulants, mois par mois : acquisition (stockage) et prise (déstockage), en jours ouvrables,
 // en heures (1 j = 35/6 h) et valorisés au coût horaire chargé du mois. Stock d'ouverture au 31/12/2026 : facultatif,
 // saisi par le contrôleur de gestion (a.stockCP2026, jours ouvrables de l'équipe roulante), valorisé au coût horaire de janvier ; 0 sinon.
-function cpAcquisMois(a,m){
-  let tauxMal=a.sick&&a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]/100:0,ref='2027-'+String(m+1).padStart(2,'0')+'-15';
-  return (a.employees||[]).filter(estRoulantPart).reduce(function(s,e){
-    if(!empPresent(e,ref))return s;
-    return s+CP_JOURS_MOIS*(1-tauxMal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*partRoulant(e);
-  },0);
-}
-function cpPrisMois(a,m){
-  let s=0;
-  needWeeks(a).forEach(function(w){if(moisDeSemaine(a,w.week).indexOf(m)>=0)s+=absPartMois(a,w.week,'cp',m);});
-  return s;
-}
 function stockCPOuverture(a){let v=a&&a.stockCP2026;return (v===null||v===undefined||v==='')?null:Math.max(0,+v||0);}
 function tableauCPStock(a){
   let ouv=stockCPOuverture(a)||0,stockJ=ouv,stockE=ouv*CP_HEURES_JOUR*chMois(a,0);
@@ -65,4 +53,4 @@ function feuillesJustif(a){
   f.push({nom:'Heures par mois',largeurs:[12,12,12,12,12,12,12,12,12],lignes:[['Mois','Besoin','Heures contrat','Congés','Maladie','Abs. payées','Abs. non payées','Disponibles','HS']].concat(h.map(function(x){return [x.lib,r(x.besoin),r(x.base),r(x.cp),r(x.maladie),r(x.absPayees),r(x.absNonPayees),r(x.dispo),r(x.hs)];}))});
   return f;
 }
-export { cpAcquisMois, cpPrisMois, stockCPOuverture, tableauCPStock, tableauHeures, tableauVariables, feuillesJustif };
+export { stockCPOuverture, tableauCPStock, tableauHeures, tableauVariables, feuillesJustif };

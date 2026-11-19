@@ -1,4 +1,4 @@
-import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode } from './calculations.js';
+import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR } from './calculations.js';
 // Détail du calcul de la masse salariale d'un mois de paie (écran Périodes de paie, nov. 2026).
 // Chaque ligne donne son montant et sa formule avec les chiffres ; la somme des lignes est égale à payrollPayMonth(a, m).
 const LIGNES_DETAIL_MS = [
@@ -7,6 +7,7 @@ const LIGNES_DETAIL_MS = [
   ['mal', 'Retenue maladie non maintenue'],
   ['abs', 'Retenue absences non payées'],
   ['lissage', 'Lissage de la 5e semaine de HS'],
+  ['cpvar', 'Variation du stock de congés payés (provision)'],
   ['dec', 'Variables de décembre 2026'],
   ['nr', 'Non-roulants'],
   ['dr', 'Quote-part DR'],
@@ -46,12 +47,14 @@ function detailMSMois(a,m){
     .reduce(function(s,e){return s+(+e.coutJour||0)*(1-partRoulant(e))*(+e.joursSem||5)*52/12;},0);
   let dr=nrLigne?0:(+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
   let lis=lissage5eSemaine(a,m),dec=m===0?varDec2026Total(a):0;
+  let cpA=cpAcquisMois(a,m),cpP=cpPrisMois(a,m),cpV=variationStockCPMois(a,m);
   let det={
     base:[base,nbSal+' roulant(s) présent(s) : '+fmtH(hBase)+' (heures du contrat × part roulante × 52/12, au prorata des jours de présence) × '+ch.toFixed(2).replace('.',',')+' €/h'+(hCDD>0?' + précarité CDD 10 % sur '+fmtH(hCDD):'')],
     hs:[hsE,fmtH(hsH)+' de HS dans la période ('+p.debut.split('-').reverse().join('/')+' – '+p.fin.split('-').reverse().join('/')+', '+nbSemPeriode(p)+' sem.) × taux horaire × majoration 25 / 50 % du mois, précarité CDD comprise'],
     mal:[-malE,fmtH(malH)+' de maladie non maintenue (maladie de la période × (1 − maintien '+Math.round(rm*100)+' %)) × taux horaire'],
     abs:[-absE,fmtH(absH)+' d\'absences non payées × taux horaire'],
     lissage:[lis,lis===0?'Pas de lissage ce mois-ci':(lis<0?'Mois à 5 semaines : − 2/3 d\'une semaine moyenne de HS de la période':'+ 1/3 de la semaine de HS lissée du mois à 5 semaines du trimestre')],
+    cpvar:[cpV,'Jours acquis dans le mois '+(Math.round(cpA*10)/10).toLocaleString('fr-FR')+' j − jours posés '+(Math.round(cpP*10)/10).toLocaleString('fr-FR')+' j = '+(Math.round((cpA-cpP)*10)/10).toLocaleString('fr-FR')+' j × '+(Math.round(CP_HEURES_JOUR*100)/100).toLocaleString('fr-FR')+' h × '+ch.toFixed(2).replace('.',',')+' €/h (dotation quand l\'équipe acquiert plus qu\'elle ne pose, reprise les mois de congés)'],
     dec:[dec,m===0?'Variables de décembre 2026 saisies (chargées), payées sur la paie de janvier':'Janvier seulement'],
     nr:[nr,nrLigne?'Ligne du contrôle de gestion : brut mensuel × (1 + charges), moins la part roulante des non-roulants, moins la maladie non maintenue du mois':'Coût journalier × jours par semaine × 52/12 × part non roulante'],
     dr:[dr,nrLigne?'Incluse dans la ligne non-roulants':'Coût annuel du DR × quote-part / 12'],

@@ -296,6 +296,23 @@ function caFunAnnuel(a){return M.reduce(function(s,_,m){return s+caFunMois(a,m);
 
 function needWeeks(a){return weeks(a).map(w=>({week:w.week,days:w.days.length,ca:w.ca,hours:(+a.targetTXR?w.ca/+a.targetTXR:0)}))}
 
+// Provision pour congés payés (nov. 2026) : la charge de personnel du mois comprend la variation du stock de congés
+// des roulants (+ jours acquis dans le mois, − jours posés dans le mois), valorisée jours × 35/6 h × coût horaire chargé du mois.
+// Les mois où l'équipe part en congés (souvent les mois faibles en CA), la reprise de provision diminue la charge ;
+// sur l'année, la somme des variations est nulle quand les congés posés égalent les congés acquis.
+function cpAcquisMois(a,m){
+  let tauxMal=a.sick&&a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]/100:0,ref='2027-'+String(m+1).padStart(2,'0')+'-15';
+  return (a.employees||[]).filter(estRoulantPart).reduce(function(s,e){
+    if(!empPresent(e,ref))return s;
+    return s+CP_JOURS_MOIS*(1-tauxMal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*partRoulant(e);
+  },0);
+}
+function cpPrisMois(a,m){
+  let s=0;
+  needWeeks(a).forEach(function(w){if(moisDeSemaine(a,w.week).indexOf(m)>=0)s+=absPartMois(a,w.week,'cp',m);});
+  return s;
+}
+function variationStockCPMois(a,m){if(!a||estStructure(a)||!a.employees||!a.employees.length)return 0;return (cpAcquisMois(a,m)-cpPrisMois(a,m))*CP_HEURES_JOUR*chMois(a,m);}
 function payrollMonth(a,m){
   // Structure : charges de personnel saisies par le CG
   if(estStructure(a)) return manual(a,'Charges de personnel',m);
@@ -354,7 +371,7 @@ function payrollMonthCivil(a,m){
   });
   // Quote-part DR : incluse dans la ligne globale non-roulante quand elle est saisie
   let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
-  return msRoulant+msImproductif+msHSImproductif+repasMois+msDR;
+  return msRoulant+msImproductif+msHSImproductif+repasMois+msDR+variationStockCPMois(a,m); // + variation du stock de congés payés
 }
 
 function payrollPayMonth(a, moisIdx) {
@@ -449,7 +466,8 @@ function payrollPayMonth(a, moisIdx) {
   let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 / 12; // mensualisé
 
   // Lissage de la 5e semaine de variables sur le trimestre (voir lissage5eSemaine)
-  return ms + msNonRoulants + msHSImp + repasPeriode + msDR + lissage5eSemaine(a, moisIdx);
+  // + variation du stock de congés payés du mois (provision : dotation des jours acquis, reprise des jours posés)
+  return ms + msNonRoulants + msHSImp + repasPeriode + msDR + lissage5eSemaine(a, moisIdx) + variationStockCPMois(a, moisIdx);
 }
 
 // ── Lissage de la 5e semaine de variables (règle du contrôle de gestion, nov. 2026) ──
@@ -888,6 +906,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

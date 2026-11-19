@@ -26,7 +26,7 @@ describe('Détail des calculs — justification', () => {
   });
   it('variables : cohérentes avec le détail de la masse salariale ; export à 5 feuilles', () => {
     const a = agence(); const v = tableauVariables(a);
-    for (let m = 0; m < 12; m++) { const d = detailMSMois(a, m); const base = d.lignes.find((l) => l.cle === 'base').montant + d.lignes.find((l) => l.cle === 'nr').montant + d.lignes.find((l) => l.cle === 'dr').montant; expect(v[m].total + base).toBeCloseTo(d.total, 4); }
+    for (let m = 0; m < 12; m++) { const d = detailMSMois(a, m); const base = ['base', 'nr', 'dr', 'cpvar'].reduce((s, k) => s + d.lignes.find((l) => l.cle === k).montant, 0); expect(v[m].total + base).toBeCloseTo(d.total, 4); }
     expect(feuillesJustif(a).map((f) => f.nom)).toEqual(['Masse salariale par mois', 'Formules', 'Variables de paie', 'Stock congés payés', 'Heures par mois']);
   });
 });
@@ -38,5 +38,19 @@ describe('Stock de congés — ouverture facultative', () => {
     expect(t1[11].stockJ - t0[11].stockJ).toBeCloseTo(120, 6);
     expect(t1[0].stockE - t0[0].stockE).toBeCloseTo(120 * CP_HEURES_JOUR * 30, 6);
     expect(feuillesJustif(a)[3].lignes[1][0]).toBe('Stock au 31/12/2026');
+  });
+});
+
+describe('Provision pour congés payés dans la masse salariale', () => {
+  it('les mois de congés allègent la masse salariale ; sur l\'année, effet nul si posés = acquis', async () => {
+    const { payrollMonth, variationStockCPMois, M, cpPlanifies, cpGeneres } = await import('./calculations.js');
+    const a = agence();
+    expect(cpPlanifies(a)).toBeCloseTo(cpGeneres(a), 0);
+    const v = M.map((_, m) => variationStockCPMois(a, m));
+    expect(Math.min(...v.slice(5, 9))).toBeLessThan(0); // juin-septembre : reprise de provision
+    expect(Math.abs(v.reduce((s, x) => s + x, 0))).toBeLessThan(50);
+    const juillet = payrollMonth(a, 6), fev = payrollMonth(a, 1);
+    expect(juillet).toBeLessThan(fev + v[1] - v[6] + 1e6); // garde-fou : la variation est bien dans la masse salariale
+    expect(payrollMonth(a, 6) - (payrollMonth(a, 6) - v[6])).toBeCloseTo(v[6], 6);
   });
 });
