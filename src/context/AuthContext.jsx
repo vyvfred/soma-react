@@ -16,7 +16,14 @@ async function loadProfile(userId) {
     .eq('id', userId)
     .single();
   if (error) return null;
-  return data;
+  return profilEffectif(data);
+}
+// Profils multiples (nov. 2026) : rôle actif choisi parmi le rôle principal et les rôles supplémentaires
+export function profilEffectif(data) {
+  if (!data) return data;
+  const supp = Array.isArray(data.roles_supp) ? data.roles_supp.filter((r) => r && r !== data.role) : [];
+  const actif = data.role_actif && (data.role_actif === data.role || supp.includes(data.role_actif)) ? data.role_actif : data.role;
+  return { ...data, rolePrincipal: data.role, rolesDispo: [data.role].concat(supp), role: actif };
 }
 
 export function AuthProvider({ children }) {
@@ -121,7 +128,13 @@ export function AuthProvider({ children }) {
   const simuler = useCallback((role) => setSimRole(role && role !== 'admin' ? role : null), []);
   const vraiProfil = profile;
   const effectif = profile && simRole && profile.role === 'admin' ? { ...profile, role: simRole } : profile;
-  const value = { session, profile: effectif, vraiProfil, simRole: effectif !== profile ? simRole : null, simuler, recuperation, setRecuperation, motDePasseOublie, changerMotDePasse, loading, error, login, logout };
+  // Bascule vers un autre de ses rôles : la base enregistre le rôle actif (droits), puis l'application repart de zéro
+  const changerRole = useCallback(async (role) => {
+    const { error: e } = await sb.rpc('choisir_role', { p_role: role });
+    if (e) throw e;
+    window.location.reload();
+  }, []);
+  const value = { changerRole, session, profile: effectif, vraiProfil, simRole: effectif !== profile ? simRole : null, simuler, recuperation, setRecuperation, motDePasseOublie, changerMotDePasse, loading, error, login, logout };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

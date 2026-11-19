@@ -1,4 +1,5 @@
 import BoutonTheme from './BoutonTheme.jsx';
+import ChoixProfil from './ChoixProfil.jsx';
 import { aDesSaisiesDR } from '../domain/saisiesDR.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PANELS_REX } from '../config/panels.js';
@@ -246,6 +247,7 @@ export default function AppShell() {
           </div>
         ) : null}
         <div className="soma-user">
+          <ChoixProfil />
           <BoutonTheme />
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
