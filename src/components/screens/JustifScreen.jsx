@@ -5,6 +5,38 @@ import { tableauCPStock, tableauHeures, tableauVariables, feuillesJustif } from 
 import { telechargerClasseur } from '../../lib/importExcel.js';
 import { euro } from '../../domain/format.js';
 import DetailCalculMS from '../DetailCalculMS.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { saveCgData } from '../../lib/budgetApi.js';
+import { stockCPOuverture } from '../../domain/justifCalculs.js';
+
+// Stock de congés au 31/12/2026 (facultatif) : saisi par le contrôleur de gestion, recopié dans toutes les versions
+function SaisieStockCP({ a, peutSaisir, applyExternal }) {
+  const ouv = stockCPOuverture(a);
+  const [v, setV] = useState(ouv === null ? '' : String(ouv));
+  const [msg, setMsg] = useState(null);
+  async function enregistrer() {
+    const val = v === '' ? null : Math.max(0, +String(v).replace(',', '.') || 0);
+    try {
+      const r = await saveCgData({ [a.name]: { stockCP2026: val } });
+      if (r.echecs.length) { setMsg('Enregistrement refusé'); return; }
+      applyExternal(a.name, { stockCP2026: val });
+      setMsg('✓ Enregistré');
+    } catch (e) { setMsg('Échec : ' + (e.message || 'erreur')); }
+  }
+  return (
+    <div data-testid="stock-cp-ouverture" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 12px', padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--card2)', fontSize: 13 }}>
+      <span><b>Stock de congés au 31/12/2026</b> (jours ouvrables, équipe roulante) — facultatif :</span>
+      {peutSaisir ? (
+        <>
+          <input data-testid="stock-cp-input" type="number" min="0" step="0.5" value={v} placeholder="non saisi" onChange={(e) => { setV(e.target.value); setMsg(null); }} style={{ width: 100 }} />
+          <button data-testid="stock-cp-enregistrer" className="secondary" style={{ fontSize: 12 }} onClick={enregistrer}>Enregistrer</button>
+          {msg ? <span style={{ fontSize: 12, color: msg.startsWith('✓') ? 'var(--green)' : 'var(--orange)' }}>{msg}</span> : null}
+        </>
+      ) : <b>{ouv === null ? 'non saisi (le stock part de 0)' : ouv.toLocaleString('fr-FR') + ' j'}</b>}
+      <span className="hint" style={{ fontSize: 11, flexBasis: '100%', margin: 0 }}>Reliquat des droits acquis et non pris à la fin de 2026, issu de la paie. Sans saisie, le stock part de 0 et peut devenir négatif quand les congés posés en 2027 puisent dans les droits acquis avant.</span>
+    </div>
+  );
+}
 
 // Détail des calculs (nov. 2026) : contrôleur de gestion et direction financière voient comment chaque chiffre est obtenu
 const ONGLETS = [['ms', 'Masse salariale'], ['var', 'Variables de paie'], ['cp', 'Stock de congés payés'], ['h', 'Heures']];
@@ -28,7 +60,9 @@ function Tableau({ entetes, lignes, total, testid }) {
 }
 
 export default function JustifScreen() {
-  const { agency: a, loading } = useBudget();
+  const { agency: a, loading, applyExternal } = useBudget();
+  const { profile } = useAuth();
+  const peutSaisirStock = ['cg', 'admin'].includes(profile && profile.role);
   const [onglet, setOnglet] = useState('ms');
   if (loading) return <div className="card"><p>Chargement…</p></div>;
   if (!a) return <div className="card"><h2>Détail des calculs</h2><p className="hint">Choisissez une agence.</p></div>;
@@ -52,10 +86,11 @@ export default function JustifScreen() {
     const t = avecCacheMoteur(() => tableauCPStock(a));
     contenu = (
       <>
-        <p className="hint" style={{ fontSize: 12 }}>Congés des roulants en jours ouvrables (6 par semaine de congés). <b>Stockage</b> : jours acquis dans le mois (2,5 j par mois pour un temps plein, 80 % pendant les arrêts maladie, au prorata des heures et de la part roulante). <b>Déstockage</b> : jours posés dans le mois (écran Présence &amp; HS). Valorisation : jours × {(Math.round(CP_HEURES_JOUR * 100) / 100).toLocaleString('fr-FR')} h × coût horaire chargé du mois. Le stock part de 0 au 1er janvier 2027 (reliquat 2026 non saisi). Les congés sont payés dans le salaire mensualisé : la variation de stock n'ajoute pas de charge à la masse salariale de l'application, elle sert au suivi de la provision.</p>
+        <p className="hint" style={{ fontSize: 12 }}>Congés des roulants en jours ouvrables (6 par semaine de congés). <b>Stockage</b> : jours acquis dans le mois (2,5 j par mois pour un temps plein, 80 % pendant les arrêts maladie, au prorata des heures et de la part roulante). <b>Déstockage</b> : jours posés dans le mois (écran Présence &amp; HS). Valorisation : jours × {(Math.round(CP_HEURES_JOUR * 100) / 100).toLocaleString('fr-FR')} h × coût horaire chargé du mois. Le stock part du stock au 31/12/2026 s'il est saisi (valorisé au coût horaire de janvier), sinon de 0. Les congés sont payés dans le salaire mensualisé : la variation de stock n'ajoute pas de charge à la masse salariale de l'application, elle sert au suivi de la provision.</p>
+        <SaisieStockCP key={a.name} a={a} peutSaisir={peutSaisirStock} applyExternal={applyExternal} />
         <Tableau testid="justif-cp"
           entetes={[['Mois'], ['Coût h.', 'Coût horaire chargé du mois'], ['Acquis (j)'], ['Stockage (€)'], ['Posés (j)'], ['Posés (h)'], ['Déstockage (€)'], ['Variation (€)'], ['Stock (j)'], ['Stock (€)'], ['Non-roul. acquis (j)', 'Non-roulants : jours acquis (pas de valorisation, masse salariale en ligne globale)'], ['Non-roul. posés (j)']]}
-          lignes={t.map((x) => [x.lib, x.taux.toFixed(2).replace('.', ','), n1(x.acquisJ), n0(x.acquisE), n1(x.prisJ), n1(x.prisH), n0(x.prisE), (x.variationE < 0 ? '-' : '') + n0(Math.abs(x.variationE)), (Math.round(x.stockJ * 10) / 10).toLocaleString('fr-FR'), Math.round(x.stockE).toLocaleString('fr-FR'), n1(x.nrAcquisJ), n1(x.nrPrisJ)])}
+          lignes={(stockCPOuverture(a) !== null ? [['Stock au 31/12/2026', '', '', '', '', '', '', '', stockCPOuverture(a).toLocaleString('fr-FR'), n0(stockCPOuverture(a) * CP_HEURES_JOUR * (t[0] ? t[0].taux : 0)), '', '']] : []).concat(t.map((x) => [x.lib, x.taux.toFixed(2).replace('.', ','), n1(x.acquisJ), n0(x.acquisE), n1(x.prisJ), n1(x.prisH), n0(x.prisE), (x.variationE < 0 ? '-' : '') + n0(Math.abs(x.variationE)), (Math.round(x.stockJ * 10) / 10).toLocaleString('fr-FR'), Math.round(x.stockE).toLocaleString('fr-FR'), n1(x.nrAcquisJ), n1(x.nrPrisJ)]))}
           total={['Année', '', n1(sum(t, 'acquisJ')), n0(sum(t, 'acquisE')), n1(sum(t, 'prisJ')), n1(sum(t, 'prisH')), n0(sum(t, 'prisE')), n0(sum(t, 'variationE')), n1(t[11].stockJ), n0(t[11].stockE), n1(sum(t, 'nrAcquisJ')), n1(sum(t, 'nrPrisJ'))]} />
       </>
     );

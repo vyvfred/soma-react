@@ -203,7 +203,7 @@ export async function saveCgData(saisies, ratioReseau = null) {
     let res;
     if (existing) {
       res = await ecrire(sb.from('budgets').update({ data: fusionnerRefCG(existing.data, data) }).eq('id', existing.id));
-    } else if (Object.keys(data).some((k) => CG_KEYS_SANS_VERROU.indexOf(k) < 0 || k.startsWith('variablesDec'))) {
+    } else if (Object.keys(data).some((k) => CG_KEYS_SANS_VERROU.indexOf(k) < 0 || k.startsWith('variablesDec') || k === 'stockCP2026')) {
       // Pas de ligne vide pour le seul ratio réseau : il est repris à l'ouverture (reprendreRatioReseau)
       res = await sb.from('budgets').insert({ agence: nom, annee: ANNEE, data: appliquerRefCG({}, data), statut: 'brouillon' });
     } else {

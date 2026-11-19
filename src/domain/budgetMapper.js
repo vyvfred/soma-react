@@ -149,6 +149,7 @@ export function migrateAgency(a) {
   if (!a.periodesPaie) a.periodesPaie = buildPeriodesPaie();
   if (a.variablesDec2026 === undefined) a.variablesDec2026 = null;
   if (a.variablesDec2026Detail === undefined) a.variablesDec2026Detail = null;
+  if (a.stockCP2026 === undefined) a.stockCP2026 = null; // stock de congés au 31/12/2026 (jours, facultatif)
   if (a.moisActif === undefined) a.moisActif = null;
   if (a.actSan === undefined) a.actSan = true;
   if (a.actSai === undefined) a.actSai = false;

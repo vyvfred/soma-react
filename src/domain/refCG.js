@@ -10,10 +10,10 @@ import { msNRMensuel, costHourJuin, isRoulant } from './calculations.js';
 export const CG_REF_KEYS = [
   'histCA2025', 'histCA', 'histTXR2026', 'targetAbsRate', 'tauxHoraireBrut', 'tauxHoraireBrutJuin',
   'tauxChargePatronal', 'costHour', 'msNRBrutMensuel', 'msNRTauxCharges', 'ratioMaintien', 'cgLocked',
-  'variablesDec2026', 'variablesDec2026Detail'
+  'variablesDec2026', 'variablesDec2026Detail', 'stockCP2026'
 ];
 // Champs qui ne verrouillent pas les saisies du REX (paramètre réseau, variables de paie)
-export const CG_KEYS_SANS_VERROU = ['ratioMaintien', 'cgLocked', 'variablesDec2026', 'variablesDec2026Detail'];
+export const CG_KEYS_SANS_VERROU = ['ratioMaintien', 'cgLocked', 'variablesDec2026', 'variablesDec2026Detail', 'stockCP2026'];
 
 export function pickRefCG(obj) {
   const o = {};

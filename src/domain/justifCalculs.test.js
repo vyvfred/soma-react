@@ -30,3 +30,13 @@ describe('Détail des calculs — justification', () => {
     expect(feuillesJustif(a).map((f) => f.nom)).toEqual(['Masse salariale par mois', 'Formules', 'Variables de paie', 'Stock congés payés', 'Heures par mois']);
   });
 });
+
+describe('Stock de congés — ouverture facultative', () => {
+  it('sans saisie : part de 0 ; avec saisie : stock décalé du stock d\'ouverture valorisé en janvier', () => {
+    const a = agence(); const t0 = tableauCPStock(a);
+    a.stockCP2026 = 120; const t1 = tableauCPStock(a);
+    expect(t1[11].stockJ - t0[11].stockJ).toBeCloseTo(120, 6);
+    expect(t1[0].stockE - t0[0].stockE).toBeCloseTo(120 * CP_HEURES_JOUR * 30, 6);
+    expect(feuillesJustif(a)[3].lignes[1][0]).toBe('Stock au 31/12/2026');
+  });
+});
