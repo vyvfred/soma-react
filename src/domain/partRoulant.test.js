@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agency, baseH, partRoulant, genCal, hsTot, transfertRoulantNR, msNRMois } from './calculations.js';
+import { agency, baseH, partRoulant, genCal, hsTot, msNRMois, msRoulantBaseMois, cpNRAcquisMois, cpNRAcquis, coutJourCPNR, variationStockCPNRMois } from './calculations.js';
 import { teamInsight } from './teamInsight.js';
 
 // Signalement nov. 2026 : la clé roulant / non-roulant ne s'appliquait pas aux ETP, et un salarié saisi
@@ -50,22 +50,43 @@ describe('Part roulante des autres qualifications (régulateur, REX…)', () => 
   });
 });
 
-describe('Retrait automatique de la part roulante sur la ligne non-roulants', () => {
+describe('Ligne non-roulants indépendante de l\'équipe (nov. 2026)', () => {
   const ag = (pct) => { const a = agency('NANTES'); a.costHour = 30; a.msNRBrutMensuel = 5000; a.msNRTauxCharges = 40;
     a.employees = [{ name: 'A', qual: 'DEA', hours: 35, pctRoulant: 100 }, { name: 'R', qual: 'REGULATEUR', hours: 35, pctRoulant: pct }]; return a; };
-  it('le CG saisit la ligne complète ; SOMA retire heures roulantes × coût horaire', () => {
-    expect(transfertRoulantNR(ag(0), 0)).toBe(0);
-    expect(transfertRoulantNR(ag(30), 0)).toBeCloseTo(10.5 * 52 / 12 * 30, 6);
-    expect(msNRMois(ag(0), 0) - msNRMois(ag(30), 0)).toBeCloseTo(10.5 * 52 / 12 * 30, 6);
+  it('la MS non roulante ne dépend pas du % roulant', () => {
+    expect(msNRMois(ag(0), 0)).toBeCloseTo(7000, 6);
+    expect(msNRMois(ag(30), 0)).toBeCloseTo(7000, 6);
   });
-  it('facturière : part roulante comptée en roulant, rien déduit de la ligne non-roulants', () => {
+  it('la part roulante d\'un non-roulant compte en capacité mais n\'est pas coûtée une 2e fois en roulant', () => {
+    expect(baseH(ag(30))).toBe(35 + 10.5);
+    expect(msRoulantBaseMois(ag(30), 0)).toBeCloseTo(msRoulantBaseMois(ag(0), 0), 6);
+    const sansLigne = ag(30); sansLigne.msNRBrutMensuel = null;
+    expect(msRoulantBaseMois(sansLigne, 0)).toBeGreaterThan(msRoulantBaseMois(ag(0), 0));
+  });
+  it('facturière : part roulante comptée en roulant', () => {
     const a = ag(0); a.employees.push({ name: 'F', qual: 'FACTURIERE', hours: 35, pctRoulant: 40 });
     expect(baseH(a)).toBe(35 + 14);
-    expect(transfertRoulantNR(a, 0)).toBe(0);
-    expect(msNRMois(a, 0)).toBe(msNRMois(ag(0), 0));
+    expect(msRoulantBaseMois(a, 0)).toBeGreaterThan(msRoulantBaseMois(ag(0), 0));
   });
-  it('jamais négatif', () => {
-    const a = ag(100); a.msNRBrutMensuel = 100;
-    expect(msNRMois(a, 0)).toBe(0);
+});
+
+describe('CP des non-roulants à partir des ETP saisis par le CG', () => {
+  const ag = () => { const a = agency('NANTES'); a.costHour = 30; a.msNRBrutMensuel = 11430; a.msNRTauxCharges = 36.69; a.etpNR = 4;
+    a.employees = [{ name: 'A', qual: 'DEA', hours: 35 }]; a.cpNR = { jours: Array(12).fill(0) }; return a; };
+  it('acquisition = ETP × 2,5 j par mois, 30 j par ETP sur l\'année', () => {
+    const a = ag();
+    expect(cpNRAcquisMois(a, 0)).toBeCloseTo(10, 6);
+    expect(cpNRAcquis(a)).toBeCloseTo(120, 6);
+  });
+  it('variation = (acquis − posés) × MS mensuelle / ETP / 26', () => {
+    const a = ag(); a.cpNR.jours[7] = 40;
+    const j = 11430 * 1.3669 / 4 / 26;
+    expect(coutJourCPNR(a)).toBeCloseTo(j, 6);
+    expect(variationStockCPNRMois(a, 0)).toBeCloseTo(10 * j, 6);
+    expect(variationStockCPNRMois(a, 7)).toBeCloseTo(-30 * j, 6);
+  });
+  it('sans ETP saisis : pas de provision non roulante', () => {
+    const a = ag(); a.etpNR = null;
+    expect(variationStockCPNRMois(a, 0)).toBe(0);
   });
 });

@@ -1,5 +1,6 @@
 // Soumission d'un budget au DR (bandeau du budget et fin de parcours) :
 // mêmes confirmations que la version mono-fichier.
+import { contexteRedige } from '../domain/contexte.js';
 import { sb } from '../lib/supabase.js';
 import { VERSION_LABELS, ecartAbsenteisme } from '../domain/versions.js';
 import { pct } from '../domain/format.js';
@@ -16,6 +17,8 @@ export async function drDeLAgence(agenceNom) {
 }
 
 export async function soumettreAvecConfirmations({ a, agenceNom, activeVersion, submit, parNom }) {
+  // Perspectives & contexte 2027 : obligatoire pour soumettre
+  if (!contexteRedige(a)) { window.alert('Rédigez d\'abord les « Perspectives & contexte 2027 » (écran Objectif) : c\'est ce texte qui justifie votre budget auprès du DR et de la direction.'); return; }
   const ecart = ecartAbsenteisme(a);
   if (ecart && !window.confirm('Attention : votre taux d\'absentéisme moyen (' + pct(ecart.moyenne) + ') s\'écarte de la référence du contrôle de gestion (' + pct(ecart.cible) + ').\n\nVous pouvez le rééquilibrer avant de soumettre (bouton « Rééquilibrer automatiquement » de l\'écran Présence).\n\nSoumettre quand même ?')) return;
   // Agence sans DR affecté : le budget resterait sans valideur

@@ -9,7 +9,7 @@ import { msNRMensuel, costHourJuin, isRoulant } from './calculations.js';
 
 export const CG_REF_KEYS = [
   'histCA2025', 'histCA', 'histTXR2026', 'targetAbsRate', 'tauxHoraireBrut', 'tauxHoraireBrutJuin',
-  'tauxChargePatronal', 'costHour', 'msNRBrutMensuel', 'msNRTauxCharges', 'ratioMaintien', 'cgLocked',
+  'tauxChargePatronal', 'costHour', 'msNRBrutMensuel', 'msNRTauxCharges', 'etpNR', 'ratioMaintien', 'cgLocked',
   'variablesDec2026', 'variablesDec2026Detail', 'stockCP2026'
 ];
 // Champs qui ne verrouillent pas les saisies du REX (paramètre réseau, variables de paie)

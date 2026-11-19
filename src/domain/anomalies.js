@@ -3,6 +3,7 @@ import { annuel, montant, resultatMemo } from './memoSIG.js';
 // qui demandent l'attention du REX ou du CG, chacun relié à l'écran où agir.
 import { isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, vueExploitation, heuresDispoAnnuelles, avecCacheMoteur, SEUIL_MS_CA } from './calculations.js';
 import { euro, pct } from './format.js';
+import { contexteRedige } from './contexte.js';
 
 export function collecterAnomalies(a, role) {
   return avecCacheMoteur(() => collecterAnomaliesCalc(a, role));
@@ -18,6 +19,7 @@ function collecterAnomaliesCalc(a, role) {
   const tauxMS = ca ? (ms / ca) * 100 : 0;
   const nbRoulants = (a.employees || []).filter((e) => isRoulant(e.qual)).length;
 
+  if (!contexteRedige(a)) out.push({ panel: 'objectif', level: 'todo', text: 'Perspectives & contexte 2027 à rédiger (obligatoire, avant l\'objectif)' });
   if (!caObj || !txr) out.push({ panel: 'objectif', level: 'todo', text: 'Objectif de CA ou TXR non renseigné' });
   if (nbRoulants === 0) out.push({ panel: 'team', level: 'todo', text: 'Aucun salarié roulant dans l\'équipe' });
   if (caObj && txr && nbRoulants > 0) {

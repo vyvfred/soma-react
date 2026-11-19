@@ -1,4 +1,4 @@
-import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR } from './calculations.js';
+import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR } from './calculations.js';
 // Détail du calcul de la masse salariale d'un mois de paie (écran Périodes de paie, nov. 2026).
 // Chaque ligne donne son montant et sa formule avec les chiffres ; la somme des lignes est égale à payrollPayMonth(a, m).
 const LIGNES_DETAIL_MS = [
@@ -10,6 +10,7 @@ const LIGNES_DETAIL_MS = [
   ['cpvar', 'Variation du stock de congés payés (provision)'],
   ['dec', 'Variables de décembre 2026'],
   ['nr', 'Non-roulants'],
+  ['cpnrvar', 'Variation du stock de CP des non-roulants'],
   ['dr', 'Quote-part DR'],
   ['hsnr', 'Heures supplémentaires des non-roulants'],
   ['repas', 'Indemnités repas et IDJF']
@@ -35,7 +36,7 @@ function detailMSMois(a,m){
   });
   // Salaire de base : heures mensualisées de l'équipe roulante présente, taux du mois civil
   let nbj=new Date(2027,m+1,0).getDate(),hBase=0,hCDD=0,nbSal=0;
-  (a.employees||[]).filter(estRoulantPart).forEach(function(e){
+  (a.employees||[]).filter(function(e){return estRoulantPart(e)&&!couvertParLigneNR(a,e);}).forEach(function(e){
     let f=1;
     if(e.dateEntree||e.dateSortie){let n=0;for(let d=1;d<=nbj;d++)if(empPresent(e,cleJour(m,d)))n++;f=n/nbj;}
     if(f>0)nbSal++;
@@ -47,6 +48,7 @@ function detailMSMois(a,m){
     .reduce(function(s,e){return s+(+e.coutJour||0)*(1-partRoulant(e))*(+e.joursSem||5)*52/12;},0);
   let dr=nrLigne?0:(+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
   let lis=lissage5eSemaine(a,m),dec=m===0?varDec2026Total(a):0;
+  let nrA=cpNRAcquisMois(a,m),nrP=cpNRPrisMois(a,m),nrV=variationStockCPNRMois(a,m),nrC=coutJourCPNR(a),j1=function(v){return (Math.round(v*10)/10).toLocaleString('fr-FR')+' j';};
   let cpA=cpAcquisMois(a,m),cpP=cpPrisMois(a,m),cpV=variationStockCPMois(a,m);
   let det={
     base:[base,nbSal+' roulant(s) présent(s) : '+fmtH(hBase)+' (heures du contrat × part roulante × 52/12, au prorata des jours de présence) × '+ch.toFixed(2).replace('.',',')+' €/h'+(hCDD>0?' + précarité CDD 10 % sur '+fmtH(hCDD):'')],
@@ -56,7 +58,8 @@ function detailMSMois(a,m){
     lissage:[lis,lis===0?'Pas de lissage ce mois-ci':(lis<0?'Mois à 5 semaines : − 2/3 d\'une semaine moyenne de HS de la période':'+ 1/3 de la semaine de HS lissée du mois à 5 semaines du trimestre')],
     cpvar:[cpV,'Jours acquis dans le mois '+(Math.round(cpA*10)/10).toLocaleString('fr-FR')+' j − jours posés '+(Math.round(cpP*10)/10).toLocaleString('fr-FR')+' j = '+(Math.round((cpA-cpP)*10)/10).toLocaleString('fr-FR')+' j × '+(Math.round(CP_HEURES_JOUR*100)/100).toLocaleString('fr-FR')+' h × '+ch.toFixed(2).replace('.',',')+' €/h (dotation quand l\'équipe acquiert plus qu\'elle ne pose, reprise les mois de congés)'],
     dec:[dec,m===0?'Variables de décembre 2026 saisies (chargées), payées sur la paie de janvier':'Janvier seulement'],
-    nr:[nr,nrLigne?'Ligne du contrôle de gestion : brut mensuel × (1 + charges), moins la part roulante des non-roulants, moins la maladie non maintenue du mois':'Coût journalier × jours par semaine × 52/12 × part non roulante'],
+    nr:[nr,nrLigne?'Ligne Données agences : brut mensuel '+Math.round(+a.msNRBrutMensuel||0).toLocaleString('fr-FR')+' € × (1 + '+String(+a.msNRTauxCharges||0).replace('.',',')+' % de charges), sans lien avec l\'équipe ni les % roulants':'Coût journalier × jours par semaine × 52/12 × part non roulante'],
+    cpnrvar:[nrV,nrC?'Jours acquis '+j1(nrA)+' ('+String(etpNR(a)).replace('.',',')+' ETP × 2,5 j) − jours posés '+j1(nrP)+' = '+j1(nrA-nrP)+' × '+(Math.round(nrC*100)/100).toLocaleString('fr-FR')+' € par jour (MS non roulante mensuelle / ETP / 26 jours ouvrables)':'Sans objet : ETP non roulants ou MS non roulante non saisis dans Données agences'],
     dr:[dr,nrLigne?'Incluse dans la ligne non-roulants':'Coût annuel du DR × quote-part / 12'],
     hsnr:[hiE,fmtH(hiH)+' saisies × coût horaire des non-roulants × majoration du mois'],
     repas:[repas,'Indemnités repas et IDJF saisies par semaine, au prorata des jours de la période']

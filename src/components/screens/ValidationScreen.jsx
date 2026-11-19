@@ -43,6 +43,10 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consul
         {f.histCA > 0 ? <>CA réalisé 2026 : <b>{euro(f.histCA)}</b> · </> : null}
         <b>{f.nbRoulants}</b> salariés roulants · activité {f.activites.length ? f.activites.join(' + ') : 'sanitaire'}
       </div>
+      <div data-testid="fiche-contexte" style={{ margin: '8px 0', padding: '8px 10px', borderLeft: '3px solid var(--violet)', background: 'var(--card2)', fontSize: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--violet)', marginBottom: 3 }}>Perspectives &amp; contexte 2027 du REX</div>
+        {String(d.perspectives || '').trim() ? <div style={{ whiteSpace: 'pre-wrap' }}>{d.perspectives}</div> : <i style={{ color: 'var(--ink65)' }}>Non rédigé</i>}
+      </div>
       <div className="ficheLignes">
         {lignes.map((l) => (
           <div className="ficheLigne" key={l.titre}>

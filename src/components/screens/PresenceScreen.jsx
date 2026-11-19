@@ -3,7 +3,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { setAbsPartMois } from '../../domain/calculations.js';
-import { SEUIL_MS_CA, hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
+import { SEUIL_MS_CA, hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto } from '../../domain/repartitionCP.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
@@ -510,11 +510,10 @@ function CongesNonRoulants({ a, editable, muter }) {
       <h4 style={{ margin: '10px 0 6px', fontSize: 13, color: 'var(--ink65)' }}>Congés payés : nombre de jours par mois</h4>
       <p className="hint" style={{ margin: '0 0 10px', fontSize: 12 }}>
         Nombre de jours de congés de l'équipe non roulante pour chaque mois, pour planifier toute l'équipe et vérifier que les jours acquis sont bien posés.
-        Ces congés n'ont <b>aucun coût</b> dans le budget : leur salaire est déjà dans la ligne globale du contrôleur de gestion et ils ne sont pas remplacés.
-        La part roulante d'un non-roulant (par exemple un régulateur à 20 % roulant) reste comptée avec les congés des roulants.
+        Ils ne sont pas remplacés. {etpNR(a) !== null ? <>Les jours acquis viennent du nombre d'ETP non roulants saisi par le contrôleur de gestion ({String(etpNR(a)).replace('.', ',')} ETP × 2,5 j par mois) ; la <b>variation du stock</b> (acquis − posés) entre dans la masse salariale du mois : calez vos jours posés sur les jours acquis.</> : <>Leur salaire est dans la ligne globale du contrôleur de gestion.</>}
       </p>
       <div data-testid="cp-nr-compteur" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, marginBottom: 10 }}>
-        <span title="30 jours ouvrables par an (6 par semaine de congés) au prorata du temps de travail et de la part non roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)">Acquis par {nb} non-roulant{nb > 1 ? 's' : ''} : <b>{acquis.toFixed(1)} J</b></span>
+        <span title={etpNR(a) !== null ? 'ETP non roulants (Données agences) × 2,5 jours ouvrables par mois' : '30 jours ouvrables par an (6 par semaine de congés) au prorata du temps de travail et de la part non roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)'}>Acquis {etpNR(a) !== null ? <>({String(etpNR(a)).replace('.', ',')} ETP)</> : <>par {nb} non-roulant{nb > 1 ? 's' : ''}</>} : <b>{acquis.toFixed(1)} J</b></span>
         <span>Posés : <b>{saisis.toFixed(1)} J</b></span>
         <span>Reste à poser : <b style={{ color: Math.abs(reste) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{reste.toFixed(1)} J</b></span>
         {editable ? <button type="button" data-testid="cp-nr-repartir" onClick={() => muter((x) => repartirCPNRAuto(x))} style={{ marginLeft: 'auto', fontSize: 12 }}>↗ Répartir les jours acquis (60/20/20)</button> : null}

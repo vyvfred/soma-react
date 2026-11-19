@@ -10,7 +10,7 @@ describe('Avancement d\'un budget en préparation', () => {
   });
   it('six jalons à parts égales', () => {
     const a = agency('X');
-    a.targetCA = 1000000; a.targetTXR = 90;                       // objectif : 1
+    a.targetCA = 1000000; a.targetTXR = 90; a.perspectives = 'Renouvellement du contrat EHPAD en janvier, recrutement d un saisonnier en juillet.'; // objectif : 1
     a.refs.san.forEach((mo) => { mo.semaine = 1; mo.vacances = 1; }); // références : 24/60 = 40 %
     a.employees = [{ qual: 'DEA' }];                                // équipe : 1
     a.sick = Array(12).fill(null).map((v, i) => (i < 6 ? 8 : null)); // absentéisme : 6/12
@@ -26,5 +26,18 @@ describe('Avancement d\'un budget en préparation', () => {
   it('jours sans modification', () => {
     const av = avancementBudget(agency('X'), '2026-11-01T10:00:00Z', new Date('2026-11-09T12:00:00Z').getTime());
     expect(av.joursSansModif).toBe(8);
+  });
+});
+
+describe('Perspectives & contexte 2027 obligatoires', () => {
+  it('sans contexte rédigé, le jalon objectif n\'est pas atteint', async () => {
+    const { contexteRedige } = await import('./contexte.js');
+    const a = agency('X'); a.targetCA = 1000000; a.targetTXR = 90;
+    expect(avancementBudget(a).objectif).toBe(false);
+    a.perspectives = 'Trop court';
+    expect(contexteRedige(a)).toBe(false);
+    a.perspectives = 'Renouvellement du contrat EHPAD en janvier, recrutement d un saisonnier en juillet, tarifs stables.';
+    expect(contexteRedige(a)).toBe(true);
+    expect(avancementBudget(a).objectif).toBe(true);
   });
 });

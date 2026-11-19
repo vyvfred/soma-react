@@ -134,6 +134,7 @@ export function migrateAgency(a) {
   if (a.tauxHoraireBrutJuin === undefined) a.tauxHoraireBrutJuin = null;
   if (a.msNRBrutMensuel === undefined) a.msNRBrutMensuel = null;
   if (a.msNRTauxCharges === undefined) a.msNRTauxCharges = null;
+  if (a.etpNR === undefined) a.etpNR = null;
   if (a.ratioMaintien === undefined) a.ratioMaintien = null;
   if (a.tauxHoraireBrut !== null && a.tauxChargePatronal !== null && a.costHour === null) {
     a.costHour = Math.round(+a.tauxHoraireBrut * (1 + (+a.tauxChargePatronal || 0) / 100) * 100) / 100;

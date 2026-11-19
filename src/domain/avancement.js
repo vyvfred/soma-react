@@ -2,6 +2,7 @@
 // même règle que avancementBudget() de la version mono-fichier.
 // Six jalons du REX à parts égales : objectif fixé, références CA, équipe, absentéisme
 // mensuel, mois validés, postes de charges du REX. Les charges CG sont suivies à part (elles relèvent du CG).
+import { contexteRedige } from './contexte.js';
 import { T, LIGNES_SIEGE, chargesREXRemplies, LIGNES_CHARGES_REX } from './calculations.js';
 
 const rempli = (v) => v !== null && v !== undefined && v !== '';
@@ -15,7 +16,7 @@ export function avancementBudget(d, updatedAt, maintenant = Date.now()) {
   acts.forEach((act) => { for (let m = 0; m < 12; m++) ['semaine', 'vacances', 'samedi', 'dimanche', 'ferie'].forEach((t) => {
     refTot++; const mo = refs[act] && refs[act][m]; if (mo && rempli(mo[t])) refOk++;
   }); });
-  const objectif = rempli(d.targetCA) && rempli(d.targetTXR);
+  const objectif = rempli(d.targetCA) && rempli(d.targetTXR) && contexteRedige(d); // contexte 2027 rédigé, objectif et TXR fixés
   const refsPct = refTot ? Math.round(refOk / refTot * 100) : 0;
   const nbSalaries = (d.employees || []).length;
   const absSaisis = (d.sick || []).filter(rempli).length;

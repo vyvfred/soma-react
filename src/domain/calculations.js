@@ -125,8 +125,7 @@ function coutHSTotal(a){
 function coutHoraireImproductif(a){
   let cm = msNRMensuel(a);
   if(cm!==null){
-    let hHebdo = a.employees.filter(e=>!isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0)*(1-partRoulant(e)),0);
-    cm=Math.max(0, cm-transfertRoulantNR(a));
+    let hHebdo = a.employees.filter(e=>!isRoulant(e.qual)).reduce((s,e)=>s+(+e.hours||0),0);
     return hHebdo>0 ? cm/(hHebdo*52/12) : (+a.costHour||0);
   }
   let imp = a.employees.filter(e=>!isRoulant(e.qual)&&e.qual!=='FACTURIERE'&&(+e.coutJour||0)>0);
@@ -164,7 +163,16 @@ function cpGeneres(a) {
 // suivis avec un compteur acquis / posés. Aucun coût : leur salaire est déjà dans la ligne non-roulants
 // du CG (un congé est payé) et ils ne sont pas remplacés (décision de la direction des opérations).
 function salariesNR(a){return (a.employees||[]).filter(function(e){return !isRoulant(e.qual)&&(1-partRoulant(e))>0;});}
-function cpNRAcquisMois(a,m){let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
+// CP des non-roulants (nov. 2026, contrôle de gestion) : si le CG saisit le nombre d'ETP non roulants dans Données agences,
+// l'acquisition est ETP × 2,5 j ouvrables par mois (sans lien avec l'écran Équipe) ; l'agence saisit les jours posés (déstockage).
+function etpNR(a){let v=a&&a.etpNR;return (v===null||v===undefined||v==='')?null:Math.max(0,+v||0);}
+function cpNRAcquisMois(a,m){let etp=etpNR(a);if(etp!==null)return etp*CP_JOURS_MOIS;let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
+// Coût d'un jour ouvrable de non-roulant : MS non roulante mensuelle / ETP / 26 jours ouvrables par mois
+function coutJourCPNR(a){let cm=msNRMensuel(a),e=etpNR(a);return cm!==null&&e>0?cm/e/26:0;}
+function cpNRPrisMois(a,m){return a&&a.cpNR&&a.cpNR.jours?(+a.cpNR.jours[m]||0):0;}
+// Variation du stock de CP des non-roulants : (jours acquis − jours posés) × coût d'un jour ; dotation les mois où l'équipe
+// acquiert plus qu'elle ne pose, reprise (baisse de la MS) les mois de congés. Nulle sans ligne MS non roulante ni ETP saisis.
+function variationStockCPNRMois(a,m){if(!a||estStructure(a))return 0;let c=coutJourCPNR(a);return c?(cpNRAcquisMois(a,m)-cpNRPrisMois(a,m))*c:0;}
 function cpNRAcquis(a){return Math.round(M.reduce(function(s,_,m){return s+cpNRAcquisMois(a,m);},0)*10)/10;}
 function cpNRSaisis(a){let j=a.cpNR&&a.cpNR.jours;return j?Math.round(j.reduce(function(s,v){return s+(+v||0);},0)*10)/10:0;}
 function cpNRVide(){return {jours:Array(12).fill(null)};}
@@ -371,7 +379,7 @@ function payrollMonthCivil(a,m){
   });
   // Quote-part DR : incluse dans la ligne globale non-roulante quand elle est saisie
   let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
-  return msRoulant+msImproductif+msHSImproductif+repasMois+msDR+variationStockCPMois(a,m); // + variation du stock de congés payés
+  return msRoulant+msImproductif+msHSImproductif+repasMois+msDR+variationStockCPMois(a,m)+variationStockCPNRMois(a,m); // + variation du stock de congés payés
 }
 
 function payrollPayMonth(a, moisIdx) {
@@ -467,7 +475,7 @@ function payrollPayMonth(a, moisIdx) {
 
   // Lissage de la 5e semaine de variables sur le trimestre (voir lissage5eSemaine)
   // + variation du stock de congés payés du mois (provision : dotation des jours acquis, reprise des jours posés)
-  return ms + msNonRoulants + msHSImp + repasPeriode + msDR + lissage5eSemaine(a, moisIdx) + variationStockCPMois(a, moisIdx);
+  return ms + msNonRoulants + msHSImp + repasPeriode + msDR + lissage5eSemaine(a, moisIdx) + variationStockCPMois(a, moisIdx) + variationStockCPNRMois(a, moisIdx);
 }
 
 // ── Lissage de la 5e semaine de variables (règle du contrôle de gestion, nov. 2026) ──
@@ -823,12 +831,15 @@ function msNRMensuel(a){
 // Facturière : son coût n'est pas dans la ligne non-roulants (intégré à part) ; sa part roulante compte, rien n'est déduit.
 function heuresRoulantesNR(a,m){let ref=m===undefined?null:'2027-'+String(m+1).padStart(2,'0')+'-15';return (a.employees||[]).reduce(function(s,e){if(isRoulant(e.qual)||String(e.qual||'').toUpperCase()==='FACTURIERE'||!estRoulantPart(e))return s;if(ref&&!empPresent(e,ref))return s;return s+(+e.hours||0)*partRoulant(e);},0)}
 function transfertRoulantNR(a,m){return heuresRoulantesNR(a,m)*52/12*chMois(a,m===undefined?0:m)}
+// MS non roulante (nov. 2026, demande du contrôle de gestion) : exactement la ligne saisie dans Données agences,
+// brut mensuel × (1 + charges), sans lien avec l'équipe, les % roulants ni la maladie.
 function msNRMois(a, m){
   let cm=msNRMensuel(a);
-  if(cm===null) return 0;
-  cm=Math.max(0, cm-transfertRoulantNR(a,m));
-  return cm*(1 - tauxAbsMois(a,m)*(1-ratioMaintien(a)));
+  return cm===null ? 0 : cm;
 }
+// Salarié de qualification non roulante déjà payé dans la ligne MS non roulante : sa part roulante
+// compte dans la capacité en heures mais n'est pas coûtée une 2e fois dans la MS roulante.
+function couvertParLigneNR(a,e){return msNRMensuel(a)!==null&&!isRoulant(e.qual)&&String(e.qual||'').toUpperCase()!=='FACTURIERE';}
 
 function varDecDetail(d){
   let det = d && d.variablesDec2026Detail;
@@ -875,7 +886,7 @@ function chargesCGSaisies(d){
 // payées sont dans ce salaire (maintien) ; HS et retenues sont des variables (variablesRoulantSemaine).
 function msRoulantBaseMois(a,m){
   let nbj=new Date(2027,m+1,0).getDate(),ch=chMois(a,m);
-  return (a.employees||[]).filter(estRoulantPart).reduce(function(s,e){
+  return (a.employees||[]).filter(function(e){return estRoulantPart(e)&&!couvertParLigneNR(a,e);}).reduce(function(s,e){
     let f=1;
     if(e.dateEntree||e.dateSortie){let p=0;for(let d=1;d<=nbj;d++)if(empPresent(e,cleJour(m,d)))p++;f=p/nbj;}
     return s+(+e.hours||0)*partRoulant(e)*52/12*ch*f*(1+(isCDD(e)?TAUX_PRECARITE_CDD:0));
@@ -906,6 +917,6 @@ function chargesReport2028(a){
 
 export {
   cleJour,
-  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
+  chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, couvertParLigneNR, etpNR, coutJourCPNR, cpNRPrisMois, variationStockCPNRMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
   TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

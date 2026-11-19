@@ -19,7 +19,8 @@ const FIELDS = [
   { key: 'tauxHoraireBrutJuin', label: 'Taux brut 1er juin (€/h)', w: 90 },
   { key: 'tauxChargePatronal', label: 'Charges pat. %', w: 80 },
   { key: 'msNRBrutMensuel', label: 'MS non-roulante brut/mois (€)', w: 110 },
-  { key: 'msNRTauxCharges', label: 'Charges non-roul. %', w: 80 }
+  { key: 'msNRTauxCharges', label: 'Charges non-roul. %', w: 80 },
+  { key: 'etpNR', label: 'ETP non-roulants (CP)', w: 80 }
 ];
 
 function Kpi({ label, value, note }) {

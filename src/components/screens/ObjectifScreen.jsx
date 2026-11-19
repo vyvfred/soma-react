@@ -1,3 +1,4 @@
+import { contexteRedige, contexteManque } from '../../domain/contexte.js';
 import { useState } from 'react';
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
@@ -63,6 +64,7 @@ export default function ObjectifScreen() {
     ...(caFun ? [['CA funéraire', euro(caFun)]] : []),
     ['Heures nécessaires', t.need.toFixed(0) + ' h'], ['HS estimées', t.hs.toFixed(0) + ' h'], ['Zone', a.schoolZone]
   ];
+  const ctxOk = contexteRedige(a);
   const ref = (field, label, placeholder, help) => (
     <div>
       <label style={lbl} htmlFor={'obj-' + field}>{label}{help ? <span title={help}> ⓘ</span> : null}</label>
@@ -82,11 +84,23 @@ export default function ObjectifScreen() {
         </span>
       </div>
 
+      <div data-testid="contexte-2027" data-visite="contexte" style={{ margin: '14px 0 18px', padding: '14px 16px', border: '1px solid ' + (ctxOk ? 'var(--border)' : 'var(--violet)'), background: ctxOk ? 'var(--card2)' : 'var(--violet-light)' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+          <b style={{ fontSize: 15 }}>1. Perspectives &amp; contexte 2027</b>
+          <span style={{ fontSize: 11, fontWeight: 700, color: ctxOk ? 'var(--green)' : 'var(--orange)' }}>{ctxOk ? '✓ rédigé' : 'obligatoire — à rédiger en premier'}</span>
+        </div>
+        <p className="hint" style={{ fontSize: 12, margin: '0 0 8px' }}>Avant de fixer votre objectif de CA et votre TXR cible, décrivez ce qui va changer en 2027 : contrats gagnés ou perdus (EHPAD, cliniques, transports réguliers), évolution de l'activité et de la concurrence, gardes, effectifs (départs, recrutements, saisonniers), véhicules, locaux… C'est ce texte qui justifie vos chiffres auprès du DR et de la direction.</p>
+        <textarea data-testid="contexte-texte" rows={5} data-saisie-dr={estSaisieDR(a, 'perspectives') ? '1' : undefined} value={a.perspectives || ''} onChange={texte('perspectives')} disabled={!editable} style={{ width: '100%' }}
+          placeholder="Ex : renouvellement du contrat EHPAD en janvier (+8 % d'activité attendue), fin du contrat de la clinique X en juin, recrutement d'un CDD saisonnier en juillet, TXR attendu stable car mêmes tarifs…" />
+        {!ctxOk ? <div data-testid="contexte-manque" style={{ fontSize: 12, color: 'var(--orange)', marginTop: 4 }}>Encore {contexteManque(a)} caractère{contexteManque(a) > 1 ? 's' : ''} au minimum pour débloquer l'objectif de CA et le TXR cible.</div> : null}
+      </div>
+
+      <div style={{ fontSize: 15, fontWeight: 700, margin: '4px 0 0' }}>2. Objectif de CA et TXR cible</div>
       <div data-visite="objectif" style={{ display: 'flex', gap: 20, flexWrap: 'wrap', margin: '14px 0 20px' }}>
         <label style={{ flex: 1, minWidth: 220 }}>
           <span style={{ display: 'block', fontSize: 12, color: 'var(--ink65)', marginBottom: 6 }}>Objectif de chiffre d'affaires</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="text" inputMode="numeric" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetCA') ? '1' : undefined} value={valeur('targetCA')} onBlur={fin('targetCA')} onChange={nombre('targetCA')} disabled={!editable} style={{ flex: 1 }} />
+            <input type="text" inputMode="numeric" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetCA') ? '1' : undefined} value={valeur('targetCA')} onBlur={fin('targetCA')} onChange={nombre('targetCA')} disabled={!editable || !ctxOk} title={!ctxOk ? 'Rédigez d\'abord les perspectives et le contexte 2027' : undefined} style={{ flex: 1 }} />
             <span style={{ color: 'var(--ink65)' }}>€</span>
           </span>
         </label>
@@ -95,7 +109,7 @@ export default function ObjectifScreen() {
             TXR cible <span className="objKpiHelp" title="Taux de recette par heure : chiffre d'affaires ÷ heures de conduite. Généralement proche du TXR réalisé en 2026.">?</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetTXR') ? '1' : undefined} value={valeur('targetTXR')} onBlur={fin('targetTXR')} onChange={nombre('targetTXR')} disabled={!editable} style={{ flex: 1 }} />
+            <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetTXR') ? '1' : undefined} value={valeur('targetTXR')} onBlur={fin('targetTXR')} onChange={nombre('targetTXR')} disabled={!editable || !ctxOk} title={!ctxOk ? 'Rédigez d\'abord les perspectives et le contexte 2027' : undefined} style={{ flex: 1 }} />
             <span style={{ color: 'var(--ink65)' }}>€/h</span>
           </span>
         </label>
@@ -142,13 +156,6 @@ export default function ObjectifScreen() {
         </div>
       </details>
 
-      <details className="objCollapse">
-        <summary>Perspectives &amp; contexte 2027 <span style={{ color: 'var(--ink30)', fontWeight: 400 }}>(optionnel)</span></summary>
-        <div className="objCollapseBody">
-          <textarea rows={5} data-saisie-dr={estSaisieDR(a, 'perspectives') ? '1' : undefined} value={a.perspectives || ''} onChange={texte('perspectives')} disabled={!editable} style={{ width: '100%' }}
-            placeholder="Ex : Renouvellement du contrat EHPAD en janvier, recrutement d'un CDD saisonnier prévu en juillet, travaux de locaux au T2..." />
-        </div>
-      </details>
 
       {coh && +a.targetCA ? (
         <details className="objCollapse" data-testid="detail-capacite">

@@ -73,12 +73,14 @@ describe('ratio de maintien de salaire', () => {
 });
 
 describe('ligne unique de masse salariale non-roulante', () => {
-  it('coût mensuel = brut × (1 + charges) × (1 − absentéisme × part non maintenue)', () => {
+  it('MS non roulante = exactement brut × (1 + charges), sans lien avec l\'équipe, les % roulants ni la maladie', () => {
     const a = base(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42; a.ratioMaintien = 50;
     expect(msNRMensuel(a)).toBeCloseTo(9656, 6);
-    // part roulante du régulateur (30 % × 35 h) retirée automatiquement au coût horaire de janvier (28,5 €)
-    expect(transfertRoulantNR(a, 0)).toBeCloseTo(10.5 * 52 / 12 * 28.5, 6);
-    expect(msNRMois(a, 0)).toBeCloseTo((9656 - 10.5 * 52 / 12 * 28.5) * (1 - 0.08 * 0.5), 6);
+    for (let m = 0; m < 12; m++) expect(msNRMois(a, m)).toBeCloseTo(9656, 6);
+  });
+  it('exemple Angoulême : 11 430 € × 1,3669 = 15 623,67 € par mois', () => {
+    const a = base(); a.msNRBrutMensuel = 11430; a.msNRTauxCharges = 36.69;
+    expect(msNRMois(a, 3)).toBeCloseTo(11430 * 1.3669, 6);
   });
   it('remplace le coût par jour des non-roulants et la quote-part DR', () => {
     const a = base(); a.drCostAnnual = 90000; a.drPct = 20; a.hsImproductif = {};
@@ -90,7 +92,7 @@ describe('ligne unique de masse salariale non-roulante', () => {
   });
   it('coût horaire improductif = coût mensuel ÷ heures mensuelles des non-roulants', () => {
     const a = base(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42;
-    expect(coutHoraireImproductif(a)).toBeCloseTo((9656 - 10.5 * 52 / 12 * 28.5) / (35 * 0.7 * 52 / 12), 6); // 70 % du régulateur, coût de sa part roulante retiré
+    expect(coutHoraireImproductif(a)).toBeCloseTo(9656 / (35 * 52 / 12), 6); // ligne complète ÷ heures complètes des non-roulants
   });
   it('en paie par période : un salaire mensuel par mois de paie, sans quote-part DR', () => {
     const a = base(); a.periodesPaie = buildPeriodesPaie(); a.msNRBrutMensuel = 6800; a.msNRTauxCharges = 42; a.drCostAnnual = 90000; a.drPct = 20;
@@ -99,7 +101,8 @@ describe('ligne unique de masse salariale non-roulante', () => {
     const coutJour = a.employees.filter((e) => !['DEA', 'AA', 'TAXI', 'TPMR', 'FACTURIERE'].includes(e.qual))
       .reduce((s, e) => s + (+e.coutJour || 0) * (1 - partRoulant(e)) * (+e.joursSem || 5) * 52 / 12, 0); // mensualisé
     const sans = payrollPayMonth(a, 1);
-    expect(avec - sans).toBeCloseTo(msNRMois({ ...a, msNRBrutMensuel: 6800 }, 1) - coutJour - 90000 * 0.2 / 12, 4);
+    // avec la ligne CG, la part roulante du régulateur (30 % × 35 h) n'est plus coûtée en roulant : elle est dans la ligne
+    expect(avec - sans).toBeCloseTo(msNRMois({ ...a, msNRBrutMensuel: 6800 }, 1) - coutJour - 90000 * 0.2 / 12 - 10.5 * 52 / 12 * chMois(a, 1), 4);
   });
 });
 

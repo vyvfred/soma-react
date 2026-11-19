@@ -1,4 +1,4 @@
-import { M, chMois, CP_HEURES_JOUR, hsRows, pres, absPartMois, partSemaineMois, cpNRAcquisMois, cpAcquisMois, cpPrisMois } from './calculations.js';
+import { M, chMois, CP_HEURES_JOUR, hsRows, pres, absPartMois, partSemaineMois, cpNRAcquisMois, cpAcquisMois, cpPrisMois, variationStockCPNRMois } from './calculations.js';
 import { detailMSMois, feuillesDetailMS } from './detailMS.js';
 // Justification des calculs (écran « Détail des calculs », contrôleur de gestion et direction financière, nov. 2026).
 // Tous les montants viennent des mêmes fonctions que le reste de l'application : rien n'est recalculé autrement.
@@ -13,9 +13,9 @@ function tableauCPStock(a){
     let ch=chMois(a,m),acq=cpAcquisMois(a,m),pris=cpPrisMois(a,m);
     let acqE=acq*CP_HEURES_JOUR*ch,prisE=pris*CP_HEURES_JOUR*ch;
     stockJ+=acq-pris;stockE+=acqE-prisE;
-    let nrAcq=cpNRAcquisMois(a,m),nrPris=a.cpNR&&a.cpNR.jours?(+a.cpNR.jours[m]||0):0;
+    let nrAcq=cpNRAcquisMois(a,m),nrPris=a.cpNR&&a.cpNR.jours?(+a.cpNR.jours[m]||0):0,nrVar=variationStockCPNRMois(a,m);
     return {mois:m,lib:lib,taux:ch,acquisJ:acq,acquisH:acq*CP_HEURES_JOUR,acquisE:acqE,prisJ:pris,prisH:pris*CP_HEURES_JOUR,prisE:prisE,
-      variationJ:acq-pris,variationE:acqE-prisE,stockJ:stockJ,stockE:stockE,nrAcquisJ:nrAcq,nrPrisJ:nrPris};
+      variationJ:acq-pris,variationE:acqE-prisE,stockJ:stockJ,stockE:stockE,nrAcquisJ:nrAcq,nrPrisJ:nrPris,nrVariationE:nrVar};
   });
 }
 // Heures du mois civil (semaines à cheval au prorata des jours) : besoin, capacité, congés, maladie, absences, HS
@@ -48,7 +48,7 @@ function feuillesJustif(a){
   let v=tableauVariables(a);
   f.push({nom:'Variables de paie',largeurs:[12,14,14,14,14,14,14,14,14],lignes:[['Mois de paie','HS majorées','Retenue maladie','Retenue absences','Lissage 5e sem.','Variables déc. 2026','HS non-roulants','Repas et IDJF','Total variables']].concat(v.map(function(x){return [x.lib,r(x.hs),r(x.retMaladie),r(x.retAbsences),r(x.lissage),r(x.dec2026),r(x.hsNR),r(x.repas),r(x.total)];}))});
   let c=tableauCPStock(a);
-  f.push({nom:'Stock congés payés',largeurs:[12,12,12,14,12,12,14,14,12,14,12,12],lignes:[['Mois','Coût horaire','Acquis (j)','Stockage (€)','Pris (j)','Pris (h)','Déstockage (€)','Variation (€)','Stock (j)','Stock (€)','Non-roulants acquis (j)','Non-roulants pris (j)']].concat(stockCPOuverture(a)!==null?[['Stock au 31/12/2026','','','','','','','',r1(stockCPOuverture(a)),r(stockCPOuverture(a)*CP_HEURES_JOUR*chMois(a,0)),'','']]:[]).concat(c.map(function(x){return [x.lib,Math.round(x.taux*100)/100,r1(x.acquisJ),r(x.acquisE),r1(x.prisJ),r1(x.prisH),r(x.prisE),r(x.variationE),r1(x.stockJ),r(x.stockE),r1(x.nrAcquisJ),r1(x.nrPrisJ)];}))});
+  f.push({nom:'Stock congés payés',largeurs:[12,12,12,14,12,12,14,14,12,14,12,12,14],lignes:[['Mois','Coût horaire','Acquis (j)','Stockage (€)','Pris (j)','Pris (h)','Déstockage (€)','Variation (€)','Stock (j)','Stock (€)','Non-roulants acquis (j)','Non-roulants pris (j)','Non-roulants variation (€)']].concat(stockCPOuverture(a)!==null?[['Stock au 31/12/2026','','','','','','','',r1(stockCPOuverture(a)),r(stockCPOuverture(a)*CP_HEURES_JOUR*chMois(a,0)),'','','']]:[]).concat(c.map(function(x){return [x.lib,Math.round(x.taux*100)/100,r1(x.acquisJ),r(x.acquisE),r1(x.prisJ),r1(x.prisH),r(x.prisE),r(x.variationE),r1(x.stockJ),r(x.stockE),r1(x.nrAcquisJ),r1(x.nrPrisJ),r(x.nrVariationE)];}))});
   let h=tableauHeures(a);
   f.push({nom:'Heures par mois',largeurs:[12,12,12,12,12,12,12,12,12],lignes:[['Mois','Besoin','Heures contrat','Congés','Maladie','Abs. payées','Abs. non payées','Disponibles','HS']].concat(h.map(function(x){return [x.lib,r(x.besoin),r(x.base),r(x.cp),r(x.maladie),r(x.absPayees),r(x.absNonPayees),r(x.dispo),r(x.hs)];}))});
   return f;

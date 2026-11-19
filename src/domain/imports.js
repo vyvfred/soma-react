@@ -60,8 +60,9 @@ export function colonnesRefAgences(headers) {
     tauxChargePatronal: idx((x) => x.includes('charge') && x.includes('patron') && !nr(x)),
     costHour: idx((x) => x.includes('cout') && !nr(x)),
     targetCA: idx((x) => x.includes('objectif') || x.includes('obj')),
-    msNRBrutMensuel: idx((x) => nr(x) && !x.includes('charge')),
-    msNRTauxCharges: idx((x) => nr(x) && x.includes('charge'))
+    msNRBrutMensuel: idx((x) => nr(x) && !x.includes('charge') && !x.includes('etp')),
+    msNRTauxCharges: idx((x) => nr(x) && x.includes('charge')),
+    etpNR: idx((x) => x.includes('etp') && nr(x))
   };
 }
 
