@@ -44,9 +44,11 @@ export const PANELS_DR = [
   ['aide', 'Aide']
 ];
 
+// Directions nationales : un seul écran de plus, en lecture seule, pour le détail des calculs de chaque agence
 export const PANELS_DG = [
   ['validation', 'Budgets à valider'],
   ['consolidation', 'Consolidation réseau'],
+  ['justif', 'Détail des calculs'],
   ['aide', 'Aide']
 ];
 

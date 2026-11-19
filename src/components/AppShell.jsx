@@ -184,7 +184,7 @@ export default function AppShell() {
   const setRexAgence = (n) => { setRexAgenceEtat(n); try { localStorage.setItem('soma.agenceREX', n); } catch (e) { /* stockage indisponible */ } };
   const agenceREX = mesAgences.length > 1 ? (mesAgences.includes(rexAgence) ? rexAgence : mesAgences[0]) : profile.agence;
   const activeAgence = consult || saisiePour || agenceREX || cgAgence;
-  const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex'].includes(profile.role);
+  const needsPicker = !profile.agence && ['cg', 'df', 'admin', 'rex', 'dg', 'pdg'].includes(profile.role);
 
   // Pastille du menu « Budgets à valider » : nombre de budgets qui attendent la décision de l'utilisateur
   const [nbAValider, setNbAValider] = useState(0);
@@ -208,7 +208,7 @@ export default function AppShell() {
       if (panel === '__saisir') { setRetour(active); setSaisiePour(agence); setActive('objectif'); return; }
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
-    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || profile.role === 'df'} saisieDR={!!saisiePour}>
+    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || ['df', 'dg', 'pdg'].includes(profile.role)} saisieDR={!!saisiePour}>
       <VisiteGuidee role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} ecransREX={!!saisiePour} />
     <div className="soma-shell">
       {consult ? (

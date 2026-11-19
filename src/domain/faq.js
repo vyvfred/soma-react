@@ -79,6 +79,10 @@ export const FAQ = {
     ['Les données sont-elles sauvegardées automatiquement ?', 'Oui. Toutes les saisies sont enregistrées automatiquement sur le serveur, en continu. Les utilisateurs n\'ont pas de manipulation à faire pour conserver leur travail.'],
     ['Puis-je modifier un budget à la place d\'un responsable ?', 'L\'administration donne accès à la modification des budgets. Utilisez cette possibilité avec discernement : le budget appartient au responsable de l\'agence, et toute modification de votre part doit rester exceptionnelle et justifiée.'],
   ],
+  // Directions nationales (DG, directeurs opérationnels) : détail des calculs en lecture seule (nov. 2026)
+  direction: [
+    ['Comment voir le détail des calculs d\'une agence ?', 'Menu <b>Détail des calculs</b>, puis choisissez l\'agence (ou cliquez sur « détail des calculs » sous le nom d\'une agence dans la Consolidation réseau). Quatre onglets, en lecture seule : <b>Masse salariale</b> poste par poste et mois par mois, avec la formule chiffrée de chaque ligne ; <b>Variables de paie</b> de chaque période de paie ; <b>Stock de congés payés</b> (jours acquis et posés, valorisés, stock cumulé) ; <b>Heures</b> (besoin, heures disponibles, HS). « Tout exporter (Excel) » donne l\'ensemble.']
+  ],
   // Directeur financier : consultation en lecture seule (nov. 2026)
   df: [
     ['Comment consulter le budget d\'une agence, même en brouillon ?', 'En haut de l\'écran, basculez sur <b>« REX exploitation (lecture) »</b> puis choisissez l\'agence : vous voyez tous les écrans du responsable d\'exploitation (Calendrier, Équipe, Présence &amp; HS, Charges, Prévisionnel, Synthèse), pour toutes les agences et toutes les versions, en lecture seule. Revenez sur <b>« Direction financière »</b> pour retrouver vos écrans de suivi.'],

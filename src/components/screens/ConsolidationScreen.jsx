@@ -10,6 +10,7 @@ import { statutLabel } from '../../config/statut.js';
 import { computeConsolidation } from '../../domain/consolidation.js';
 import { detailAvancement } from '../../domain/avancement.js';
 import { euro } from '../../domain/format.js';
+import { useNav } from '../../context/NavContext.jsx';
 import { feuillesConsolidation, nomFichierConsolidation } from '../../domain/exportConsolidation.js';
 import { telechargerClasseur } from '../../lib/importExcel.js';
 
@@ -47,6 +48,9 @@ export default function ConsolidationScreen() {
   const [k, setK] = useState(0);
   const [exportEtat, setExportEtat] = useState('');
   const { profile } = useAuth();
+  const nav = useNav();
+  // Lien discret vers le détail des calculs de l'agence (contrôle de gestion, direction financière, directions nationales)
+  const lienDetail = ['cg', 'df', 'dg', 'pdg'].includes(profile && profile.role);
   // DR : périmètre limité aux agences de sa région, sans les structures du siège
   const estDR = !!(profile && profile.role === 'dr');
 
@@ -142,7 +146,7 @@ export default function ConsolidationScreen() {
               }
               return (
                 <tr key={r.nom}>
-                  <td style={{ padding: '4px 8px' }}><b>{r.nom}</b><br /><span style={{ fontSize: 10, color: 'var(--ink65)' }}>Zone {r.zone}</span></td>
+                  <td style={{ padding: '4px 8px' }}><b>{r.nom}</b><br /><span style={{ fontSize: 10, color: 'var(--ink65)' }}>Zone {r.zone}</span>{lienDetail ? <> · <button type="button" data-testid={'detail-calculs-' + r.nom} onClick={() => nav('justif', r.nom)} title="Détail des calculs de l'agence (lecture seule)" style={{ all: 'unset', cursor: 'pointer', fontSize: 10, color: 'var(--violet)', textDecoration: 'underline' }}>détail des calculs</button></> : null}</td>
                   <td style={{ padding: '4px 8px' }}><span className={'statut ' + r.statut}>{statutLabel(r.statut)}</span></td>
                   <td style={{ padding: '4px 8px' }}><Avancement av={r.av} statut={r.statut} /></td>
                   <td className="num" style={{ padding: '4px 8px' }}>{r.caB > 0 ? euro(r.caB) : '—'}</td>
