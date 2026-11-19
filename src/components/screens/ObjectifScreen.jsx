@@ -1,5 +1,7 @@
 import { contexteRedige, contexteManque } from '../../domain/contexte.js';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import ReperesBloc from '../ReperesBloc.jsx';
+import { chargerReperes } from '../../lib/reperesApi.js';
 import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -35,6 +37,9 @@ export default function ObjectifScreen() {
   const { profile } = useAuth();
   // Texte en cours de frappe : garde « 85, » ou « 85,5 » tel quel tant que le champ a le focus
   const [brouillon, setBrouillon] = useState({});
+  // Repères 2026 de l'agence (tableau de bord du CG) : information, rien n'est repris dans le budget
+  const [repere, setRepere] = useState(null);
+  useEffect(() => { let on = true; if (agenceNom) chargerReperes(agenceNom).then((m) => { if (on) setRepere(m[agenceNom] || null); }); return () => { on = false; }; }, [agenceNom]);
   if (!agenceNom) return <div className="card"><h2>Objectif</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Objectif</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Objectif</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
@@ -99,6 +104,7 @@ export default function ObjectifScreen() {
         {!ctxOk ? <div data-testid="contexte-manque" style={{ fontSize: 12, color: 'var(--orange)', marginTop: 4 }}>Encore {contexteManque(a)} caractère{contexteManque(a) > 1 ? 's' : ''} au minimum pour débloquer l'objectif de CA et le TXR cible.</div> : null}
       </div>
 
+      {repere ? <ReperesBloc a={a} r={repere} titre="Vos repères 2026 (tableau de bord du contrôle de gestion)" /> : null}
       <div style={{ fontSize: 15, fontWeight: 700, margin: '4px 0 0' }}>2. Objectif de CA et TXR cible</div>
       <div data-visite="objectif" style={{ display: 'flex', gap: 20, flexWrap: 'wrap', margin: '14px 0 20px' }}>
         <label style={{ flex: 1, minWidth: 220 }}>

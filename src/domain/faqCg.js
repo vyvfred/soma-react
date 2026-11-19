@@ -25,6 +25,7 @@ export const FAQ_CG_SECTIONS = [
   {
     "t": "Étape 1 — Données agences",
     "items": [
+      ["Comment importer le tableau de bord 2026 et estimer les derniers mois ?", "Menu <b>Tableau de bord 2026</b>, bouton « Importer le tableau de bord (Excel) » : le classeur habituel, un onglet par agence et structure (nom en A1, réalisé et colonnes « B mm-26 » du budget) et l'onglet « 26 Vs 25 » pour 2025. Cliquez ensuite sur une agence : saisissez votre <b>estimation des mois non clos</b> (CA, charges externes, charges de personnel, résultat d'exploitation). L'atterrissage 2026 = réalisé des mois clos + votre estimation ; tant qu'elle manque, le budget 2026 du mois est retenu et l'atterrissage est signalé « provisoire ». Réimportez après chaque clôture : vos estimations sont conservées. Ces chiffres n'alimentent jamais le budget 2027 : ils informent les valideurs (fiche de validation, tableau de bord) et le REX sur son agence."],
       [
         "Comment bien préparer les références des agences ?",
         "Pour chaque agence : le CA 2025 et 2026, le TXR 2026 (CA par heure travaillée), le taux d'absentéisme cible (maladie et accident du travail), le taux horaire brut au 1er janvier et au 1er juin, le taux de charges patronales des roulants, et la ligne de masse salariale non-roulante (salaire brut mensuel total et taux de charges). SOMA calcule le coût horaire chargé, affiché en fin de ligne (avec celui de juin). Ces données servent de socle au REX et de point de comparaison entre agences."

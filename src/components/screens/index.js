@@ -26,6 +26,7 @@ import SaisieDRScreen from './SaisieDRScreen.jsx';
 import ChargesREXScreen from './ChargesREXScreen.jsx';
 import JournalScreen from './JournalScreen.jsx';
 import SuiviREXScreen from './SuiviREXScreen.jsx';
+import ReperesScreen from './ReperesScreen.jsx';
 
 function PrevisionnelCgScreen() { return PrevisionnelScreen({ vueCG: true }); }
 
@@ -55,7 +56,8 @@ export const SCREENS = {
   refs: RefsScreen,
   cal: CalScreen,
   variablesdec: VariablesDecScreen,
-  saisie: SaisieDRScreen
+  saisie: SaisieDRScreen,
+  reperes: ReperesScreen
 };
 
 export function screenFor(panelId) {

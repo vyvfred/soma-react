@@ -67,3 +67,12 @@ export async function telechargerClasseurCharges(c, nomFichier) {
   XLSX.utils.book_append_sheet(wb, wsM, 'Mensuel');
   XLSX.writeFile(wb, nomFichier);
 }
+
+// Toutes les feuilles d'un classeur : { nomFeuille: lignes[][] } (tableau de bord du contrôle de gestion)
+export async function lireToutesFeuilles(file) {
+  const XLSX = await xlsx();
+  const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' });
+  const f = {};
+  wb.SheetNames.forEach((n) => { f[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '' }); });
+  return f;
+}

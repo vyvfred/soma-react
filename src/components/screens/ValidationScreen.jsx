@@ -10,8 +10,10 @@ import { ficheDecisions, lignesFiche } from '../../domain/ficheDecisions.js';
 import { euro, pct } from '../../domain/format.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { toast as toaster } from '../Toast.jsx';
+import ReperesBloc from '../ReperesBloc.jsx';
+import { chargerReperes } from '../../lib/reperesApi.js';
 
-function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consultatif }) {
+function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consultatif, repere }) {
   const { agence, v, d } = item;
   const f = ficheDecisions(d, autres);
   const lignes = lignesFiche(f);
@@ -47,6 +49,7 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consul
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--violet)', marginBottom: 3 }}>Perspectives &amp; contexte 2027 du REX</div>
         {String(d.perspectives || '').trim() ? <div style={{ whiteSpace: 'pre-wrap' }}>{d.perspectives}</div> : <i style={{ color: 'var(--ink65)' }}>Non rédigé</i>}
       </div>
+      <ReperesBloc a={d} r={repere} />
       <div className="ficheLignes">
         {lignes.map((l) => (
           <div className="ficheLigne" key={l.titre}>
@@ -84,6 +87,9 @@ export default function ValidationScreen() {
   const [state, setState] = useState({ loading: true, error: null, aValider: [], traites: [], noRegion: false, tous: [] });
   const navigate = useNav();
   const parNom = profile.nom || profile.email || profile.role;
+  // Repères 2026 du tableau de bord (information pour la décision)
+  const [reperes, setReperes] = useState({});
+  useEffect(() => { chargerReperes().then(setReperes); }, []);
 
   const load = useCallback(() => {
     let active = { on: true };
@@ -141,7 +147,7 @@ export default function ValidationScreen() {
       </div>
 
       {state.aValider.map((it) => (
-        <BudgetCard consultatif={!!profile.consultatif} key={it.agence} item={it} role={profile.role} parNom={parNom} onDecided={onDecided}
+        <BudgetCard consultatif={!!profile.consultatif} repere={reperes[it.agence]} key={it.agence} item={it} role={profile.role} parNom={parNom} onDecided={onDecided}
           autres={state.tous.filter((x) => x.agence !== it.agence).map((x) => x.d)}
           onConsulter={(ag) => navigate('__consulter', ag)} />
       ))}

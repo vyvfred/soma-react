@@ -26,6 +26,7 @@ export const PANELS_CG = [
   ['comparative', 'Vue comparative'],
   ['graphiques', 'Graphiques'],
   ['consolidation', 'Consolidation'],
+  ['reperes', 'Tableau de bord 2026'],
   ['objectif', 'Ouvrir une agence'],
   ['cg', 'Charges CG'],
   ['rex', 'Prévisionnel'],
@@ -39,6 +40,7 @@ export const PANELS_CG = [
 export const PANELS_DR = [
   ['validation', 'Budgets à valider'],
   ['suivi', 'Suivi des REX'],
+  ['reperes', 'Tableau de bord 2026'],
   ['saisie', 'Saisir pour un REX'],
   ['consolidation', 'Consolidation région'],
   ['aide', 'Aide']
@@ -48,6 +50,7 @@ export const PANELS_DR = [
 export const PANELS_DG = [
   ['validation', 'Budgets à valider'],
   ['consolidation', 'Consolidation réseau'],
+  ['reperes', 'Tableau de bord 2026'],
   ['justif', 'Détail des calculs'],
   ['aide', 'Aide']
 ];
