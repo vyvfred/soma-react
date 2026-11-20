@@ -210,7 +210,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   .soma-topbar > [data-attention] { order: 4; margin-left: 0 !important; }
   .soma-topbar .somAttention { padding: 5px 10px; font-size: 12px; margin: 0; }
   .soma-topbar > .soma-crumb { margin-left: auto; }
-  .soma-topbar > .soma-user { order: 5; flex: 0 0 auto; margin-left: auto; }
+  .soma-topbar > .soma-user { order: 5; flex: 1 1 100%; min-width: 0; max-width: 100%; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+  /* Sélecteur de profil : compact, sans libellé, pour laisser la place à « Quitter » */
+  .soma-user [data-testid="choix-profil"] > span { display: none; }
+  .soma-user [data-testid="choix-profil-select"] { max-width: 46vw; min-width: 0; text-overflow: ellipsis; }
   .soma-btn-ghost { padding: 6px 8px; min-width: 34px; min-height: 34px; font-size: 13px; }
   .soma-topbar .roleSwitch { order: 4; }
   /* Grands montants des indicateurs : plus petits et retour à la ligne plutôt que débordement */
