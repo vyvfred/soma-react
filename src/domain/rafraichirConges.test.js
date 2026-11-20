@@ -24,7 +24,7 @@ describe('Congés payés — mise à jour après un changement des jours acquis'
   });
   it('non-roulants : répartition automatique suivie, saisie manuelle jamais écrasée', () => {
     const a = prete(); repartirCPNRAuto(a); expect(a.cpNR.auto).toBe(true);
-    let av = etatConges(a); a.sick = a.sick.map(() => 10);
+    let av = etatConges(a); a.sick = a.sick.map(() => 60); // assez pour changer le total entier de jours acquis
     expect(rafraichirConges(a, av, repartirCPAuto).nonRoulants).toBe(true);
     expect(cpNRSaisis(a)).toBeCloseTo(cpNRAcquis(a), 0);
     a.cpNR = { ...a.cpNR, auto: false, jours: a.cpNR.jours.map(() => 1) };

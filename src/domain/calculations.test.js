@@ -87,12 +87,12 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
 
   it('congés payés générés sur l’année', () => {
     // 30 j ouvrables par an (6 par semaine, nov. 2026), roulants seulement, au prorata des heures : 74,6 j ouvrés × 6/5
-    expect(+cpGeneres(a).toFixed(1)).toBe(89.6); // 74,55 × 1,2
+    expect(cpGeneres(a)).toBe(90); // 74,55 × 1,2 = 89,46 → arrondi au jour entier supérieur (nov. 2026)
   });
 
   it('masse salariale de janvier', () => {
     // 1er-3 janvier (semaine 53) : 3/7 d'une semaine au lieu d'une semaine entière (−4/7 × 2 679 €)
-    expect(Math.round(payrollMonth(a, 0))).toBe(17517); // 16 276 + 1 241 de provision CP (congés acquis, aucun posé sur l'agence de référence) ; // part roulante du régulateur transférée de la ligne non-roulants : quasi neutre
+    expect(Math.round(payrollMonth(a, 0))).toBe(17523); // 16 276 + 1 241 de provision CP (congés acquis, aucun posé sur l'agence de référence) ; // part roulante du régulateur transférée de la ligne non-roulants : quasi neutre
   });
 
   it('découpage en semaines ISO 2027', () => {
@@ -100,15 +100,15 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('compte de résultat de janvier — résultat net', () => {
-    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(64483); // − 1 241 de provision CP
+    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(64477); // − 1 241 de provision CP
   });
 
   it('agrégats annuels du compte de résultat (KPI Synthèse)', () => {
     expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(945400);
     // Semaines partielles au prorata : −4/7 (1er-3 janv.) − 2/7 (27-31 déc.) d'une semaine à 2 679 € = −2 296 €
-    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(208553); // + 14 891 : 89,6 j acquis non posés → le stock de congés augmente
-    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(736847);
-    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(736847);
+    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(208624); // + 14 891 : 89,6 j acquis non posés → le stock de congés augmente
+    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(736776);
+    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(736776);
     expect(Math.round(hsTot(a).hs)).toBe(0);
   });
 });

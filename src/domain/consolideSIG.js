@@ -1,7 +1,7 @@
 // Compte de résultat consolidé (demande du CG, nov. 2026) — port fidèle de
 // sigAnnuelEntite / entiteDepuisBudget / consolideReseau du mono-fichier.
 // Somme des agences et des 4 structures, version soumise sinon active (budgetData).
-import { convertirCPOuvrables } from './rafraichirConges.js';
+import { convertirCPOuvrables, arrondirCPEntiers } from './rafraichirConges.js';
 import { T, sig, manual, refs, STRUCTURES, LIB_STRUCTURES, libLigneSIG } from './calculations.js';
 import { budgetData } from './budgetMapper.js';
 
@@ -27,6 +27,7 @@ export function entiteDepuisBudget(nom, raw) {
   if (!a.sick) a.sick = Array(12).fill(null); if (!a.hs50) a.hs50 = Array(12).fill(null);
   if (!a.cal) a.cal = [];
   convertirCPOuvrables(a); // CP saisis avant en jours ouvrés → jours ouvrables
+  arrondirCPEntiers(a); // congés en jours entiers
   return a;
 }
 

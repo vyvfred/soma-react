@@ -110,7 +110,7 @@ describe('absentéisme unique roulants / improductifs', () => {
   it('les CP générés (roulants seulement, prorata heures et part roulante) suivent le taux mensuel d\'absentéisme', () => {
     const a = base(); a.tauxAbsImproductif = 2;
     const etp = a.employees.reduce((s, e) => s + (+e.hours || 0) / 35 * partRoulant(e), 0);
-    const attendu = Math.round(etp * 30 * (1 - 0.08 * 0.2) * 10) / 10; // loi 2024 : 80 % du rythme pendant les arrêts
+    const attendu = Math.ceil(etp * 30 * (1 - 0.08 * 0.2) - 1e-6); // loi 2024 : 80 % du rythme pendant les arrêts ; jours entiers (arrondi supérieur)
     expect(cpGeneres(a)).toBe(attendu);
   });
 });

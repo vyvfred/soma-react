@@ -1,4 +1,4 @@
-import { convertirCPOuvrables } from './rafraichirConges.js';
+import { convertirCPOuvrables, arrondirCPEntiers } from './rafraichirConges.js';
 import { fusionnerVersion } from './fusion.js';
 // Couche de mapping budget ⇄ Supabase.
 // Reproduit fidèlement loadBudgetFromSupabase() et saveBudgetToSupabase() de
@@ -127,6 +127,7 @@ export function migrateAgency(a) {
   a.calScolaire = 2;
   // CP en jours ouvrables (6 par semaine) : budget saisi avant en jours ouvrés converti une fois
   convertirCPOuvrables(a);
+  arrondirCPEntiers(a); // congés en jours entiers
   if (!Array.isArray(a.hs50)) a.hs50 = Array(12).fill(null);
   if (a.drCostAnnual === undefined) a.drCostAnnual = 0;
   if (a.tauxHoraireBrut === undefined) a.tauxHoraireBrut = null;
@@ -197,6 +198,6 @@ export function budgetData(d) {
     r = d.versions[v] || premiereVersionRemplie(d.versions);
   }
   // CP saisis avant en jours ouvrés : copie convertie en jours ouvrables (la donnée lue n'est pas modifiée)
-  if (r && r.presence && r.uniteCP !== 'ouvrables') { r = JSON.parse(JSON.stringify(r)); convertirCPOuvrables(r); }
+  if (r && r.presence && (r.uniteCP !== 'ouvrables' || !r.cpEntiers)) { r = JSON.parse(JSON.stringify(r)); convertirCPOuvrables(r); arrondirCPEntiers(r); }
   return r;
 }

@@ -128,7 +128,8 @@ export function reinitialiserCP(a) {
 // Saisie d'une semaine (CP ou autres absences, en jours)
 export function setPresenceSemaine(a, w, champ, v) {
   a.presence = { ...(a.presence || {}) };
-  a.presence[w] = { cp: 0, other: 0, ...(a.presence[w] || {}), [champ]: v === '' ? 0 : +v };
+  const val = v === '' ? 0 : +v;
+  a.presence[w] = { cp: 0, other: 0, ...(a.presence[w] || {}), [champ]: champ === 'cp' ? Math.max(0, Math.round(val)) : val };
   return a;
 }
 // Saisie hebdomadaire d'un montant (repas, IDJF, HS improductives) : vide ou 0 = suppression

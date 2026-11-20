@@ -1,5 +1,6 @@
 import { etatConges, rafraichirConges, appliquerRegleCP2024 } from '../domain/rafraichirConges.js';
 import { ajusterCPMinimal } from '../domain/repartitionCP.js';
+import { cpPlanifies as cpPlanifiesCP, cpGeneres as cpGeneresCP } from '../domain/calculations.js';
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
 import { appliquerRefCG, descriptionCopie } from '../domain/refCG.js';
@@ -165,7 +166,9 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
         if (!lectureSeule && estModifiable(res.statut) && res.budgetId && res.agency) {
           const a2 = JSON.parse(JSON.stringify(res.agency));
           const brut = res.data && res.data.versions ? res.data.versions[res.activeVersion] : null;
-          const converti = !!(brut && Object.keys(brut).length && brut.uniteCP !== 'ouvrables'); // CP passés en jours ouvrables au chargement
+          const converti = !!(brut && Object.keys(brut).length && (brut.uniteCP !== 'ouvrables' || !brut.cpEntiers)); // CP passés en jours ouvrables / en jours entiers au chargement
+          // Jours entiers : si les congés étaient posés à hauteur des jours acquis, l'arrondi (acquis à l'entier supérieur) est complété
+          if (brut && !brut.cpEntiers && +a2.targetCA > 0 && +a2.targetTXR > 0 && cpPlanifiesCP(a2) > 0 && Math.abs(cpPlanifiesCP(a2) - cpGeneresCP(a2)) <= 1.05) ajusterCPMinimal(a2);
           if (appliquerRegleCP2024(a2, ajusterCPMinimal) || converti) { res.agency = a2; majCP = a2; }
         }
         setAgency(res.agency);        snapRef.current = null; viderHisto();

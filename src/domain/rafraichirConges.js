@@ -1,4 +1,4 @@
-import { cpGeneres, cpPlanifies, cpNRAcquis, repartirCPNRAuto } from './calculations.js';
+import { cpGeneres, cpPlanifies, cpNRAcquis, repartirCPNRAuto, partsEntieres, moisDeSemaine } from './calculations.js';
 // Mise à jour des congés payés après un changement qui modifie les jours ACQUIS (audit CP nov. 2026) :
 // équipe (ajout, suppression, import, reprise d'une autre version), dates d'entrée / de sortie, temps de travail,
 // part roulante, qualification, absentéisme.
@@ -39,4 +39,32 @@ function convertirCPOuvrables(a){
   if(+a.cpReliquat)a.cpReliquat=r(a.cpReliquat);
   a.uniteCP='ouvrables';return true;
 }
-export { etatConges, rafraichirConges, appliquerRegleCP2024, convertirCPOuvrables };
+// Congés en jours entiers (nov. 2026) : un budget posé avant en demi-journées ou en décimales est arrondi une fois au
+// chargement, en gardant le total de l'agence (méthode des plus forts restes, semaine par semaine) ; les parts par mois des
+// semaines à cheval et les jours des non-roulants deviennent entiers aussi. Renvoie true si quelque chose a été arrondi.
+function arrondirCPEntiers(a){
+  if(!a||a.cpEntiers)return false;
+  let entier=function(v){return Math.abs((+v||0)-Math.round(+v||0))<1e-9;};
+  let cles=Object.keys(a.presence||{}),change=false;
+  let aArrondir=cles.filter(function(w){let p=a.presence[w];return p&&!entier(p.cp);});
+  if(aArrondir.length){
+    let total=aArrondir.reduce(function(s,w){return s+(+a.presence[w].cp||0);},0);
+    let parts=partsEntieres(Math.round(total),aArrondir.map(function(w){return +a.presence[w].cp||0;}));
+    a.presence=Object.assign({},a.presence);
+    aArrondir.forEach(function(w,i){a.presence[w]=Object.assign({},a.presence[w],{cp:parts[i]});});
+    change=true;
+  }
+  // Parts par mois des semaines à cheval : entières, avec le même total que la semaine
+  cles.forEach(function(w){let p=a.presence[w];if(!p||!p.cpMois||typeof p.cpMois!=='object')return;
+    let ms=Object.keys(p.cpMois);if(ms.every(function(m){return entier(p.cpMois[m]);})&&Math.abs(ms.reduce(function(s,m){return s+(+p.cpMois[m]||0);},0)-(+p.cp||0))<1e-9)return;
+    let pe=partsEntieres(+p.cp||0,ms.map(function(m){return Math.max(0,+p.cpMois[m]||0);}));let o={};ms.forEach(function(m,i){o[m]=pe[i];});
+    a.presence[w]=Object.assign({},p,{cpMois:o});change=true;});
+  if(a.cpOptimal)Object.keys(a.cpOptimal).forEach(function(w){if(!entier(a.cpOptimal[w])){a.cpOptimal[w]=Math.round(+a.cpOptimal[w]||0);change=true;}});
+  if(a.cpNR&&Array.isArray(a.cpNR.jours)&&a.cpNR.jours.some(function(v){return v!==null&&v!==undefined&&v!==''&&!entier(v);})){
+    let idx=[],poids=[];a.cpNR.jours.forEach(function(v,i){if(v!==null&&v!==undefined&&v!==''){idx.push(i);poids.push(+v||0);}});
+    let pe=partsEntieres(Math.round(poids.reduce(function(s,v){return s+v;},0)),poids);let j=a.cpNR.jours.slice();idx.forEach(function(i,k){j[i]=pe[k];});
+    a.cpNR=Object.assign({},a.cpNR,{jours:j});change=true;}
+  if(+a.cpReliquat&&!entier(a.cpReliquat))a.cpReliquat=Math.round(a.cpReliquat);
+  a.cpEntiers=true;return change;
+}
+export { etatConges, rafraichirConges, appliquerRegleCP2024, convertirCPOuvrables, arrondirCPEntiers };

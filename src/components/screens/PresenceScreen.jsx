@@ -197,7 +197,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
               <tr key={s.week} style={{ textAlign: 'right' }}>
                 <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b>{s.aCheval ? <div data-testid={'a-cheval-' + s.week} style={{ fontSize: 10, color: 'var(--ink65)' }} title="Semaine à cheval sur deux mois : saisissez les jours de ce mois, ils s'additionnent à ceux de l'autre mois">à cheval · sem. {fmt1(+((a.presence[s.week] || {}).cp) || 0)} J CP</div> : null}</td>
                 <td style={cell}>{Math.round(s.base)}</td>
-                <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="0.5" value={s.parts.cp || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).cp) || 0) + ' J' : undefined} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value, m)} style={{ width: 56 }} /></td>
+                <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="1" value={s.parts.cp || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).cp) || 0) + ' J' : undefined} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={s.parts.otherPaid || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).otherPaid) || 0) + ' J' : 'Absences payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.other') ? '1' : undefined} min="0" step="0.5" value={s.parts.other || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).other) || 0) + ' J' : 'Absences non payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}>{Math.round(s.mal)}</td>
@@ -569,7 +569,7 @@ function CongesNonRoulants({ a, editable, muter }) {
   const acquis = cpNRAcquis(a);
   const saisis = cpNRSaisis(a);
   const reste = Math.round((acquis - saisis) * 10) / 10;
-  const setJour = (i, v) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, auto: false, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; x.cpNR.jours[i] = v === '' ? null : +String(v).replace(',', '.'); });
+  const setJour = (i, v) => muter((x) => { if (!x.cpNR) x.cpNR = cpNRVide(); x.cpNR = { ...x.cpNR, auto: false, jours: (x.cpNR.jours || Array(12).fill(null)).slice() }; x.cpNR.jours[i] = v === '' ? null : Math.max(0, Math.round(+String(v).replace(',', '.') || 0)); });
   const cellule = { padding: '4px 6px' };
   return (
     <div data-testid="repli-cp-nr" style={{ marginBottom: 18 }}>
@@ -592,7 +592,7 @@ function CongesNonRoulants({ a, editable, muter }) {
               <td style={cellule}><b>Jours de CP</b></td>
               {M.map((_, i) => (
                 <td key={i} style={{ padding: '2px 3px' }}>
-                  <input data-testid={'cpnr-' + i} data-saisie-dr={estSaisieDR(a, 'cpNR.jours.' + i) ? '1' : undefined} type="number" min="0" step="0.5" value={c.jours && c.jours[i] !== null && c.jours[i] !== undefined ? c.jours[i] : ''} placeholder="0" disabled={!editable}
+                  <input data-testid={'cpnr-' + i} data-saisie-dr={estSaisieDR(a, 'cpNR.jours.' + i) ? '1' : undefined} type="number" min="0" step="1" value={c.jours && c.jours[i] !== null && c.jours[i] !== undefined ? c.jours[i] : ''} placeholder="0" disabled={!editable}
                     onChange={(e) => setJour(i, e.target.value)} style={{ width: '100%', minWidth: 58, padding: '6px 4px', textAlign: 'center' }} />
                 </td>
               ))}

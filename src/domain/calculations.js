@@ -163,8 +163,13 @@ function cpGeneres(a) {
       totalJ += CP_JOURS_MOIS * (1 - tauxMal * (1 - CP_ACQUIS_MALADIE)) * ((+e.hours||0) / 35) * partRoulant(e);
     });
   });
-  return Math.round(totalJ * 10) / 10;
+  // Jours entiers (nov. 2026) : les congés acquis s'arrondissent à l'entier supérieur
+  return Math.ceil(totalJ - 1e-6);
 }
+// Partage d'un total entier en parts entières proportionnelles à des poids (méthode des plus forts restes)
+function partsEntieres(total, poids){let n=Math.round(total),sp=poids.reduce(function(s,v){return s+v;},0);if(!poids.length)return [];if(sp<=0){let r=poids.map(function(){return 0;});r[0]=n;return r;}
+  let brut=poids.map(function(v){return n*v/sp;}),ent=brut.map(Math.floor),reste=n-ent.reduce(function(s,v){return s+v;},0);
+  brut.map(function(v,i){return [v-ent[i],i];}).sort(function(x,y){return y[0]-x[0];}).slice(0,reste).forEach(function(x){ent[x[1]]++;});return ent;}
 // Congés des non-roulants (nov. 2026) : jours de CP saisis par mois pour l'équipe non roulante (total),
 // suivis avec un compteur acquis / posés. Aucun coût : leur salaire est déjà dans la ligne non-roulants
 // du CG (un congé est payé) et ils ne sont pas remplacés (décision de la direction des opérations).
@@ -172,22 +177,23 @@ function salariesNR(a){return (a.employees||[]).filter(function(e){return !isRou
 // CP des non-roulants (nov. 2026, contrôle de gestion) : si le CG saisit le nombre d'ETP non roulants dans Données agences,
 // l'acquisition est ETP × 2,5 j ouvrables par mois (sans lien avec l'écran Équipe) ; l'agence saisit les jours posés (déstockage).
 function etpNR(a){let v=a&&a.etpNR;return (v===null||v===undefined||v==='')?null:Math.max(0,+v||0);}
-function cpNRAcquisMois(a,m){let etp=etpNR(a);if(etp!==null)return etp*CP_JOURS_MOIS;let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
+function cpNRAcquisMois(a,m){let tot=0;for(let k=0;k<12;k++)tot+=cpNRAcquisMoisBrut(a,k);let b=cpNRAcquisMoisBrut(a,m);return tot>0?b*Math.ceil(tot-1e-6)/tot:0;}
+function cpNRAcquisMoisBrut(a,m){let etp=etpNR(a);if(etp!==null)return etp*CP_JOURS_MOIS;let ref='2027-'+String(m+1).padStart(2,'0')+'-15',mal=tauxAbsMois(a,m);return salariesNR(a).reduce(function(s,e){if(!empPresent(e,ref))return s;return s+CP_JOURS_MOIS*(1-mal*(1-CP_ACQUIS_MALADIE))*((+e.hours||0)/35)*(1-partRoulant(e));},0);}
 // Coût d'un jour ouvrable de non-roulant : MS non roulante mensuelle / ETP / 26 jours ouvrables par mois
 function coutJourCPNR(a){let cm=msNRMensuel(a),e=etpNR(a);return cm!==null&&e>0?cm/e/26:0;}
 function cpNRPrisMois(a,m){return a&&a.cpNR&&a.cpNR.jours?(+a.cpNR.jours[m]||0):0;}
 // Variation du stock de CP des non-roulants : (jours acquis − jours posés) × coût d'un jour ; dotation les mois où l'équipe
 // acquiert plus qu'elle ne pose, reprise (baisse de la MS) les mois de congés. Nulle sans ligne MS non roulante ni ETP saisis.
 function variationStockCPNRMois(a,m){if(!a||estStructure(a))return 0;let c=coutJourCPNR(a);return c?(cpNRAcquisMois(a,m)-cpNRPrisMois(a,m))*c:0;}
-function cpNRAcquis(a){return Math.round(M.reduce(function(s,_,m){return s+cpNRAcquisMois(a,m);},0)*10)/10;}
+function cpNRAcquis(a){return Math.ceil(M.reduce(function(s,_,m){return s+cpNRAcquisMoisBrut(a,m);},0)-1e-6);}
 function cpNRSaisis(a){let j=a.cpNR&&a.cpNR.jours;return j?Math.round(j.reduce(function(s,v){return s+(+v||0);},0)*10)/10:0;}
 function cpNRVide(){return {jours:Array(12).fill(null)};}
 // Répartition automatique des jours acquis selon les enveloppes légales (60 % juin-octobre, 20 % novembre-janvier, 20 % février-mai)
 function repartirCPNRAuto(a){
-  let tot=cpNRAcquis(a),j=Array(12).fill(0);
-  [[[5,6,7,8,9],0.6],[[10,11,0],0.2],[[1,2,3,4],0.2]].forEach(function(e){let parMois=tot*e[1]/e[0].length;e[0].forEach(function(m){j[m]=Math.round(parMois*2)/2;});});
-  // Reliquat d'arrondi (demi-journées) reporté sur août, pour poser exactement les jours acquis
-  let ecart=Math.round(tot*2)/2-j.reduce(function(s,v){return s+v;},0);j[7]=Math.max(0,Math.round((j[7]+ecart)*10)/10);
+  // Jours entiers : chaque période puis chaque mois reçoit un nombre entier de jours, le total fait exactement les jours acquis
+  let tot=cpNRAcquis(a),j=Array(12).fill(0),env=[[[5,6,7,8,9],0.6],[[10,11,0],0.2],[[1,2,3,4],0.2]];
+  let parEnv=partsEntieres(tot,env.map(function(e){return e[1];}));
+  env.forEach(function(e,k){let pm=partsEntieres(parEnv[k],e[0].map(function(){return 1;}));e[0].forEach(function(m,i){j[m]=pm[i];});});
   if(!a.cpNR)a.cpNR=cpNRVide();
   a.cpNR.jours=j;a.cpNR.auto=true;return a;
 }
@@ -214,13 +220,15 @@ function absPartMois(a,w,champ,m){
   // le dernier mois reçoit le reste pour que les parts fassent exactement le total
   let ouv=function(mm){return joursSemaine(a,w).filter(function(d){let j=new Date(2027,d.month,d.day).getDay();return d.month===mm&&j>0&&j<(champ==='cp'?7:6);}).length;};
   let tous=ms.reduce(function(s,mm){return s+ouv(mm);},0);
-  let part=function(mm){return tous>0?Math.round(tot*ouv(mm)/tous*10)/10:(mm===ms[0]?tot:0);};
+  let ent=champ==='cp'&&Math.abs(tot-Math.round(tot))<1e-9; // CP en jours entiers : parts entières
+  let part=function(mm){return tous>0?(ent?Math.round(tot*ouv(mm)/tous):Math.round(tot*ouv(mm)/tous*10)/10):(mm===ms[0]?tot:0);};
   if(m!==ms[ms.length-1])return part(m);
   return Math.round((tot-ms.slice(0,-1).reduce(function(s,mm){return s+part(mm);},0))*10)/10;
 }
 function setAbsPartMois(a,w,champ,m,v){
   let ms=moisDeSemaine(a,w),p=Object.assign({cp:0,other:0},a.presence[w]||{});
   v=(v===''||v===null||v===undefined)?0:(+String(v).replace(',','.')||0);
+  if(champ==='cp')v=Math.max(0,Math.round(v)); // congés en jours entiers
   if(ms.length<2||ms.indexOf(m)<0){p[champ]=v;delete p[champ+'Mois'];}
   else{let parts={};ms.forEach(function(mm){parts[mm]=mm===m?v:absPartMois(a,w,champ,mm);});p[champ+'Mois']=parts;p[champ]=Math.round(ms.reduce(function(s,mm){return s+parts[mm];},0)*10)/10;}
   a.presence=Object.assign({},a.presence);a.presence[w]=p;return a;
@@ -320,7 +328,9 @@ function txrEffectif(a){if(!txrModule(a)||!a.cal||!a.cal.length)return +(a&&a.ta
 // des roulants (+ jours acquis dans le mois, − jours posés dans le mois), valorisée jours × 35/6 h × coût horaire chargé du mois.
 // Les mois où l'équipe part en congés (souvent les mois faibles en CA), la reprise de provision diminue la charge ;
 // sur l'année, la somme des variations est nulle quand les congés posés égalent les congés acquis.
-function cpAcquisMois(a,m){
+// Mois par mois au prorata, ramené au total arrondi à l'entier supérieur (la provision s'annule sur l'année quand posés = acquis)
+function cpAcquisMois(a,m){let tot=0;for(let k=0;k<12;k++)tot+=cpAcquisMoisBrut(a,k);let b=cpAcquisMoisBrut(a,m);return tot>0?b*cpGeneres(a)/tot:0;}
+function cpAcquisMoisBrut(a,m){
   let tauxMal=a.sick&&a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]/100:0,ref='2027-'+String(m+1).padStart(2,'0')+'-15';
   return (a.employees||[]).filter(estRoulantPart).reduce(function(s,e){
     if(!empPresent(e,ref))return s;
@@ -927,6 +937,7 @@ function chargesReport2028(a){
   return Math.round(ms);
 }
 
+export { partsEntieres };
 export { txrDuMois, txrModule, txrEffectif };
 export {
   cleJour,

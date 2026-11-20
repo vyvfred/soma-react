@@ -1,7 +1,7 @@
 // Répartition automatique des congés des roulants (refonte nov. 2026).
 // Le cœur du calcul (repartirCPAgence) est le même texte dans le mono-fichier ; ici, repartirCPAuto(a, moisLibres)
 // mute `a` (presence, cpEnveloppes, cpReliquat, cpReport, cpOptimal) et le renvoie.
-import { M, needWeeks, mainMonth, cpGeneres, memoriserRepartitionOptimale, genCal, moisDeSemaine, pres, CP_HEURES_JOUR, coutHSTotal, absPartMois } from './calculations.js';
+import { M, needWeeks, mainMonth, cpGeneres, memoriserRepartitionOptimale, genCal, moisDeSemaine, pres, CP_HEURES_JOUR, coutHSTotal, absPartMois, partsEntieres } from './calculations.js';
 
 // Enveloppes de la règle de l'entreprise : 60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai.
 const ENVELOPPES_CP = [
@@ -36,24 +36,26 @@ function repartirCPAgence(a, moisLibres) {
     let dans = function (w) { return env.months.indexOf(mainMonth(a, w.week)) >= 0; };
     env.cpVerrouilles = r1(semaines.reduce(function (s, w) { return dans(w) && !estLibre(w) ? s + (+((a.presence[w.week] || {}).cp) || 0) : s; }, 0));
     env.semaines = semaines.filter(function (w) { return dans(w) && estLibre(w); });
-    env.cible = r1(generes * env.pct);
-    env.budgetBrut = r1(env.cible - env.cpVerrouilles);
+    env.budgetBrut = 0;
   });
+  // Jours entiers : cibles 60 / 20 / 20 entières dont la somme fait exactement les jours acquis
+  let cibles = partsEntieres(generes, envelopes.map(function (e) { return e.pct; }));
+  envelopes.forEach(function (env, i) { env.cible = cibles[i]; env.budgetBrut = r1(env.cible - env.cpVerrouilles); });
 
   // Mois validés au-delà de la cible de leur enveloppe : l'excédent réduit les autres enveloppes au prorata de leur place
   let excedent = envelopes.reduce(function (s, env) { return s + (env.budgetBrut < 0 ? -env.budgetBrut : 0); }, 0);
   let capacite = envelopes.reduce(function (s, env) { return s + (env.budgetBrut > 0 ? env.budgetBrut : 0); }, 0);
-  envelopes.forEach(function (env) {
-    if (env.budgetBrut <= 0) { env.budget = 0; return; }
-    env.budget = Math.max(0, r1(env.budgetBrut - (capacite > 0 ? excedent * env.budgetBrut / capacite : 0)));
-  });
+  // Total à placer sur les semaines libres, en jours entiers, partagé au prorata des besoins positifs des périodes
+  let aPlacer = Math.max(0, Math.round(capacite - excedent));
+  let partsB = partsEntieres(aPlacer, envelopes.map(function (env) { return env.budgetBrut > 0 ? env.budgetBrut : 0; }));
+  envelopes.forEach(function (env, i) { env.budget = env.budgetBrut > 0 ? partsB[i] : 0; });
 
   // Report : une enveloppe dont tous les mois sont validés ne peut plus rien recevoir
   let aReporter = 0;
   envelopes.forEach(function (env) { env.recu = 0; env.reporte = 0; if (!env.semaines.length && env.budget > 0.05) { env.reporte = env.budget; aReporter += env.budget; env.budget = 0; } });
   let receveurs = envelopes.filter(function (env) { return env.semaines.length; });
   let poidsRec = receveurs.reduce(function (s, env) { return s + env.pct; }, 0);
-  if (aReporter > 0.05 && poidsRec > 0) receveurs.forEach(function (env) { env.recu = r1(aReporter * env.pct / poidsRec); env.budget = r1(env.budget + env.recu); });
+  if (aReporter > 0.05 && poidsRec > 0) { let pr = partsEntieres(aReporter, receveurs.map(function (env) { return env.pct; })); receveurs.forEach(function (env, i) { env.recu = pr[i]; env.budget = env.budget + env.recu; }); }
 
   // Placement
   let reliquat = receveurs.length ? 0 : aReporter;
@@ -71,14 +73,15 @@ function repartirCPAgence(a, moisLibres) {
     let elig = env.semaines.filter(function (w) { return etat(w).etp > 0.5; });
     while (budget - place > 0.05 && secu < 20000 && elig.length) {
       secu++;
-      let reste = r1(budget - place);
-      let pas = Math.min(reste > 10 ? 2 : 0.5, reste);
+      let reste = Math.round(budget - place);
+      if (reste < 1) break;
+      let pas = Math.min(reste > 10 ? 2 : 1, reste);
       // 1) capacité gratuite : semaine qui peut recevoir sans créer d'HS, la moins chargée en congés
       let best = null, ajout = 0, cle = Infinity;
       elig.forEach(function (w) {
         let e = etat(w);
-        let possible = Math.min(pas, Math.floor((-e.gap / CP_HEURES_JOUR) * 2) / 2);
-        if (possible <= 0) return;
+        let possible = Math.min(pas, Math.floor(-e.gap / CP_HEURES_JOUR));
+        if (possible < 1) return;
         let part = e.base > 0 ? e.cpH / e.base : 0;
         if (part < cle) { cle = part; best = w; ajout = possible; }
       });
@@ -127,15 +130,16 @@ function ajusterCPMinimal(a, moisLibres, deltaImpose) {
   let estLibre = function (w) { return moisDeSemaine(a, w.week).every(function (m) { return libres.indexOf(m) >= 0; }); };
   let cpDe = function (w) { return +((a.presence[w.week] || {}).cp) || 0; };
   let generes = cpGeneres(a);
-  let delta = typeof deltaImpose === 'number' && isFinite(deltaImpose) ? r1(deltaImpose) : r1(generes - semaines.reduce(function (s, w) { return s + cpDe(w); }, 0));
+  let delta = Math.round(typeof deltaImpose === 'number' && isFinite(deltaImpose) ? deltaImpose : generes - semaines.reduce(function (s, w) { return s + cpDe(w); }, 0));
   let envelopes = ENVELOPPES_CP.map(function (e) {
     let dans = function (w) { return e.months.indexOf(mainMonth(a, w.week)) >= 0; };
     let ws = semaines.filter(dans);
-    return { nom: e.nom, pct: e.pct, months: e.months, cible: r1(generes * e.pct),
+    return { nom: e.nom, pct: e.pct, months: e.months, cible: 0,
       place: r1(ws.reduce(function (s, w) { return s + cpDe(w); }, 0)),
       verrouille: r1(ws.filter(function (w) { return !estLibre(w); }).reduce(function (s, w) { return s + cpDe(w); }, 0)),
       semaines: ws.filter(estLibre) };
   });
+  partsEntieres(generes, envelopes.map(function (e) { return e.pct; })).forEach(function (c, i) { envelopes[i].cible = c; });
   let cache = {};
   let etat = function (w) {
     if (!cache[w.week]) { let p = pres(a, w.week); cache[w.week] = { gap: w.hours - p.av, etp: p.etp, base: p.base, cpH: p.cpH }; }
@@ -162,15 +166,16 @@ function ajusterCPMinimal(a, moisLibres, deltaImpose) {
       let parts = rec.map(function (e, i) { return tot > 0.05 ? Math.min(Math.abs(delta), ecarts[i]) : Math.abs(delta) * e.pct / poids; });
       let somme = parts.reduce(function (x, y) { return x + y; }, 0);
       if (somme < Math.abs(delta) - 0.05) { let manque = Math.abs(delta) - somme; parts = parts.map(function (v, i) { return v + manque * rec[i].pct / poids; }); }
+      parts = partsEntieres(Math.abs(delta), parts); // jours entiers
       rec.forEach(function (env, i) {
-        let reste = r1(parts[i]), secu = 0;
+        let reste = parts[i], secu = 0;
         if (delta > 0) {
           let elig = env.semaines.filter(function (w) { return etat(w).etp > 0.5; });
           while (reste > 0.05 && elig.length && secu++ < 20000) {
-            let pas = Math.min(reste > 10 ? 2 : 0.5, reste), best = null, ajout = 0, cle = Infinity;
+            let pas = Math.min(reste > 10 ? 2 : 1, reste), best = null, ajout = 0, cle = Infinity;
             elig.forEach(function (w) {
-              let e = etat(w), possible = Math.min(pas, Math.floor((-e.gap / CP_HEURES_JOUR) * 2) / 2);
-              if (possible <= 0) return;
+              let e = etat(w), possible = Math.min(pas, Math.floor(-e.gap / CP_HEURES_JOUR));
+              if (possible < 1) return;
               let part = e.base > 0 ? e.cpH / e.base : 0;
               if (part < cle) { cle = part; best = w; ajout = possible; }
             });
@@ -188,15 +193,15 @@ function ajusterCPMinimal(a, moisLibres, deltaImpose) {
           reliquat += Math.max(0, reste);
         } else {
           while (reste > 0.05 && secu++ < 20000) {
-            let pas = Math.min(reste > 10 ? 2 : 0.5, reste);
-            let cand = env.semaines.filter(function (w) { return cpDe(w) > 0.05; });
+            let pas = Math.min(reste > 10 ? 2 : 1, reste);
+            let cand = env.semaines.filter(function (w) { return cpDe(w) >= 1; });
             if (!cand.length) break;
             let best = null, k1 = -Infinity, k2 = -Infinity;
             cand.forEach(function (w) {
               let e = etat(w), r = e.etp > 0 ? Math.max(0, e.gap) / e.etp : 0, part = e.base > 0 ? e.cpH / e.base : 0;
               if (r > k1 + 0.01 || (Math.abs(r - k1) <= 0.01 && part > k2)) { k1 = r; k2 = part; best = w; }
             });
-            let retrait = Math.min(pas, cpDe(best));
+            let retrait = Math.min(pas, Math.floor(cpDe(best)));
             poser(best, -retrait);
             reste = r1(reste - retrait);
           }
