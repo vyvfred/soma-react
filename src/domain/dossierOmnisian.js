@@ -1,7 +1,7 @@
 // Dossier d'analyse pour Omnisian (nov. 2026) : l'IA autorisée pour la direction générale et la direction financière.
 // Un document texte (Markdown) que l'on dépose dans Omnisian : méthode, vue réseau, tableau comparatif des agences,
 // une fiche par agence, questions types. Uniquement des données agrégées : aucun nom ni salaire individuel.
-import { ann, hsTot, coutHSTotal, cpGeneres, cpPlanifies, estStructure, isRoulant, avecCacheMoteur, STRUCTURES, LIB_STRUCTURES, M } from './calculations.js';
+import { ann, hsTot, coutHSTotal, cpGeneres, cpPlanifies, estStructure, isRoulant, avecCacheMoteur, STRUCTURES, LIB_STRUCTURES, M, txrEffectif, txrModule, txrDuMois } from './calculations.js';
 import { entiteDepuisBudget, consolideReseau } from './consolideSIG.js';
 import { syntheseVue } from './syntheseVue.js';
 import { syntheseBudget } from './syntheseBudget.js';
@@ -42,7 +42,7 @@ export function ficheEntite(nom, row, reperes, role) {
       libResultat: s.kpis[1].label, resultat: s.net, rex, rexPct: ratio(rex, ca), rex26Pct: comp('res', 0), rexReseauPct: comp('res', 1),
       ms, msPct: ratio(ms, ca), ms26Pct: comp('ms', 0), msReseauPct: comp('ms', 1),
       ext, extPct: ratio(ext, ca), ext26Pct: comp('ext', 0), extReseauPct: comp('ext', 1),
-      txr: +a.targetTXR || null, absenteisme: +a.targetAbsRate || null,
+      txr: +a.targetTXR ? txrEffectif(a) : null, txrMensuel: txrModule(a) ? M.map((_, m) => txrDuMois(a, m)) : null, absenteisme: +a.targetAbsRate || null,
       roulants: (a.employees || []).filter((e) => isRoulant(e.qual)).length,
       hs: t ? t.hs : null, coutHS: struct ? null : coutHSTotal(a),
       cpAcquis: struct ? null : cpGeneres(a), cpPoses: struct ? null : cpPlanifies(a),
@@ -104,7 +104,7 @@ function ficheMarkdown(f) {
   l.push('- Masse salariale : ' + eur(f.ms) + ' soit ' + pc(f.msPct) + ' du CA (2026 : ' + pc(f.ms26Pct) + ', réseau 2026 : ' + pc(f.msReseauPct) + ')');
   l.push('- Charges externes : ' + eur(f.ext) + ' soit ' + pc(f.extPct) + ' du CA (2026 : ' + pc(f.ext26Pct) + ', réseau 2026 : ' + pc(f.extReseauPct) + ')');
   if (!f.structure) {
-    l.push('- Hypothèses : TXR ' + (f.txr ? nb(f.txr) + ' € de CA par heure' : '—') + ' · absentéisme ' + (f.absenteisme ? nb(f.absenteisme, 1) + ' %' : '—') + ' · ' + nb(f.roulants) + ' salariés roulants');
+    l.push('- Hypothèses : TXR ' + (f.txr ? nb(f.txr, 1) + ' € de CA par heure' + (f.txrMensuel ? ' en moyenne, modulé par mois (' + f.txrMensuel.map((t, m) => M[m] + ' ' + nb(t, 1)).join(', ') + ')' : '') : '—') + ' · absentéisme ' + (f.absenteisme ? nb(f.absenteisme, 1) + ' %' : '—') + ' · ' + nb(f.roulants) + ' salariés roulants');
     l.push('- Heures supplémentaires : ' + nb(f.hs) + ' h, coût ' + eur(f.coutHS) + ' (' + pc(ratio(f.coutHS, f.ca)) + ' du CA) · congés des roulants : ' + nb(f.cpPoses, 1) + ' jours posés sur ' + nb(f.cpAcquis, 1) + ' acquis');
   }
   l.push('');

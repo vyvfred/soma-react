@@ -1,6 +1,6 @@
 import { annuel, montant } from './memoSIG.js';
 // Anomalies d'un budget soumis, signalées au CG à son ouverture — port fidèle de afficherAlertesCG.
-import { msNRMensuel, isRoulant, costHourJuin, baseH, cpGeneres, cpPlanifies, heuresDispoAnnuelles, caFunAnnuel } from './calculations.js';
+import { msNRMensuel, isRoulant, costHourJuin, baseH, cpGeneres, cpPlanifies, heuresDispoAnnuelles, caFunAnnuel, txrEffectif } from './calculations.js';
 import { euro } from './format.js';
 
 export function alertesBudgetSoumis(a) {
@@ -13,7 +13,7 @@ export function alertesBudgetSoumis(a) {
   }
   if (a.ratioMaintien === null || a.ratioMaintien === undefined || a.ratioMaintien === '') l.push({ t: 'info', m: 'Ratio de maintien de salaire non renseigné — les absences sont déduites à 100 %.' });
   if (a.costHour && !costHourJuin(a)) l.push({ t: 'info', m: 'Taux horaire au 1er juin non renseigné — le taux de janvier s\'applique toute l\'année.' });
-  const base = baseH(a), txr = +a.targetTXR || 0;
+  const base = baseH(a), txr = txrEffectif(a);
   if (base > 0 && txr > 0) {
     const caMax = Math.round(heuresDispoAnnuelles(a) * txr), caB = annuel(a, "Chiffre d'affaires") - caFunAnnuel(a); // funéraire : sans besoin d'équipage
     if (caB > caMax * 1.15) l.push({ t: 'crit', m: 'CA budgété (' + euro(caB) + ') dépasse de plus de 15 % la capacité max (' + euro(caMax) + '). Vérifier les références CA.' });

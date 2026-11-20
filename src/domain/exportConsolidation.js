@@ -2,7 +2,7 @@
 // Fonction PURE : renvoie les feuilles (tableaux de lignes) ; l'écriture du fichier est dans lib/.
 import { statutLabel } from '../config/statut.js';
 import { avancementBudget } from './avancement.js';
-import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles, partRoulant, estRoulantPart } from './calculations.js';
+import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles, partRoulant, estRoulantPart, txrEffectif } from './calculations.js';
 import { entiteDepuisBudget } from './consolideSIG.js';
 
 const ROULANTS = ['DEA', 'AA', 'TAXI', 'TPMR'];
@@ -17,8 +17,8 @@ function indicateurs(d, nom) {
   etp = Math.round(etp * 100) / 100;
   const caB = d.cal && d.cal.length ? d.cal.reduce((s, day) => s + (day.total || 0), 0) : 0;
   // Mêmes calculs que l'écran de l'agence (moteur) : TXR cible, maladie et congés déduits
-  const txr = +d.targetTXR || +d.histTXR2026 || 0;
   let ent = null; try { ent = entiteDepuisBudget(nom || 'X', d); } catch (e) { ent = null; }
+  const txr = (ent && +ent.targetTXR ? txrEffectif(ent) : 0) || +d.targetTXR || +d.histTXR2026 || 0;
   const caMax = ent && txr > 0 ? Math.round(heuresDispoAnnuelles(ent) * txr) : 0;
   const txCharge = caMax > 0 ? Math.round((caB / caMax) * 100) : 0;
   let hs = 0; try { hs = ent && txr > 0 ? Math.round(hsTot(ent).hs) : 0; } catch (e) { hs = 0; }

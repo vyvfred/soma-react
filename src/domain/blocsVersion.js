@@ -4,7 +4,7 @@
 // il n'est jamais recopié. Seules les saisies propres à une version le sont, par bloc.
 const BLOCS_VERSION=[
   {id:'equipe',label:'Équipe',detail:'salariés, contrats, heures, % roulant, entrées et sorties',cles:['employees']},
-  {id:'objectif',label:'Objectif et références CA',detail:'CA cible, TXR cible, activités, perspectives, CA moyen par type de jour, jours ajustés sur le calendrier',cles:['targetCA','targetTXR','perspectives','actSan','actSai','actTP','actFun','caFuneraire','refs','ajustJours']},
+  {id:'objectif',label:'Objectif et références CA',detail:'CA cible, TXR cible (et par mois), activités, perspectives, CA moyen par type de jour, jours ajustés sur le calendrier',cles:['targetCA','targetTXR','txrMois','perspectives','actSan','actSai','actTP','actFun','caFuneraire','refs','ajustJours']},
   {id:'presence',label:'Présence & HS',detail:'absentéisme, congés, mois travaillés, CP des non-roulants, indemnités',cles:['sick','presence','cpEnveloppes','cpReliquat','cpDernierRecalcul','cpOptimal','cpOptimalHSCost','cpNR','moisVerrouilles','hs50','hsImproductif','repasRoulant','repasNonRoulant','idjfRoulant','idjfNonRoulant']},
   {id:'charges',label:'Charges',detail:'postes de charges hors personnel (saisies REX et CG)',cles:['rex']}
 ];

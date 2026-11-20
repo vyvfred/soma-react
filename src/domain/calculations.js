@@ -308,7 +308,13 @@ function caFunMois(a,m){if(!a||!a.actFun||!Array.isArray(a.caFuneraire))return 0
 function caFunJour(a,m){return caFunMois(a,m)/new Date(2027,m+1,0).getDate();}
 function caFunAnnuel(a){return M.reduce(function(s,_,m){return s+caFunMois(a,m);},0);}
 
-function needWeeks(a){return weeks(a).map(w=>({week:w.week,days:w.days.length,ca:w.ca,hours:(+a.targetTXR?w.ca/+a.targetTXR:0)}))}
+// TXR du mois : modulation mensuelle facultative saisie par le REX (txrMois), sinon le TXR cible annuel
+function txrDuMois(a,m){let v=a&&a.txrMois?+a.txrMois[m]:0;return v>0?v:(+(a&&a.targetTXR)||0)}
+function txrModule(a){return !!(a&&Array.isArray(a.txrMois)&&a.txrMois.some(v=>+v>0))}
+// Heures nécessaires de la semaine : CA de chaque jour ÷ TXR de son mois
+function needWeeks(a){let mod=txrModule(a),t=+a.targetTXR||0;return weeks(a).map(w=>({week:w.week,days:w.days.length,ca:w.ca,hours:mod?w.days.reduce((s,d)=>{let x=txrDuMois(a,d.month);return s+(x>0?d.total/x:0)},0):(t?w.ca/t:0)}))}
+// TXR moyen réellement appliqué sur l'année (CA ÷ heures nécessaires) ; égal au TXR cible sans modulation
+function txrEffectif(a){if(!txrModule(a)||!a.cal||!a.cal.length)return +(a&&a.targetTXR)||0;let ca=0,h=0;needWeeks(a).forEach(w=>{ca+=w.ca;h+=w.hours});return h>0?ca/h:(+a.targetTXR||0)}
 
 // Provision pour congés payés (nov. 2026) : la charge de personnel du mois comprend la variation du stock de congés
 // des roulants (+ jours acquis dans le mois, − jours posés dans le mois), valorisée jours × 35/6 h × coût horaire chargé du mois.
@@ -921,6 +927,7 @@ function chargesReport2028(a){
   return Math.round(ms);
 }
 
+export { txrDuMois, txrModule, txrEffectif };
 export {
   cleJour,
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, couvertParLigneNR, lignesStructure, totalLignesMois, totalLigneAn, ligneStructureVide, etpNR, coutJourCPNR, cpNRPrisMois, variationStockCPNRMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,

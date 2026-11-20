@@ -1,4 +1,4 @@
-import { baseH, isRoulant, heuresDispoAnnuelles } from './calculations.js';
+import { baseH, isRoulant, heuresDispoAnnuelles, txrEffectif } from './calculations.js';
 import { euro } from './format.js';
 
 // Interprétation de l'objectif — port fidèle de renderObjectifInsight().
@@ -9,7 +9,7 @@ import { euro } from './format.js';
 //   { recall, phrase, banner: { class, icon, title, detail } | null }
 export function objectifInsight(a) {
   const caObj = +a.targetCA || 0;
-  const txr = +a.targetTXR || 0;
+  const txr = txrEffectif(a);
   const ca2026 = +a.histCA || 0;
   const baseHebdo = baseH(a);
   const nbRoulants = (a.employees || []).filter((e) => isRoulant(e.qual)).length;
@@ -68,7 +68,7 @@ export function objectifInsight(a) {
 // Renvoie null tant que l'effectif ou le TXR cible manquent.
 export function coherenceCapacite(a) {
   const baseHebdo = baseH(a);
-  const txr = +a.targetTXR || 0;
+  const txr = txrEffectif(a);
   const caObj = +a.targetCA || 0;
   if (!baseHebdo || !txr) return null;
   // Capacité hors HS : base moins la maladie ET les congés (audit nov. 2026)

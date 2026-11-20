@@ -1,4 +1,4 @@
-import { partRoulant, estRoulantPart } from './calculations.js';
+import { partRoulant, estRoulantPart, txrEffectif } from './calculations.js';
 import { capaciteHorsHS } from './graphiques.js';
 // Comparaison inter-agences — logique pure extraite de renderComparative().
 // Prend la map réseau { agence: { statut, data } } et la liste des agences
@@ -34,7 +34,7 @@ export function computeComparative(map, ops) {
         ? d.employees.filter(estRoulantPart).reduce((s, e) => s + (+e.hours || 0) *partRoulant(e), 0)
         : 0;
       const caB = d.cal.reduce((s, day) => s + (day.total || 0), 0);
-      const caMax = baseHs > 0 ? capaciteHorsHS(ag.nom, d, +d.targetTXR || +d.histTXR2026 || 0) : 0;
+      const caMax = baseHs > 0 ? capaciteHorsHS(ag.nom, d, txrEffectif(d) || +d.histTXR2026 || 0) : 0;
       tauxHS = caMax > 0 ? Math.round(Math.max(0, (caB - caMax) / caMax * 100)) : null;
     }
 

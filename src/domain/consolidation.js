@@ -3,7 +3,7 @@
 // opérationnelles ; renvoie les KPI globaux, les lignes détaillées et les alertes.
 // Les indicateurs passent par le moteur de calcul (audit nov. 2026) : mêmes chiffres que l'écran de l'agence.
 
-import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles, partRoulant, estRoulantPart } from './calculations.js';
+import { hsTot, cpGeneres, cpPlanifies, heuresDispoAnnuelles, partRoulant, estRoulantPart, txrEffectif } from './calculations.js';
 import { entiteDepuisBudget } from './consolideSIG.js';
 import { avancementBudget } from './avancement.js';
 
@@ -39,8 +39,8 @@ export function computeConsolidation(map, ops) {
       baseH = d.employees.filter(estRoulantPart)
         .reduce((s, e) => s + (+e.hours || 0) *partRoulant(e), 0);
     }
-    const txr = +d.targetTXR || 0;
     let ent = null; try { ent = entiteDepuisBudget(ag.nom, d); } catch (e) { ent = null; }
+    const txr = ent && +ent.targetTXR ? txrEffectif(ent) : (+d.targetTXR || 0);
     const caMax = ent ? Math.round(heuresDispoAnnuelles(ent) * txr) : 0;
     const txCharge = caMax > 0 ? Math.round(caB / caMax * 100) : 0;
 

@@ -6,7 +6,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { objectifInsight, coherenceCapacite } from '../../domain/objectifInsight.js';
-import { annualCA, hsTot, genCal, caFunAnnuel } from '../../domain/calculations.js';
+import { annualCA, hsTot, genCal, caFunAnnuel, txrDuMois, txrModule, txrEffectif, M } from '../../domain/calculations.js';
 import { euro } from '../../domain/format.js';
 import BudgetBar from '../BudgetBar.jsx';
 import StructureScreen from './StructureScreen.jsx';
@@ -30,6 +30,61 @@ function SaveIndicator({ status }) {
   const color = status === 'error' ? 'var(--orange, #c45300)' : 'var(--ink30)';
   if (!map[status]) return null;
   return <span style={{ fontSize: 12, color }}>{map[status]}</span>;
+}
+
+
+// TXR modulé mois par mois (facultatif) : chaque jour est converti en heures avec le TXR de son mois
+const MOIS_TXR = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
+function TxrMensuel({ a, editable, update }) {
+  const [saisie, setSaisie] = useState({});
+  const base = +a.targetTXR || 0;
+  const mod = txrModule(a);
+  const [ouvert, setOuvert] = useState(mod);
+  const parMois = M.map((_, m) => {
+    let ca = 0; (a.cal || []).forEach((d) => { if (d.month === m) ca += d.total; });
+    const t = txrDuMois(a, m);
+    return { ca, txr: t, heures: t > 0 ? ca / t : 0 };
+  });
+  const changer = (m) => (e) => {
+    const brut = e.target.value; setSaisie((x) => ({ ...x, [m]: brut }));
+    const v = brut.replace(/[\s ]/g, '').replace(',', '.');
+    const n = v === '' ? null : Number(v);
+    if (n !== null && !(n > 0)) return;
+    update((d) => { const t = Array.isArray(d.txrMois) ? d.txrMois.slice() : Array(12).fill(null); t[m] = n; d.txrMois = t.some((x) => +x > 0) ? t : null; return d; });
+  };
+  const toutEffacer = () => { setSaisie({}); update((d) => { d.txrMois = null; return d; }); };
+  const val = (m) => (saisie[m] !== undefined ? saisie[m] : (a.txrMois && +a.txrMois[m] > 0 ? String(a.txrMois[m]).replace('.', ',') : ''));
+  const td = { padding: '4px 6px', textAlign: 'right', whiteSpace: 'nowrap' };
+  return (
+    <details className="objCollapse" data-testid="txr-mensuel" open={ouvert} onToggle={(e) => setOuvert(e.currentTarget.open)} style={{ margin: '-6px 0 18px' }}>
+      <summary>Moduler le TXR mois par mois (facultatif){mod ? ' — TXR moyen appliqué : ' + txrEffectif(a).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' €/h' : ''}</summary>
+      <div className="objCollapseBody">
+        <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
+          Si votre recette par heure varie selon la saison (longues distances l'été, tarifs, type de transports), saisissez un TXR pour les mois concernés.
+          Les heures nécessaires de chaque jour sont alors calculées avec le TXR de son mois, ce qui change le besoin d'équipe, les heures supplémentaires et la répartition des congés.
+          Un mois laissé vide garde le TXR cible annuel ({base ? base.toLocaleString('fr-FR') + ' €/h' : 'à renseigner'}).
+        </p>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
+            <thead><tr><th style={{ ...td, textAlign: 'left' }} /> {MOIS_TXR.map((l) => <th key={l} style={td}>{l}</th>)}</tr></thead>
+            <tbody>
+              <tr><td style={{ ...td, textAlign: 'left', color: 'var(--ink65)' }}>TXR (€/h)</td>
+                {M.map((_, m) => (
+                  <td key={m} style={td}>
+                    <input type="text" inputMode="decimal" data-testid={'txr-mois-' + m} value={val(m)} placeholder={base ? String(base).replace('.', ',') : '—'}
+                      onChange={changer(m)} onBlur={() => setSaisie((x) => { const n = { ...x }; delete n[m]; return n; })} disabled={!editable}
+                      style={{ width: 62, textAlign: 'right', padding: '4px 6px', fontWeight: a.txrMois && +a.txrMois[m] > 0 ? 700 : 400 }} />
+                  </td>
+                ))}
+              </tr>
+              <tr><td style={{ ...td, textAlign: 'left', color: 'var(--ink65)' }}>Heures nécessaires</td>{parMois.map((p, m) => <td key={m} style={{ ...td, color: 'var(--ink65)' }}>{Math.round(p.heures).toLocaleString('fr-FR')}</td>)}</tr>
+            </tbody>
+          </table>
+        </div>
+        {mod && editable ? <button type="button" className="secondary" data-testid="txr-mois-effacer" onClick={toutEffacer} style={{ width: 'auto', margin: '10px 0 0', fontSize: 12, padding: '6px 12px' }}>Revenir au TXR annuel pour tous les mois</button> : null}
+      </div>
+    </details>
+  );
 }
 
 export default function ObjectifScreen() {
@@ -124,6 +179,8 @@ export default function ObjectifScreen() {
           </span>
         </label>
       </div>
+
+      {+a.targetTXR > 0 && ctxOk ? <TxrMensuel a={a} editable={editable} update={update} /> : null}
 
       <div className="objInsight" style={{ display: 'flex' }}>
         <span className="objInsightIcon">💬</span>

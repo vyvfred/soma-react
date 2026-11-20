@@ -1,7 +1,7 @@
 import { annuel, montant, resultatMemo } from './memoSIG.js';
 // Centre d'attention — port fidèle de collectAnomalies : les points du budget ouvert
 // qui demandent l'attention du REX ou du CG, chacun relié à l'écran où agir.
-import { isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, vueExploitation, heuresDispoAnnuelles, avecCacheMoteur } from './calculations.js';
+import { isRoulant, baseH, hsRows, cpGeneres, cpPlanifies, refAgenceSeuils, M, vueExploitation, heuresDispoAnnuelles, avecCacheMoteur, txrEffectif } from './calculations.js';
 import { euro, pct } from './format.js';
 import { contexteRedige } from './contexte.js';
 
@@ -13,7 +13,7 @@ function collecterAnomaliesCalc(a, role) {
   if (!a) return out;
   const ca = annuel(a, "Chiffre d'affaires");
   const caObj = +a.targetCA || 0;
-  const txr = +a.targetTXR || 0;
+  const txr = txrEffectif(a);
   const net = resultatMemo(a, role).val;
   const ms = annuel(a, 'Charges de personnel');
   const tauxMS = ca ? (ms / ca) * 100 : 0;

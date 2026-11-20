@@ -1,4 +1,4 @@
-import { baseH, baseHWeek, needWeeks, isRoulant, heuresDispoAnnuelles, partRoulant, estRoulantPart } from './calculations.js';
+import { baseH, baseHWeek, needWeeks, isRoulant, heuresDispoAnnuelles, partRoulant, estRoulantPart, txrEffectif } from './calculations.js';
 import { euro } from './format.js';
 
 // KPI + interprétation de l'équipe — port fidèle de renderTeamKpis().
@@ -10,7 +10,7 @@ export function teamInsight(a) {
   const capaciteAn = Math.round(baseH(a) * 52);
 
   const caObj = +a.targetCA || 0;
-  const txr = +a.targetTXR || 0;
+  const txr = txrEffectif(a);
 
   let phrase;
   if (nbSal === 0) {
