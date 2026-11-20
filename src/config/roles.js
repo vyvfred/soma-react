@@ -5,7 +5,7 @@ export const ROLE_LABELS = {
   cg: 'Contrôleur de gestion',
   df: 'Direction Financière',
   dg: 'Direction (DG, directeurs opérationnels)',
-  pdg: 'Direction (DG, directeurs opérationnels)',
+  pdg: 'Président (PDG)',
   admin: 'Admin',
   demo: 'Démonstration'
 };

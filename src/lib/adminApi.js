@@ -20,7 +20,21 @@ export async function loadAdminData() {
 // Création de compte — port fidèle de adminCreateUser.
 // Utilise un client Supabase SECONDAIRE (persistSession:false) pour ne pas toucher
 // la session admin en cours. Dépend de « Confirm email » désactivé côté Supabase.
-export async function createAccount({ nom, email, role, agence }) {
+// Comptes de consultation : tous les rôles en lecture seule (voir les écrans de chacun sans participer au budget)
+const ROLES_CONSULTATION = ['dg', 'df', 'cg', 'dr', 'admin', 'rex'];
+async function finaliserConsultation(id, role) {
+  const autres = ROLES_CONSULTATION.filter((r) => r !== role);
+  const { error } = await sb.from('profiles').update({ roles_supp: autres, roles_consultatifs: [role].concat(autres) }).eq('id', id);
+  return error;
+}
+// Identité déjà présente (tentative précédente) : rattacher le profil côté serveur
+async function lierProfil({ nom, email, role, agence, consultation }) {
+  const { data: id, error } = await sb.rpc('admin_lier_profil', { p_email: email, p_nom: nom, p_role: role, p_agence: agence || null });
+  if (error) return { ok: false, message: 'Le compte existe déjà dans les identités, mais le profil n\'a pas pu être rattaché : ' + error.message };
+  if (consultation) { const e2 = await finaliserConsultation(id, role); if (e2) return { ok: false, message: 'Profil rattaché, mais erreur sur les rôles de consultation : ' + e2.message }; }
+  return { ok: true, message: 'Compte rattaché : ' + nom + ' (' + role + (consultation ? ', consultation uniquement' : '') + '). L\'identité existait déjà : la personne garde le mot de passe défini à sa création.' };
+}
+export async function createAccount({ nom, email, role, agence, consultation = false }) {
   // 1) Profil déjà existant ?
   try {
     const { data: existing } = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
@@ -35,12 +49,12 @@ export async function createAccount({ nom, email, role, agence }) {
     });
     const { data, error } = await sbTemp.auth.signUp({ email, password: DEFAULT_PASSWORD, options: { emailRedirectTo: URL_APPLI } });
     if (error) {
-      if (String(error.message || '').toLowerCase().includes('already registered')) {
-        return { ok: false, message: 'Cette identité existe déjà dans Supabase. Si le profil manque, utilisez le SQL de liaison.' };
-      }
+      if (String(error.message || '').toLowerCase().includes('already registered')) return lierProfil({ nom, email, role, agence, consultation });
       return { ok: false, message: 'Erreur création identité : ' + error.message };
     }
     userId = data && data.user ? data.user.id : null;
+    // Identité existante : Supabase renvoie un identifiant fictif (aucune identité attachée)
+    if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) return lierProfil({ nom, email, role, agence, consultation });
     if (!userId) {
       return { ok: false, message: 'Identité créée mais identifiant introuvable. Vérifiez que « Confirm email » est désactivé (Authentication > Providers > Email).' };
     }
@@ -51,12 +65,14 @@ export async function createAccount({ nom, email, role, agence }) {
   // 3) Créer le profil métier.
   try {
     const { error: perr } = await sb.from('profiles').insert({ id: userId, email, nom, role, agence: agence || null });
+    if (perr && /profiles_id_fkey|foreign key/i.test(perr.message || '')) return lierProfil({ nom, email, role, agence, consultation });
     if (perr) return { ok: false, message: 'Identité créée, mais erreur sur le profil : ' + perr.message };
+    if (consultation) { const e2 = await finaliserConsultation(userId, role); if (e2) return { ok: false, message: 'Compte créé, mais erreur sur les rôles de consultation : ' + e2.message }; }
   } catch (e) {
     return { ok: false, message: 'Identité créée, mais erreur sur le profil : ' + (e.message || e) };
   }
 
-  return { ok: true, message: 'Compte créé : ' + nom + ' (' + role + (agence ? ', ' + agence : '') + '). Mot de passe habituel.' };
+  return { ok: true, message: 'Compte créé : ' + nom + ' (' + role + (agence ? ', ' + agence : '') + (consultation ? ', consultation uniquement' : '') + '). Mot de passe habituel.' };
 }
 
 export async function updateUserRole(userId, role) {

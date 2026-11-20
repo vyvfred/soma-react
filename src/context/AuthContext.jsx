@@ -24,7 +24,7 @@ export function profilEffectif(data) {
   const supp = Array.isArray(data.roles_supp) ? data.roles_supp.filter((r) => r && r !== data.role) : [];
   const actif = data.role_actif && (data.role_actif === data.role || supp.includes(data.role_actif)) ? data.role_actif : data.role;
   const consult = Array.isArray(data.roles_consultatifs) ? data.roles_consultatifs : [];
-  return { ...data, rolePrincipal: data.role, rolesDispo: [data.role].concat(supp), rolesConsultatifs: consult, consultatif: actif !== data.role && consult.includes(actif), role: actif };
+  return { ...data, rolePrincipal: data.role, rolesDispo: [data.role].concat(supp), rolesConsultatifs: consult, consultatif: consult.includes(actif), role: actif };
 }
 
 export function AuthProvider({ children }) {

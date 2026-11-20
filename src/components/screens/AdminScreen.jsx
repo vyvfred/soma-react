@@ -35,9 +35,9 @@ export default function AdminScreen() {
     if (form.role === 'rex' && !form.agence) { flash('Sélectionnez une agence pour ce REX.', false); return; }
     setCreating(true);
     try {
-      const res = await createAccount({ nom: form.nom.trim(), email: form.email.trim(), role: form.role, agence: form.role === 'rex' ? form.agence : null });
+      const res = await createAccount({ nom: form.nom.trim(), email: form.email.trim(), role: form.role, agence: form.role === 'rex' ? form.agence : null, consultation: !!form.consultation });
       flash(res.message, res.ok);
-      if (res.ok) { setForm({ nom: '', email: '', role: 'rex', agence: '' }); load(); }
+      if (res.ok) { setForm({ nom: '', email: '', role: 'rex', agence: '', consultation: false }); load(); }
     } catch (e) { flash(e.message || 'Erreur', false); }
     finally { setCreating(false); }
   }
@@ -92,6 +92,10 @@ export default function AdminScreen() {
             </select>
           </label>
         ) : null}
+        <label data-testid="creer-consultation" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, margin: '0 0 8px', maxWidth: 260 }}>
+          <input type="checkbox" checked={!!form.consultation} onChange={(e) => setForm({ ...form, consultation: e.target.checked })} style={{ width: 'auto', margin: 0 }} />
+          <span>Consultation uniquement<br /><span style={{ color: 'var(--ink65)' }}>voit les écrans de tous les rôles, ne saisit ni ne valide</span></span>
+        </label>
         <button onClick={submitCreate} disabled={creating}>{creating ? '⏳…' : 'Créer le compte'}</button>
       </div>
       <p className="hint" style={{ fontSize: 12, marginBottom: 24 }}>
@@ -108,7 +112,7 @@ export default function AdminScreen() {
           <tbody>
             {state.users.map((u) => (
               <tr key={u.id}>
-                <td style={{ padding: '4px 8px' }}><b>{u.nom}</b></td>
+                <td style={{ padding: '4px 8px' }}><b>{u.nom}</b>{Array.isArray(u.roles_consultatifs) && u.roles_consultatifs.includes(u.role) ? <span data-testid={'badge-consultation-' + u.id} title="Compte de consultation : tous les rôles en lecture seule" style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', border: '1px solid var(--border)', color: 'var(--ink65)' }}>👁 consultation</span> : null}</td>
                 <td style={{ padding: '4px 8px', fontSize: 11, color: 'var(--ink65)' }}>{u.email}</td>
                 <td style={{ padding: '4px 8px' }}>
                   <select value={u.role} onChange={(e) => act(() => updateUserRole(u.id, e.target.value), 'Rôle mis à jour.')}>
