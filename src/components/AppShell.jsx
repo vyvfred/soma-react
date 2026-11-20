@@ -1,5 +1,6 @@
 import BoutonTheme from './BoutonTheme.jsx';
 import ChoixProfil from './ChoixProfil.jsx';
+import ChoixRegionConsult from './ChoixRegionConsult.jsx';
 import { aDesSaisiesDR } from '../domain/saisiesDR.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PANELS_REX } from '../config/panels.js';
@@ -222,6 +223,7 @@ export default function AppShell() {
       {profile.consultatif ? (
         <div data-testid="bandeau-consultatif" style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', flexWrap: 'wrap', padding: '6px 14px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', fontSize: 12.5, color: 'var(--ink65)' }}>
           <span>👁 Vue « {roleLabel(profile.role)} » en consultation : vous voyez tout, rien ne peut être modifié ni validé. Changez de vue avec le sélecteur « Profil » en haut.</span>
+          <ChoixRegionConsult />
         </div>
       ) : null}
       {saisiePour ? (
