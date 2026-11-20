@@ -62,7 +62,7 @@ function Tableau({ entetes, lignes, total, testid }) {
 export default function JustifScreen() {
   const { agency: a, loading, applyExternal } = useBudget();
   const { profile } = useAuth();
-  const peutSaisirStock = ['cg', 'admin'].includes(profile && profile.role);
+  const peutSaisirStock = ['cg', 'df', 'admin'].includes(profile && profile.role);
   const [onglet, setOnglet] = useState('ms');
   if (loading) return <div className="card"><p>Chargement…</p></div>;
   if (!a) return <div className="card"><h2>Détail des calculs</h2><p className="hint">Choisissez une agence.</p></div>;

@@ -210,7 +210,7 @@ export default function AppShell() {
       if (panel === '__saisir') { setRetour(active); setSaisiePour(agence); setActive('objectif'); return; }
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
-    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || !!profile.consultatif || ['df', 'dg', 'pdg'].includes(profile.role)} saisieDR={!!saisiePour}>
+    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || !!profile.consultatif || ['dg', 'pdg'].includes(profile.role)} saisieDR={!!saisiePour}>
       <VisiteGuidee role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} ecransREX={!!saisiePour} />
     <div className="soma-shell">
       {consult ? (
@@ -244,10 +244,10 @@ export default function AppShell() {
         <button className="soma-burger" data-testid="menu-mobile" aria-label="Ouvrir le menu" aria-expanded={menuMobile} onClick={() => setMenuMobile(!menuMobile)}>☰</button>
         <div className="soma-brand">SOMA</div>
         <VersionChip />
-        {['rex', 'cg'].includes(roleNav) || (profile.role === 'cg') ? <AttentionCenter onNavigate={setActive} /> : null}
+        {['rex', 'cg', 'df'].includes(roleNav) || ['cg', 'df'].includes(profile.role) ? <AttentionCenter onNavigate={setActive} /> : null}
         {['cg', 'df'].includes(profile.role) ? (
           <div className="roleSwitch" data-testid="role-switch" style={{ display: 'flex', gap: 0, marginLeft: 12 }}>
-            {[[true, profile.role === 'df' ? 'REX exploitation (lecture)' : 'REX exploitation'], [false, profile.role === 'df' ? 'Direction financière' : 'Contrôleur de gestion']].map(([rex, l]) => (
+            {[[true, 'REX exploitation'], [false, profile.role === 'df' ? 'Direction financière' : 'Contrôleur de gestion']].map(([rex, l]) => (
               <button key={l} onClick={() => basculerVue(rex)} style={{ width: 'auto', margin: 0, padding: '5px 12px', fontSize: 12, border: '1px solid var(--border)',
                 background: vueRex === rex ? 'var(--violet2)' : 'transparent', color: vueRex === rex ? '#fff' : 'var(--ink65)', fontWeight: vueRex === rex ? 700 : 400 }}>{l}</button>
             ))}
@@ -265,7 +265,7 @@ export default function AppShell() {
             </select>
           ) : null}
           <BoutonsHistorique />
-          {['rex', 'cg', 'admin'].includes(profile.role) || saisiePour ? <SaveButton /> : null}
+          {['rex', 'cg', 'df', 'admin'].includes(profile.role) || saisiePour ? <SaveButton /> : null}
           <button className="soma-btn-ghost" data-testid="btn-mdp" onClick={() => setMdpOuvert(true)} title="Changer mon mot de passe">🔑</button>
           <button className="soma-btn-ghost" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><span className="soma-txt-long">Déconnexion</span><span className="soma-txt-court">Quitter</span></button>
         </div>
@@ -295,7 +295,7 @@ export default function AppShell() {
 
         <VersionBorder>
           <AideOnglet panel={active} role={consult ? 'rex' : roleNav} onNavigate={setActive} />
-          {profile.role === 'cg' && !consult ? <CgAlertes /> : null}
+          {['cg', 'df'].includes(profile.role) && !consult ? <CgAlertes /> : null}
           {showPicker ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, color: 'var(--ink65)' }}>Agence ouverte :</span>
@@ -309,7 +309,7 @@ export default function AppShell() {
                 ) : null}
                 {activeAgence && !agencesOps().some((ag) => ag.nom === activeAgence) && STRUCTURES.indexOf(activeAgence) < 0 ? <option value={activeAgence}>{activeAgence} (hors référentiel)</option> : null}
               </select>
-              {['cg', 'admin'].includes(profile.role) ? (
+              {['cg', 'df', 'admin'].includes(profile.role) ? (
                 <button className="secondary" data-testid="hors-ref" style={{ width: 'auto', margin: 0, fontSize: 12, padding: '6px 12px' }}
                   onClick={() => { const n = window.prompt('Nom de l\'agence hors référentiel'); if (n && n.trim()) setCgAgence(n.trim().toUpperCase()); }}>Agence hors référentiel</button>
               ) : null}
@@ -321,7 +321,7 @@ export default function AppShell() {
           {showPicker && !activeAgence && active !== 'cg'
             ? <div className="card"><p className="hint">Sélectionnez une agence ci-dessus pour ouvrir son budget.</p></div>
             : Screen ? <Screen /> : <PlaceholderPanel id={active} label={activeLabel} />}
-          {(consult || ['rex', 'cg', 'admin'].includes(profile.role)) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
+          {(consult || ['rex', 'cg', 'df', 'admin'].includes(profile.role)) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
         </VersionBorder>
       </div>
     <ToastHost />

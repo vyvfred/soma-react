@@ -35,7 +35,7 @@ export default function EquipeScreen() {
   const [repriseMsg, setRepriseMsg] = useState(null);
   const { profile } = useAuth();
   // Import Excel de la liste du personnel : réservé au contrôle de gestion et à l'administration (pas aux REX)
-  const peutImporter = !!profile && ['cg', 'admin'].includes(profile.role);
+  const peutImporter = !!profile && ['cg', 'df', 'admin'].includes(profile.role);
   const fichier = useRef(null);
   const [importMsg, setImportMsg] = useState(null);
   // Tri d'affichage (mémorisé sur ce navigateur) ; l'ordre est figé pendant la saisie

@@ -52,7 +52,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   const snapRef = useRef(null);
   const { profile } = useAuth();
   const saisieCGRef = useRef(false);
-  saisieCGRef.current = !!(profile && ['cg', 'admin'].includes(profile.role));
+  saisieCGRef.current = !!(profile && ['cg', 'df', 'admin'].includes(profile.role));
   // État chargé (ou dernier état enregistré) : point de départ de la fusion à l'enregistrement
   const baseRef = useRef(null);
   const metaBaseRef = useRef(null);

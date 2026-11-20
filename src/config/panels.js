@@ -67,8 +67,9 @@ export const PANELS_ADMIN = [
 
 // Directeur financier : écrans de suivi et de validation du CG, sans la préparation des données ;
 // les périodes de paie (et le détail du calcul de la masse salariale) en lecture seule
-const PREPARATION_CG = ['refagences', 'variablesdec', 'affectation', 'cg'];
-export const PANELS_DF = PANELS_CG.filter((p) => !PREPARATION_CG.includes(p[0]));
+// (ancienne liste des écrans de préparation retirés au DF : ils lui sont désormais ouverts)
+// Le directeur financier a tous les accès du contrôleur de gestion, et valide en plus (nov. 2026)
+export const PANELS_DF = PANELS_CG;
 
 // Rôle -> panneaux + écran d'atterrissage (repris de setupUI()).
 export function navForRole(role) {

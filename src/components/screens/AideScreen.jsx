@@ -11,13 +11,13 @@ export default function AideScreen() {
   const { profile } = useAuth();
   const { saisieDR } = useBudget();
   const key = faqKeyForRole(profile.role);
-  const sections = (key === 'cg'
+  const sections = (key === 'cg' || profile.role === 'df'
     ? FAQ_CG_SECTIONS.map((s) => ({ titre: s.t, items: s.items }))
     : [{ titre: null, items: FAQ[key] || [] }])
     // Le DF utilise aussi les écrans de suivi du contrôle de gestion
     .concat(['dg', 'pdg'].includes(profile.role) && FAQ.direction ? [{ titre: 'Détail des calculs des agences', items: FAQ.direction }] : [])
     .concat(profile.role === 'df' && FAQ.df ? [{ titre: 'Direction financière : consultation et masse salariale', items: FAQ.df }] : [])
-    .concat(profile.role === 'df' ? FAQ_CG_SECTIONS.filter((s) => s.t.indexOf('Suivre le réseau') >= 0).map((s) => ({ titre: 'Écrans de suivi du réseau', items: s.items })) : [])
+    .concat(profile.role === 'df' && FAQ.valideur ? [{ titre: 'Valider les budgets', items: FAQ.valideur }] : [])
     // L'administrateur a aussi accès au classeur des charges du réseau
     .concat(profile.role === 'admin' ? FAQ_CG_SECTIONS.filter((s) => s.t.indexOf('Charges par agence') >= 0).map((s) => ({ titre: 'Charges du réseau', items: s.items.slice(0, 1) })) : [])
     .concat(FAQ.commun && FAQ.commun.length ? [{ titre: 'Questions générales', items: FAQ.commun }] : []);

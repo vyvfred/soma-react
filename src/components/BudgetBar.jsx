@@ -107,7 +107,7 @@ export default function BudgetBar() {
   const [cols, setCols] = useState(null);
   const [reprise, setReprise] = useState(false);
   // Le DR (et les valideurs) voient aussi les versions quand ils saisissent pour un REX ou consultent un budget
-  if (!a || !profile || !(['rex', 'cg', 'admin'].includes(profile.role) || saisieDR || lectureSeule)) return null;
+  if (!a || !profile || !(['rex', 'cg', 'df', 'admin'].includes(profile.role) || saisieDR || lectureSeule)) return null;
 
   const run = (f) => async (...args) => { if (busy) return; setBusy(true); try { await f(...args); } catch (e) { toast('Échec : ' + (e.message || 'erreur'), 'error'); } finally { setBusy(false); } };
 
@@ -140,7 +140,7 @@ export default function BudgetBar() {
 
   const autresRemplies = VERSIONS.filter((v) => v !== activeVersion && versionsRemplies[v]);
   const refus = profile.role === 'rex' && statut === 'brouillon' ? refusAAfficher(validation) : null;
-  const peutSoumettre = (profile.role === 'rex' || profile.role === 'cg') && editable;
+  const peutSoumettre = ['rex', 'cg', 'df'].includes(profile.role) && editable;
   const libelleSoumettre = statut === 'brouillon' ? 'Soumettre au DR' : 'Re-soumettre au DR';
 
   return (
