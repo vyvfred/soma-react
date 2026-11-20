@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { lireClasseur } from '../../lib/importExcel.js';
 import { parseVariablesDec } from '../../domain/imports.js';
@@ -30,6 +31,7 @@ export function varDecLigne(base, saisie) {
 }
 
 export default function VariablesDecScreen() {
+  const lectureConsult = !!(useAuth().profile || {}).consultatif;
   const { applyExternal } = useBudget();
   const [state, setState] = useState({ loading: true, error: null, map: null });
   const [edits, setEdits] = useState({}); // { agence: { rubrique: valeur } }
@@ -117,6 +119,7 @@ export default function VariablesDecScreen() {
 
   return (
     <div className="card">
+      <fieldset disabled={lectureConsult} data-testid="fieldset-consultation" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
         <h2 style={{ margin: 0 }}>Variables de paie de décembre 2026</h2>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -172,6 +175,7 @@ export default function VariablesDecScreen() {
           </tbody>
         </table>
       </div>
+      </fieldset>
     </div>
   );
 }

@@ -209,7 +209,7 @@ export default function AppShell() {
       if (panel === '__saisir') { setRetour(active); setSaisiePour(agence); setActive('objectif'); return; }
       if (agence && needsPicker) setCgAgence(agence); setActive(panel);
     }}>
-    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || ['df', 'dg', 'pdg'].includes(profile.role)} saisieDR={!!saisiePour}>
+    <BudgetProvider agenceNom={activeAgence} lectureSeule={!!consult || !!profile.consultatif || ['df', 'dg', 'pdg'].includes(profile.role)} saisieDR={!!saisiePour}>
       <VisiteGuidee role={profile.role} userId={profile.id} vision={!!vision} aller={allerVisite} ecransREX={!!saisiePour} />
     <div className="soma-shell">
       {consult ? (
@@ -217,6 +217,11 @@ export default function AppShell() {
           <span className="consultBannerDot" />
           <span>Mode consultation — lecture seule</span>
           <button onClick={() => { setConsult(null); setActive(retour || 'validation'); }}>{retour === 'suivi' ? '↩ Revenir au suivi des REX' : '↩ Revenir à la validation'}</button>
+        </div>
+      ) : null}
+      {profile.consultatif ? (
+        <div data-testid="bandeau-consultatif" style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', flexWrap: 'wrap', padding: '6px 14px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', fontSize: 12.5, color: 'var(--ink65)' }}>
+          <span>👁 Vue « {roleLabel(profile.role)} » en consultation : vous voyez tout, rien ne peut être modifié ni validé. Changez de vue avec le sélecteur « Profil » en haut.</span>
         </div>
       ) : null}
       {saisiePour ? (

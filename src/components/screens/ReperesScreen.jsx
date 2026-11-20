@@ -62,7 +62,7 @@ function Estimation({ agence, r, a, onEnregistre }) {
 
 export default function ReperesScreen() {
   const { profile } = useAuth();
-  const cg = ['cg', 'admin'].includes(profile.role);
+  const cg = (['cg', 'admin'].includes(profile.role)) && !profile.consultatif;
   const [etat, setEtat] = useState({ chargement: true, reperes: {}, budgets: {} });
   const [choix, setChoix] = useState(null);
   const [msg, setMsg] = useState(null);

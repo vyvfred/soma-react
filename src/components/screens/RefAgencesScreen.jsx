@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { loadNetworkBudgets, saveCgData, saveEquipesImportees } from '../../lib/budgetApi.js';
 import { lireClasseur, feuilleAgences } from '../../lib/importExcel.js';
@@ -35,6 +36,7 @@ function costHourOf(d) {
 }
 
 export default function RefAgencesScreen() {
+  const lectureConsult = !!(useAuth().profile || {}).consultatif;
   const { applyExternal } = useBudget();
   const [state, setState] = useState({ loading: true, error: null, map: null });
   const [edits, setEdits] = useState({}); // { agence: { field: value } }
@@ -155,6 +157,7 @@ export default function RefAgencesScreen() {
 
   return (
     <div className="card">
+      <fieldset disabled={lectureConsult} data-testid="fieldset-consultation" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
         <h2 style={{ margin: 0 }}>Données agences — références CG</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -221,6 +224,7 @@ export default function RefAgencesScreen() {
         {dirty ? <span className="hint" style={{ fontSize: 12 }}>{Object.keys(edits).length} agence(s) modifiée(s){ratio !== null ? ' · ratio réseau modifié' : ''} — non enregistré</span> : null}
         {savedMsg ? <span style={{ fontSize: 13, color: savedMsg.startsWith('✓') ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{savedMsg}</span> : null}
       </div>
+      </fieldset>
     </div>
   );
 }

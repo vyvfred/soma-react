@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useEffect, useState, useCallback } from 'react';
 import { loadAffectationData, affecterDR } from '../../lib/budgetApi.js';
 import { invaliderEtatCG } from '../CgGuide.jsx';
@@ -9,6 +10,7 @@ function Kpi({ label, value, note }) {
 }
 
 export default function AffectationScreen() {
+  const lectureConsult = !!(useAuth().profile || {}).consultatif;
   const [state, setState] = useState({ loading: true, error: null, data: null });
   const [busyAgence, setBusyAgence] = useState(null);
   const [msg, setMsg] = useState(null);
@@ -52,6 +54,7 @@ export default function AffectationScreen() {
 
   return (
     <div className="card">
+      <fieldset disabled={lectureConsult} data-testid="fieldset-consultation" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <h2 style={{ marginBottom: 14 }}>Affectation des Directeurs Régionaux</h2>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
@@ -108,6 +111,7 @@ export default function AffectationScreen() {
           </p>
         </>
       )}
+      </fieldset>
     </div>
   );
 }

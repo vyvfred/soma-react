@@ -43,7 +43,7 @@ export default function SaisieDRScreen() {
                     <td style={{ padding: '6px 10px' }}><b>{nom}</b></td>
                     <td style={{ padding: '6px 10px' }}>{b ? <span className={'statut ' + b.statut}>{statutLabel(b.statut)}</span> : <span className="hint">Budget pas encore créé</span>}</td>
                     <td style={{ padding: '6px 10px' }}>
-                      <button disabled={!ok} title={!b ? 'Le budget sera créé à la première connexion du REX ou par le contrôleur de gestion' : (!ok ? 'Budget en validation' : '')}
+                      <button disabled={!ok || !!profile.consultatif} title={profile.consultatif ? 'Consultation : saisie impossible' : !b ? 'Le budget sera créé à la première connexion du REX ou par le contrôleur de gestion' : (!ok ? 'Budget en validation' : '')}
                         onClick={() => navigate('__saisir', nom)} style={{ width: 'auto', margin: 0 }}>✎ Saisir le budget</button>
                     </td>
                   </tr>

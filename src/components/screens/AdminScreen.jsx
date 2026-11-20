@@ -16,7 +16,8 @@ export default function AdminScreen() {
   const [msg, setMsg] = useState(null);
   const [form, setForm] = useState({ nom: '', email: '', role: 'rex', agence: '' });
   const [creating, setCreating] = useState(false);
-  const { simuler } = useAuth();
+  const { simuler, profile } = useAuth();
+  const lectureConsult = !!(profile || {}).consultatif;
 
   const load = useCallback(() => {
     setState((p) => ({ ...p, loading: true }));
@@ -69,6 +70,9 @@ export default function AdminScreen() {
         </div>
       </div>
 
+      <fieldset disabled={lectureConsult} data-testid="fieldset-consultation" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+      {lectureConsult ? <p className="hint" data-testid="admin-consultation" style={{ fontSize: 12, marginBottom: 16 }}>👁 Administration en consultation : les comptes et les budgets sont visibles, aucune action n'est possible.</p> : null}
+      {!lectureConsult ? (<>
       {/* Création de compte */}
       <h3 style={{ fontSize: 14, marginBottom: 10 }}>Créer un compte</h3>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 8 }}>
@@ -92,6 +96,8 @@ export default function AdminScreen() {
       <p className="hint" style={{ fontSize: 12, marginBottom: 24 }}>
         Le compte est créé avec le mot de passe habituel. Nécessite que « Confirm email » soit désactivé dans Supabase (Authentication → Providers → Email).
       </p>
+
+      </>) : null}
 
       {/* Utilisateurs */}
       <h3 style={{ fontSize: 14, marginBottom: 10 }}>Utilisateurs ({state.users.length})</h3>
@@ -165,6 +171,7 @@ export default function AdminScreen() {
           </table>
         </div>
       ) : <p className="hint">Aucun budget créé pour le moment.</p>}
+      </fieldset>
     </div>
   );
 }
