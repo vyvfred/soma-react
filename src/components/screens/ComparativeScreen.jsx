@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import StatutConsultable from '../StatutConsultable.jsx';
 import { loadNetworkBudgets } from '../../lib/budgetApi.js';
 import { agencesOps } from '../../config/agences.js';
 import { statutLabel } from '../../config/statut.js';
@@ -100,7 +101,7 @@ export default function ComparativeScreen() {
                 <tr key={r.nom}>
                   <td style={{ padding: '4px 8px' }}><b>{r.nom}</b></td>
                   <td style={{ textAlign: 'center', padding: '4px 8px' }}>{r.zone}</td>
-                  <td style={{ padding: '4px 8px' }}><span className={'statut ' + st}>{statutLabel(st)}</span></td>
+                  <td style={{ padding: '4px 8px' }}>{r.statut === '—' ? <span className={'statut ' + st}>{statutLabel(st)}</span> : <StatutConsultable agence={r.nom} statut={st} />}</td>
                   <Cell val={r.txr} median={medians.txr} unit=" €/h" higherIsBad={false} />
                   <Cell val={r.mal} median={medians.mal} unit=" %" higherIsBad={true} />
                   <Cell val={r.ch} median={medians.ch} unit=" €/h" higherIsBad={true} />

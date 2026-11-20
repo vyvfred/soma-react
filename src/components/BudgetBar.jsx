@@ -163,22 +163,29 @@ export default function BudgetBar() {
             {VERSIONS.map((v) => {
               const actif = v === activeVersion, rempli = versionsRemplies[v];
               return (
-                <button key={v} onClick={() => onSwitch(v)} disabled={busy} data-testid={'version-' + v}
+                <button key={v} onClick={() => onSwitch(v)} disabled={busy || (!editable && !rempli)} title={!editable && !rempli ? 'Version vide' : undefined} data-testid={'version-' + v}
                   style={{ ...btn, fontWeight: 700, background: actif ? 'linear-gradient(135deg,var(--violet),var(--violet2))' : (rempli ? 'var(--bg3)' : 'transparent'), color: actif ? '#fff' : (rempli ? 'var(--ink)' : 'var(--ink30)'), border: actif ? 'none' : '1px solid var(--border)' }}>
                   {VERSION_LABELS[v]}{meta.submittedVersion === v ? ' ★' : ''}
                 </button>
               );
             })}
             <span style={{ flex: 1 }} />
-            <button onClick={onDup} disabled={busy || !editable} style={btn}>⎘ Dupliquer la version active</button>
+            {editable ? <button onClick={onDup} disabled={busy} style={btn}>⎘ Dupliquer la version active</button> : null}
             <button onClick={onCompare} disabled={busy} style={btn}>⇄ Comparer les versions</button>
-            {autresRemplies.length ? <button onClick={() => setReprise(true)} disabled={busy || !editable} style={btn} data-testid="reprise-ouvrir">↧ Reprendre d'une autre version</button> : null}
-            {VERSIONS.filter((v) => versionsRemplies[v]).length > 1 && VERSIONS_SUPPRIMABLES.filter((v) => versionsRemplies[v]).map((v) => (
+            {editable && autresRemplies.length ? <button onClick={() => setReprise(true)} disabled={busy || !editable} style={btn} data-testid="reprise-ouvrir">↧ Reprendre d'une autre version</button> : null}
+            {editable && VERSIONS.filter((v) => versionsRemplies[v]).length > 1 && VERSIONS_SUPPRIMABLES.filter((v) => versionsRemplies[v]).map((v) => (
               <button key={v} onClick={() => onDelete(v)} disabled={busy || !editable || meta.submittedVersion === v}
                 title={meta.submittedVersion === v ? 'Version choisie pour la soumission : choisissez-en une autre avant de la supprimer' : 'Supprimer définitivement la ' + VERSION_LABELS[v]}
                 style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid={'version-supprimer-' + v}>🗑 Supprimer la {VERSION_LABELS[v]}</button>
             ))}
           </div>
+          {lectureSeule ? (
+            <div data-testid="versions-consultation" style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 8 }}>
+              👁 {VERSIONS.filter((v) => versionsRemplies[v]).length > 1
+                ? 'Le REX a préparé ' + VERSIONS.filter((v) => versionsRemplies[v]).length + ' versions : cliquez sur une version pour la parcourir écran par écran. Rien n\'est modifié chez lui.'
+                : 'Une seule version préparée pour l\'instant. Rien n\'est modifié chez le REX pendant votre consultation.'}
+            </div>
+          ) : null}
           <input type="text" value={(meta.descriptions && meta.descriptions[activeVersion]) || ''} onChange={(e) => setVersionDesc(e.target.value)} disabled={!editable}
             placeholder={'Description de la version ' + VERSION_LABELS[activeVersion] + ' (ex. : scénario avec renfort estival)'} style={{ width: '100%', marginBottom: 8 }} />
           <div style={{ fontSize: 12 }}>
@@ -197,7 +204,7 @@ export default function BudgetBar() {
         <span className={'statut ' + statut} data-testid="statut-badge">{statutLabel(statut)}</span>
         <span style={{ flex: 1 }} />
         {peutSoumettre && budgetId ? <button className={statut === 'brouillon' ? 'ok' : 'warn'} onClick={onSubmit} disabled={busy} style={btn}>{libelleSoumettre}</button> : null}
-        {!editable ? <span style={{ fontSize: 12, color: 'var(--blue2)' }}>🔒 En validation — lecture seule</span> : null}
+        {!editable ? <span style={{ fontSize: 12, color: 'var(--blue2)' }}>{lectureSeule ? '👁 Consultation — lecture seule' : '🔒 En validation — lecture seule'}</span> : null}
       </div>
 
       {reprise ? <RepriseModal active={activeVersion} sources={autresRemplies} onClose={() => setReprise(false)} onValider={onReprise} /> : null}

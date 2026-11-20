@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import StatutConsultable from '../StatutConsultable.jsx';
 import {
   loadAdminData, createAccount, updateUserRole, updateUserAgence, updateUserAgencesSupp,
   forceStatut, resetPassword, deleteProfile
@@ -158,7 +159,7 @@ export default function AdminScreen() {
               {state.budgets.map((b) => (
                 <tr key={b.id}>
                   <td style={{ padding: '4px 8px' }}><b>{b.agence}</b></td>
-                  <td style={{ padding: '4px 8px' }}><span className={'statut ' + b.statut}>{statutLabel(b.statut)}</span></td>
+                  <td style={{ padding: '4px 8px' }}><StatutConsultable agence={b.agence} statut={b.statut} /></td>
                   <td className="num" style={{ padding: '4px 8px' }}>{euro(b.targetCA)}</td>
                   <td style={{ padding: '4px 8px' }}>
                     <select value={b.statut} onChange={(e) => act(() => forceStatut(b.id, e.target.value), 'Statut forcé : ' + statutLabel(e.target.value))} style={{ fontSize: 11 }}>

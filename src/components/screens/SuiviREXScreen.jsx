@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import StatutConsultable from '../StatutConsultable.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useNav } from '../../context/NavContext.jsx';
 import { sb } from '../../lib/supabase.js';
@@ -98,7 +99,7 @@ export default function SuiviREXScreen() {
                   <div key={r.email || r.nom} style={{ marginBottom: 2 }}>{r.nom}{r.principale ? '' : ' (agence supp.)'}
                     <span style={{ fontSize: 11, color: r.activite ? 'var(--ink65)' : 'var(--orange, #c45300)' }}> · {r.activite ? ilYALisible(r.jours) : 'jamais connecté'}</span></div>
                 )) : <span style={{ color: 'var(--orange, #c45300)', fontSize: 12 }}>aucun REX</span>}</td>
-                <td style={{ ...td, whiteSpace: 'nowrap' }}><span style={{ color: COUL[l.etat], fontWeight: 600 }}>{l.statut ? statutLabel(l.statut) : 'Non commencé'}</span></td>
+                <td style={{ ...td, whiteSpace: 'nowrap' }}>{l.statut ? <StatutConsultable agence={l.agence} statut={l.statut} /> : <span style={{ color: COUL[l.etat], fontWeight: 600 }}>Non commencé</span>}</td>
                 <td style={{ ...td, minWidth: 120 }}>
                   <div style={{ height: 8, background: 'var(--bg3, #2a2f45)', borderRadius: 4, overflow: 'hidden' }}><div style={{ width: l.pct + '%', height: '100%', background: l.pct >= 100 ? 'var(--green, #2e7d6f)' : 'var(--violet)' }} /></div>
                   <div style={{ fontSize: 12, marginTop: 3 }}>{l.pct} %</div>

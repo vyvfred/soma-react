@@ -1,4 +1,5 @@
 import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
+import StatutConsultable from '../StatutConsultable.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { consolideReseau, feuilleConsolide } from '../../domain/consolideSIG.js';
 import { T, STRUCTURES, LIB_STRUCTURES } from '../../domain/calculations.js';
@@ -150,7 +151,7 @@ export default function ConsolidationScreen() {
               return (
                 <tr key={r.nom}>
                   <td style={{ padding: '4px 8px' }}><b>{r.nom}</b><br /><span style={{ fontSize: 10, color: 'var(--ink65)' }}>Zone {r.zone}</span>{lienDetail ? <> · <button type="button" data-testid={'detail-calculs-' + r.nom} onClick={() => nav('justif', r.nom)} title="Détail des calculs de l'agence (lecture seule)" style={{ all: 'unset', cursor: 'pointer', fontSize: 10, color: 'var(--violet)', textDecoration: 'underline' }}>détail des calculs</button></> : null}</td>
-                  <td style={{ padding: '4px 8px' }}><span className={'statut ' + r.statut}>{statutLabel(r.statut)}</span></td>
+                  <td style={{ padding: '4px 8px' }}><StatutConsultable agence={r.nom} statut={r.statut} /></td>
                   <td style={{ padding: '4px 8px' }}><Avancement av={r.av} statut={r.statut} /></td>
                   <td className="num" style={{ padding: '4px 8px' }}>{r.caB > 0 ? euro(r.caB) : '—'}</td>
                   <td className="num" style={{ padding: '4px 8px' }}>{r.caMax > 0 ? euro(r.caMax) : '—'}</td>

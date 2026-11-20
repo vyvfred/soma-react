@@ -216,8 +216,8 @@ export default function AppShell() {
       {consult ? (
         <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>
           <span className="consultBannerDot" />
-          <span>Mode consultation — lecture seule</span>
-          <button onClick={() => { setConsult(null); setActive(retour || 'validation'); }}>{retour === 'suivi' ? '↩ Revenir au suivi des REX' : '↩ Revenir à la validation'}</button>
+          <span>Consultation du budget de {consult} — lecture seule, toutes ses versions</span>
+          <button data-testid="consult-retour" onClick={() => { setConsult(null); setActive(retour || 'validation'); }}>↩ Revenir {({ suivi: 'au suivi des REX', consolidation: 'à la consolidation', comparative: 'à la vue comparative', admin: 'à l\'administration', cgdash: 'au tableau de bord' })[retour] || 'à la validation'}</button>
         </div>
       ) : null}
       {profile.consultatif ? (
