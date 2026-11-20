@@ -73,3 +73,32 @@ describe('Proposition du mois et semaines à cheval sur un mois validé', () => 
     M.forEach((_, m) => { if (m !== 6) expect(Math.abs(cpParMois(a)[m] - cpProposeMois(a, m))).toBeLessThan(0.5); });
   });
 });
+
+describe('Ajustement minimal (nov. 2026) : le planning en place ne bouge pas', () => {
+  const sem = (a) => JSON.stringify(Object.fromEntries(Object.entries(a.presence).map(([w, p]) => [w, +p.cp || 0])));
+  it('un CDD ajouté : seuls les jours acquis en plus sont posés, rien n\'est retiré ailleurs', async () => {
+    const { etatConges, rafraichirConges } = await import('./rafraichirConges.js');
+    const { ajusterCPMinimal } = await import('./repartitionCP.js');
+    const a = agence(2000000); repartirCPAuto(a); [0, 1, 2, 3].forEach((m) => verrouillerMois(a, m));
+    const avant = Object.fromEntries(Object.entries(a.presence).map(([w, p]) => [w, +p.cp || 0]));
+    const moisAvant = cpParMois(a);
+    const av = etatConges(a);
+    a.employees = a.employees.concat({ name: 'CDD été', qual: 'DEA', contract: 'CDD', hours: 35, pctRoulant: 100, joursSem: 5, dateEntree: '2027-07-01', dateSortie: '2027-08-31' });
+    rafraichirConges(a, av, ajusterCPMinimal);
+    const ajout = cpGeneres(a) - av.gen;
+    let diffPos = 0, diffNeg = 0;
+    Object.keys(avant).forEach((w) => { const d = (+a.presence[w].cp || 0) - avant[w]; if (d > 0) diffPos += d; if (d < 0) diffNeg += d; });
+    expect(diffNeg).toBe(0);
+    expect(diffPos).toBeCloseTo(ajout, 0);
+    [0, 1, 2, 3].forEach((m) => expect(cpParMois(a)[m]).toBeCloseTo(moisAvant[m], 5));
+  });
+  it('valider un mois ne remplace pas les ajustements faits à la main sur un autre mois', () => {
+    const a = agence(2000000); repartirCPAuto(a);
+    const octobre = semainesDuMois(a, 9).filter((w) => moisDeSemaine(a, w.week).every((m) => m === 9))[0];
+    setAbsPartMois(a, octobre.week, 'cp', 9, 3);
+    semainesDuMois(a, 6).forEach((w) => setAbsPartMois(a, w.week, 'cp', 6, 0));
+    verrouillerMois(a, 6);
+    expect(+a.presence[octobre.week].cp).toBeGreaterThanOrEqual(3);
+    expect(cpPlanifies(a)).toBeCloseTo(cpGeneres(a), 0);
+  });
+});

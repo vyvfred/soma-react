@@ -5,7 +5,7 @@ import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
   chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois
 } from './calculations.js';
-import { repartirCPAuto, cpParMois, bilanRecalculCP, cpProposeMois } from './repartitionCP.js';
+import { repartirCPAuto, ajusterCPMinimal, cpParMois, bilanRecalculCP, cpProposeMois } from './repartitionCP.js';
 import { coutHSTotal } from './calculations.js';
 
 const semainesDe = (a, rows, m) => rows.filter((r) => a.cal.some((d) => d.week === r.week && d.month === m));
@@ -100,7 +100,9 @@ export function verrouillerMois(a, m) {
   const libres = M.map((_, i) => i).filter((i) => a.moisVerrouilles.indexOf(i) < 0);
   if (libres.length) {
     const avant = cpParMois(a), cout = coutHSTotal(a), propose = proposeAvant;
-    repartirCPAuto(a, libres);
+    // Ajustement minimal : l'écart entre jours acquis et jours posés est ajouté ou retiré sur les mois non validés,
+    // sans refaire le planning (les congés déjà placés, y compris ajustés à la main, ne bougent pas)
+    ajusterCPMinimal(a, libres);
     a.cpDernierRecalcul = bilanRecalculCP(avant, cout, a, { type: 'validation', mois: m, pose: avant[m], propose });
   } else a.cpDernierRecalcul = null;
   return messageValidation(nb, m);

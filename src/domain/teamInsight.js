@@ -6,7 +6,11 @@ import { euro } from './format.js';
 export function teamInsight(a) {
   const emps = a.employees || [];
   const nbSal = emps.filter((e) => e.qual !== 'FACTURIERE').length;
-  const etpTotal = emps.filter(estRoulantPart).reduce((s, e) => s + (+e.hours || 0) * partRoulant(e) / 35, 0);
+  // Effectif = ETP roulants MOYENS sur l'année, selon les dates d'entrée et de sortie (un CDD de 2 mois compte pour 2/12) ;
+  // etpContrats = somme des contrats, sans tenir compte des dates
+  const etpContrats = emps.filter(estRoulantPart).reduce((s, e) => s + (+e.hours || 0) * partRoulant(e) / 35, 0);
+  const etpTotal = baseH(a) / 35;
+  const cddSansDates = emps.filter((e) => (e.contract || e.contrat) === 'CDD' && !e.dateEntree && !e.dateSortie && estRoulantPart(e)).length;
   const capaciteAn = Math.round(baseH(a) * 52);
 
   const caObj = +a.targetCA || 0;
@@ -28,7 +32,7 @@ export function teamInsight(a) {
     phrase = 'Votre équipe représente <b>' + etpTotal.toFixed(1) + ' ETP</b>. Renseignez votre objectif (étape 1) pour que SOMA vérifie qu\u2019il est réalisable.';
   }
 
-  return { nbSal, etpTotal, capaciteAn, phrase };
+  return { nbSal, etpTotal, etpContrats, cddSansDates, capaciteAn, phrase };
 }
 
 // ETP roulants présents chaque mois selon les dates d'entrée/sortie — port de la

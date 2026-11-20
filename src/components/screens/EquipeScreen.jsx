@@ -11,7 +11,7 @@ import { parseEquipe } from '../../domain/imports.js';
 import { TRIS_EQUIPE, majOrdreEquipe } from '../../domain/triEquipe.js';
 import { lireClasseur } from '../../lib/importExcel.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
-import { repartirCPAuto } from '../../domain/repartitionCP.js';
+import { ajusterCPMinimal } from '../../domain/repartitionCP.js';
 
 const QUALS = ['DEA', 'AA', 'TAXI', 'TPMR', 'REGULATEUR', 'REX'];
 const CONTRACTS = ['CDI', 'CDD', 'APPRENTI', 'INTERIM'];
@@ -55,7 +55,7 @@ export default function EquipeScreen() {
   const sourcesEquipe = VERSIONS.filter((v) => v !== activeVersion && versionsRemplies && versionsRemplies[v]);
   etatTri.current = majOrdreEquipe(etatTri.current, a.employees, tri, agenceNom);
   const ordre = etatTri.current.ordre;
-  const { nbSal, etpTotal, capaciteAn, phrase } = teamInsight(a);
+  const { nbSal, etpTotal, etpContrats, cddSansDates, capaciteAn, phrase } = teamInsight(a);
   const evolution = etpParMois(a);
 
   // Import Excel de l'équipe (port de handleExcelImport) : feuille « Saisie personnel »
@@ -84,7 +84,7 @@ export default function EquipeScreen() {
       const av = etatConges(draft);
       fn(draft);
       const d = { ...draft, presence: Object.fromEntries(Object.entries(draft.presence || {}).map(([k, v]) => [k, { ...v }])), cpNR: draft.cpNR ? { ...draft.cpNR } : draft.cpNR };
-      rafraichirConges(d, av, repartirCPAuto);
+      rafraichirConges(d, av, ajusterCPMinimal);
       return d;
     });
   }
@@ -141,12 +141,17 @@ export default function EquipeScreen() {
 
       <div className="teamKpiRow" style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
         <Kpi label="Salariés" value={nbSal} sub={nbSal > 1 ? 'personnes' : 'personne'} />
-        <Kpi label="Effectif" value={etpTotal.toFixed(1) + ' ETP'} sub="équivalent temps plein" />
+        <Kpi label="Effectif moyen" value={etpTotal.toFixed(1) + ' ETP'} sub={Math.abs(etpContrats - etpTotal) >= 0.05 ? 'sur l\'année, selon les dates (' + etpContrats.toFixed(1) + ' ETP au total des contrats)' : 'roulants, équivalent temps plein'} />
         <Kpi label="Capacité" value={capaciteAn > 0 ? capaciteAn.toLocaleString('fr-FR') + ' h' : '—'} sub="heures / an" />
       </div>
 
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}
         dangerouslySetInnerHTML={{ __html: phrase }} />
+      {cddSansDates ? (
+        <p className="hint" data-testid="cdd-sans-dates" style={{ fontSize: 12, marginTop: -8, marginBottom: 14, color: 'var(--orange, #c45300)' }}>
+          {cddSansDates} CDD sans date{cddSansDates > 1 ? 's' : ''} d'entrée ni de sortie : {cddSansDates > 1 ? 'ils sont comptés' : 'il est compté'} présent{cddSansDates > 1 ? 's' : ''} toute l'année. Saisissez les dates pour qu'un CDD ne compte que sur sa période.
+        </p>
+      ) : null}
 
       {!editable ? (
         <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--blue-light, rgba(61,111,214,.10))', border: '1px solid var(--blue2, #3d6fd6)', fontSize: 13, color: 'var(--blue2, #3d6fd6)' }}>
@@ -223,11 +228,13 @@ const LigneEmploye = memo(function LigneEmploye({ e, i, editable, onSet, onDel }
   const roul = isRoulant(e.qual) || estRoulantPart(e);
   const etp = roul ? ((+e.hours || 0) * partRoulant(e) / 35).toFixed(2) : '—';
   const isCddSais = contrat === 'CDD' && (e.dateEntree || e.dateSortie);
+  const cddSansDates = contrat === 'CDD' && !e.dateEntree && !e.dateSortie;
   return (
     <tr>
       <td style={td}>
         <input data-saisie-dr={champSaisiDR(e, 'name') ? '1' : undefined} type="text" value={nom} disabled={!editable} onChange={(ev) => onSet(i, 'name', ev.target.value)} style={{ width: 150 }} />
         {isCddSais ? <span style={{ fontSize: 9, background: 'var(--orange, #c45300)', color: '#fff', padding: '1px 4px', marginLeft: 4 }}>CDD</span> : null}
+        {cddSansDates ? <span title="Sans dates, ce CDD compte toute l'année : saisissez son entrée et sa sortie" style={{ fontSize: 9, border: '1px solid var(--orange, #c45300)', color: 'var(--orange, #c45300)', padding: '1px 4px', marginLeft: 4 }}>dates ?</span> : null}
       </td>
       <td style={td}>
         <select data-saisie-dr={champSaisiDR(e, 'qual') ? '1' : undefined} value={e.qual} disabled={!editable} onChange={(ev) => onSet(i, 'qual', ev.target.value)} style={{ width: 90 }}>

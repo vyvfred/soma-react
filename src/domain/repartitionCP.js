@@ -113,6 +113,121 @@ function repartirCPAgence(a, moisLibres) {
   return a;
 }
 
+// Ajustement minimal (nov. 2026) : quand les jours acquis changent (CDD, dates, absentéisme…) ou qu'un mois est validé
+// avec plus ou moins de congés que prévu, SOMA ajoute ou retire SEULEMENT la différence sur les semaines des mois non
+// validés, sans refaire tout le planning : les congés déjà placés (y compris ajustés à la main) ne bougent pas.
+// Ajout : mêmes règles que la répartition (marge d'abord sans créer d'HS, puis HS par personne les plus basses).
+// Retrait : là où il y a le plus d'HS par personne (c'est là qu'un congé de moins aide le plus), puis la semaine la plus chargée en congés.
+// La différence est partagée entre les périodes selon leur écart à la cible 60 / 20 / 20.
+// deltaImpose : variation à traiter (ex. jours acquis en plus après un CDD) ; sinon tout l'écart entre acquis et posés
+function ajusterCPMinimal(a, moisLibres, deltaImpose) {
+  if (!a.cal || !a.cal.length) genCal(a);
+  let libres = moisLibres || M.map(function (_, i) { return i; }).filter(function (m) { return (a.moisVerrouilles || []).indexOf(m) < 0; });
+  let semaines = needWeeks(a);
+  let estLibre = function (w) { return moisDeSemaine(a, w.week).every(function (m) { return libres.indexOf(m) >= 0; }); };
+  let cpDe = function (w) { return +((a.presence[w.week] || {}).cp) || 0; };
+  let generes = cpGeneres(a);
+  let delta = typeof deltaImpose === 'number' && isFinite(deltaImpose) ? r1(deltaImpose) : r1(generes - semaines.reduce(function (s, w) { return s + cpDe(w); }, 0));
+  let envelopes = ENVELOPPES_CP.map(function (e) {
+    let dans = function (w) { return e.months.indexOf(mainMonth(a, w.week)) >= 0; };
+    let ws = semaines.filter(dans);
+    return { nom: e.nom, pct: e.pct, months: e.months, cible: r1(generes * e.pct),
+      place: r1(ws.reduce(function (s, w) { return s + cpDe(w); }, 0)),
+      verrouille: r1(ws.filter(function (w) { return !estLibre(w); }).reduce(function (s, w) { return s + cpDe(w); }, 0)),
+      semaines: ws.filter(estLibre) };
+  });
+  let cache = {};
+  let etat = function (w) {
+    if (!cache[w.week]) { let p = pres(a, w.week); cache[w.week] = { gap: w.hours - p.av, etp: p.etp, base: p.base, cpH: p.cpH }; }
+    return cache[w.week];
+  };
+  let modifs = {};
+  let poser = function (w, j) {
+    if (!a.presence[w.week]) a.presence[w.week] = { cp: 0, other: 0 };
+    a.presence[w.week] = Object.assign({}, a.presence[w.week], { cp: Math.max(0, r1(cpDe(w) + j)) });
+    delete a.presence[w.week].cpMois;
+    modifs[w.week] = r1((modifs[w.week] || 0) + j);
+    delete cache[w.week];
+  };
+  let reliquat = 0;
+  if (Math.abs(delta) >= 0.05) {
+    a.presence = Object.assign({}, a.presence);
+    let rec = envelopes.filter(function (e) { return e.semaines.length; });
+    if (!rec.length) reliquat = delta > 0 ? delta : 0;
+    else {
+      // Partage de la différence : d'abord vers les périodes les plus éloignées de leur cible, sinon au prorata
+      let ecarts = rec.map(function (e) { return Math.max(0, delta > 0 ? e.cible - e.place : e.place - e.cible); });
+      let tot = ecarts.reduce(function (x, y) { return x + y; }, 0);
+      let poids = rec.reduce(function (x, e) { return x + e.pct; }, 0);
+      let parts = rec.map(function (e, i) { return tot > 0.05 ? Math.min(Math.abs(delta), ecarts[i]) : Math.abs(delta) * e.pct / poids; });
+      let somme = parts.reduce(function (x, y) { return x + y; }, 0);
+      if (somme < Math.abs(delta) - 0.05) { let manque = Math.abs(delta) - somme; parts = parts.map(function (v, i) { return v + manque * rec[i].pct / poids; }); }
+      rec.forEach(function (env, i) {
+        let reste = r1(parts[i]), secu = 0;
+        if (delta > 0) {
+          let elig = env.semaines.filter(function (w) { return etat(w).etp > 0.5; });
+          while (reste > 0.05 && elig.length && secu++ < 20000) {
+            let pas = Math.min(reste > 10 ? 2 : 0.5, reste), best = null, ajout = 0, cle = Infinity;
+            elig.forEach(function (w) {
+              let e = etat(w), possible = Math.min(pas, Math.floor((-e.gap / CP_HEURES_JOUR) * 2) / 2);
+              if (possible <= 0) return;
+              let part = e.base > 0 ? e.cpH / e.base : 0;
+              if (part < cle) { cle = part; best = w; ajout = possible; }
+            });
+            if (!best) {
+              let minR = Infinity; elig.forEach(function (w) { let e = etat(w), r = Math.max(0, e.gap) / e.etp; if (r < minR) minR = r; });
+              cle = Infinity;
+              elig.forEach(function (w) { let e = etat(w); if (Math.max(0, e.gap) / e.etp > minR + 0.01) return; let part = e.base > 0 ? e.cpH / e.base : 0; if (part < cle) { cle = part; best = w; } });
+              ajout = pas;
+            }
+            if (!best) break;
+            poser(best, ajout);
+            if (etat(best).etp <= 0.5) elig = elig.filter(function (w) { return w !== best; });
+            reste = r1(reste - ajout);
+          }
+          reliquat += Math.max(0, reste);
+        } else {
+          while (reste > 0.05 && secu++ < 20000) {
+            let pas = Math.min(reste > 10 ? 2 : 0.5, reste);
+            let cand = env.semaines.filter(function (w) { return cpDe(w) > 0.05; });
+            if (!cand.length) break;
+            let best = null, k1 = -Infinity, k2 = -Infinity;
+            cand.forEach(function (w) {
+              let e = etat(w), r = e.etp > 0 ? Math.max(0, e.gap) / e.etp : 0, part = e.base > 0 ? e.cpH / e.base : 0;
+              if (r > k1 + 0.01 || (Math.abs(r - k1) <= 0.01 && part > k2)) { k1 = r; k2 = part; best = w; }
+            });
+            let retrait = Math.min(pas, cpDe(best));
+            poser(best, -retrait);
+            reste = r1(reste - retrait);
+          }
+        }
+      });
+    }
+  }
+  // La proposition de SOMA suit les mêmes ajustements (les changements faits à la main restent repérables)
+  if (Object.keys(modifs).length) {
+    let opt = Object.assign({}, a.cpOptimal || {});
+    if (!a.cpOptimal) semaines.forEach(function (w) { opt[w.week] = cpDe(w) - (modifs[w.week] || 0); });
+    Object.keys(modifs).forEach(function (k) { opt[k] = Math.max(0, r1((+opt[k] || 0) + modifs[k])); });
+    a.cpOptimal = opt;
+    // Coût des HS de la proposition (sur une copie : les ajustements faits à la main ne comptent pas)
+    let presOpt = {};
+    Object.keys(a.presence).forEach(function (k) { presOpt[k] = Object.assign({}, a.presence[k]); });
+    Object.keys(opt).forEach(function (k) { presOpt[k] = Object.assign({ other: 0 }, presOpt[k] || {}, { cp: opt[k] }); delete presOpt[k].cpMois; });
+    a.cpOptimalHSCost = coutHSTotal(Object.assign({}, a, { presence: presOpt }));
+  }
+  let envApres = ENVELOPPES_CP.map(function (e) { return semaines.filter(function (w) { return e.months.indexOf(mainMonth(a, w.week)) >= 0; }); });
+  a.cpEnveloppes = envelopes.map(function (env, i) {
+    let placeApres = r1(envApres[i].reduce(function (s, w) { return s + cpDe(w); }, 0));
+    // Période close (tous ses mois validés) en dessous de sa cible : ce qui manque a été placé sur les autres périodes
+    let clos = !env.semaines.length;
+    return { nom: env.nom, pct: env.pct, cible: env.cible, verrouille: env.verrouille, budget: r1(placeApres - env.verrouille),
+      recu: !clos ? Math.max(0, r1(placeApres - env.cible)) : 0, reporte: clos ? Math.max(0, r1(env.cible - placeApres)) : 0 };
+  });
+  a.cpReliquat = r1(reliquat);
+  return a;
+}
+
 // Congés posés par mois (semaine à cheval : part du mois)
 function cpParMois(a) {
   return M.map(function (_, m) {
@@ -163,4 +278,4 @@ function reprendrePropositionMois(a, m) {
 }
 
 export function repartirCPAuto(a, moisLibres) { return repartirCPAgence(a, moisLibres); }
-export { ENVELOPPES_CP, repartirCPAgence, cpParMois, bilanRecalculCP, cpProposeMois, reprendrePropositionMois };
+export { ENVELOPPES_CP, repartirCPAgence, ajusterCPMinimal, cpParMois, bilanRecalculCP, cpProposeMois, reprendrePropositionMois };

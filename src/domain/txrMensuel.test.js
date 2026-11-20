@@ -28,3 +28,17 @@ describe('TXR modulé mois par mois', () => {
     expect(w.hours).toBeCloseTo(attendu, 6);
   });
 });
+
+describe('Effectif moyen de l\'écran Équipe', () => {
+  it('un CDD de 2 mois compte pour 2/12 d\'ETP, pas un temps plein sur l\'année', async () => {
+    const { teamInsight } = await import('./teamInsight.js');
+    const a = agenceReference(); const t0 = teamInsight(a);
+    a.employees = a.employees.concat({ name: 'CDD été', qual: 'DEA', contract: 'CDD', hours: 35, pctRoulant: 100, joursSem: 5, dateEntree: '2027-07-01', dateSortie: '2027-08-31' });
+    const t1 = teamInsight(a);
+    expect(t1.etpContrats - t0.etpContrats).toBeCloseTo(1, 5);
+    expect(t1.etpTotal - t0.etpTotal).toBeGreaterThan(0.12);
+    expect(t1.etpTotal - t0.etpTotal).toBeLessThan(0.2);
+    a.employees.push({ name: 'CDD sans dates', qual: 'DEA', contract: 'CDD', hours: 35, pctRoulant: 100, joursSem: 5, dateEntree: '', dateSortie: '' });
+    expect(teamInsight(a).cddSansDates).toBe(1);
+  });
+});

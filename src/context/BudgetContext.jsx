@@ -1,5 +1,5 @@
 import { etatConges, rafraichirConges, appliquerRegleCP2024 } from '../domain/rafraichirConges.js';
-import { repartirCPAuto } from '../domain/repartitionCP.js';
+import { ajusterCPMinimal } from '../domain/repartitionCP.js';
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { loadAgencyBudget, saveAgencyBudget, loadBudgetData, writeBudgetData, submitBudget } from '../lib/budgetApi.js';
 import { appliquerRefCG, descriptionCopie } from '../domain/refCG.js';
@@ -166,7 +166,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
           const a2 = JSON.parse(JSON.stringify(res.agency));
           const brut = res.data && res.data.versions ? res.data.versions[res.activeVersion] : null;
           const converti = !!(brut && Object.keys(brut).length && brut.uniteCP !== 'ouvrables'); // CP passés en jours ouvrables au chargement
-          if (appliquerRegleCP2024(a2, repartirCPAuto) || converti) { res.agency = a2; majCP = a2; }
+          if (appliquerRegleCP2024(a2, ajusterCPMinimal) || converti) { res.agency = a2; majCP = a2; }
         }
         setAgency(res.agency);        snapRef.current = null; viderHisto();
         // Point de départ de la fusion : l'état tel que chargé (null si le budget n'existe pas encore)
@@ -350,7 +350,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
       const r = reprendreBlocs(a, src, ids);
       // Équipe reprise sans la présence : les congés acquis changent, les répartitions sont remises à jour
       // (reprendreBlocs renvoie une copie complète, l'état précédent reste intact)
-      if (ids.indexOf('presence') < 0) rafraichirConges(r, av, repartirCPAuto);
+      if (ids.indexOf('presence') < 0) rafraichirConges(r, av, ajusterCPMinimal);
       return r;
     });
     return { ok: true, message: 'Données de la ' + VERSION_LABELS[source] + ' reprises dans la ' + VERSION_LABELS[versionRef.current] + ' (↶ pour annuler)' };

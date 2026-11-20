@@ -5,13 +5,13 @@ import { useBudget } from '../../context/BudgetContext.jsx';
 import { setAbsPartMois } from '../../domain/calculations.js';
 import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
-import { repartirCPAuto } from '../../domain/repartitionCP.js';
+import { repartirCPAuto, ajusterCPMinimal } from '../../domain/repartitionCP.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
 import { presenceInsight } from '../../domain/presenceInsight.js';
 import {
   progressionMois, etatMois, semainesMois, impactMois, semainesCritiques, verrouillerMois, deverrouillerMois,
   reinitialiserCP, setPresenceSemaine, messageValidation, setMontantSemaine, indemnites, hsImproductives, moyenneHS50,
-  relancerRepartitionCP, moisModifiesHorsPropo
+  relancerRepartitionCP
 } from '../../domain/presenceMois.js';
 import { cpProposeMois, reprendrePropositionMois } from '../../domain/repartitionCP.js';
 import { euro, pct } from '../../domain/format.js';
@@ -135,7 +135,6 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
   const saisie = editable && !e.verrouille;
   const propose = cpProposeMois(a, m);
   const ecart = propose == null ? 0 : Math.round((imp.cpM - propose) * 10) / 10;
-  const autres = saisie ? moisModifiesHorsPropo(a, m) : [];
   return (
     <div data-testid="detail-mois" style={{ border: '1px solid var(--violet2)', padding: 14, marginTop: 12, background: 'var(--bg)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -173,11 +172,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
           {Math.abs(ecart) >= 0.5 ? <button data-testid="reprendre-proposition" style={btnSec} onClick={onReprendre}>Reprendre la proposition</button> : null}
         </div>
       ) : null}
-      {autres.length ? (
-        <p data-testid="cp-autres-modifies" className="hint" style={{ fontSize: 12, margin: '0 0 10px', color: 'var(--orange, #c45300)' }}>
-          Vous avez aussi changé les congés de {autres.map((i) => MOIS_LONGS[i].toLowerCase()).join(', ')}, qui ne {autres.length > 1 ? 'sont' : 'est'} pas validé{autres.length > 1 ? 's' : ''} : la validation de ce mois {autres.length > 1 ? 'les' : 'le'} recalculera. Validez d'abord {autres.length > 1 ? 'ces mois' : 'ce mois'} pour garder vos choix.
-        </p>
-      ) : null}
+
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
@@ -258,9 +253,9 @@ export default function PresenceScreen() {
   // automatiquement (roulants : si des congés étaient posés ; non-roulants : si la répartition était automatique).
   const setSick = (m) => (e) => {
     const v = e.target.value;
-    muter((x) => { const av = etatConges(x); x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; rafraichirConges(x, av, repartirCPAuto); });
+    muter((x) => { const av = etatConges(x); x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; rafraichirConges(x, av, ajusterCPMinimal); });
   };
-  const rebalance = () => muter((x) => { const av = etatConges(x); x.sick = reequilibrerSick(x.sick, +x.targetAbsRate || 0); rafraichirConges(x, av, repartirCPAuto); });
+  const rebalance = () => muter((x) => { const av = etatConges(x); x.sick = reequilibrerSick(x.sick, +x.targetAbsRate || 0); rafraichirConges(x, av, ajusterCPMinimal); });
   const setHS50 = (m) => (e) => {
     const v = e.target.value;
     update((draft) => { draft.hs50 = (draft.hs50 || Array(12).fill(null)).slice(); draft.hs50[m] = v === '' ? null : Math.max(0, Math.min(100, +v)); return draft; });
@@ -347,7 +342,7 @@ export default function PresenceScreen() {
         <div data-visite="conges" style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
           <button onClick={distribuerCP} style={{ width: 'auto', margin: 0 }}>Répartir les congés automatiquement</button>
           <button data-testid="reset-cp" onClick={resetCP} style={btnSec}>Remettre les CP à zéro</button>
-          <span className="hint" style={{ fontSize: 12 }}>Recalcule les congés de tous les mois non validés. Les mois validés ne bougent pas.</span>
+          <span className="hint" style={{ fontSize: 12 }}>Refait toute la proposition sur les mois non validés (vos ajustements à la main sur ces mois sont remplacés). Les mois validés ne bougent pas.</span>
         </div>
       ) : null}
 
@@ -371,7 +366,7 @@ export default function PresenceScreen() {
         <b>Comment SOMA propose les congés.</b> Il pose exactement les jours acquis, en respectant les périodes (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai).
         Dans chaque période, il les place d'abord sur les semaines où l'équipe est plus nombreuse que le besoin, sans créer d'heure supplémentaire, en les étalant ;
         s'il en reste, il les met là où les heures supplémentaires par personne sont les plus basses, pour garder une charge régulière.
-        Si les jours acquis changent (absentéisme, équipe, dates d'entrée ou de sortie, temps de travail, part roulante), la répartition est refaite sur les mois non validés.
+        Si les jours acquis changent (absentéisme, équipe, CDD, dates d'entrée ou de sortie, temps de travail, part roulante), SOMA ajoute ou retire <b>seulement la différence</b> sur les mois non validés : les congés déjà placés, y compris ceux ajustés à la main, ne bougent pas.
       </p>
 
       {/* ── Mois par mois ── */}
@@ -385,7 +380,7 @@ export default function PresenceScreen() {
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
         💡 Ouvrez un mois, ajustez les congés et les absences semaine par semaine, puis <b>validez-le</b> : il est figé, et l'écart avec la proposition
-        (jours en plus ou en moins) est reporté sur les mois non validés. Un bilan montre ensuite les mois qui ont bougé et l'effet sur le coût des heures supplémentaires. <Pourquoi k="conges" />
+        (jours en plus ou en moins) est ajouté ou retiré sur les mois non validés, sans toucher aux congés déjà placés. Un bilan montre ensuite les mois qui ont bougé et l'effet sur le coût des heures supplémentaires. <Pourquoi k="conges" />
       </p>
       <div data-visite="mois" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
         {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
