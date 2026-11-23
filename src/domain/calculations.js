@@ -98,9 +98,43 @@ function buildPeriodesPaie() {
   // NB: période 06/12/2027 → 31/12/2027 = variables à reporter sur paie jan 2028
 }
 
+// Majoration des HS (nov. 2026) : les 8 premières heures supplémentaires d'un salarié dans la semaine sont à +25 %,
+// les suivantes à +50 %. Par défaut SOMA calcule la part à +50 % semaine par semaine (calcul « auto ») en supposant
+// les HS réparties entre les salariés présents : équipe présente = heures disponibles ÷ 35, chacun absorbe 8 h à +25 %.
+// Mode « manuel » : la part saisie mois par mois par l'agence (a.hs50, en %), comme avant.
+const HS25_PAR_ETP = 8;
+function hs50Auto(a){ return !a || a.hs50Mode !== 'manuel'; }
+function part50Semaine(r, hsForce){
+  let hs = hsForce===undefined ? (+(r&&r.hs)||0) : (+hsForce||0);
+  if(hs <= 0) return 0;
+  let etp = Math.max(0, (+(r&&r.av)||0) / 35);
+  return Math.max(0, hs - HS25_PAR_ETP*etp) / hs;
+}
+function coefHSManuel(a, mois){
+  let p = tauxHS50Saisi(a, mois);
+  return (1 - p) * 1.25 + p * 1.50;
+}
+// Coefficient d'une semaine (r = ligne hsRows) pour le mois m ; hsForce : volume d'HS simulé
+function coefHSSemaine(a, r, m, hsForce){
+  if(!hs50Auto(a)) return coefHSManuel(a, m===undefined ? mainMonth(a, r.week) : m);
+  return 1.25 + 0.25 * part50Semaine(r, hsForce);
+}
+// Part à +50 % de chaque mois en mode auto (pondérée par les HS attribuées au mois), null si le mois n'a pas d'HS
+function parts50AutoMois(a){
+  return memoMoteur(a, 'parts50Auto', function(){
+    let hs = Array(12).fill(0), h50 = Array(12).fill(0);
+    hsRows(a).forEach(function(r){
+      if(!(r.hs > 0)) return;
+      let p = part50Semaine(r);
+      for(let m=0;m<12;m++){ let x = hsDuMois(a, r, m); if(x){ hs[m] += x; h50[m] += x*p; } }
+    });
+    return { parMois: hs.map(function(v,m){ return v>0 ? h50[m]/v : null; }), hs: hs, h50: h50 };
+  });
+}
 function coefHSMois(a, mois){
-  let p50 = tauxHS50Mois(a, mois);
-  return (1 - p50) * 1.25 + p50 * 1.50;
+  if(!hs50Auto(a)) return coefHSManuel(a, mois);
+  let p = parts50AutoMois(a).parMois[mois];
+  return 1.25 + 0.25 * (p || 0);
 }
 
 function coefHSMoyen(a){
@@ -108,8 +142,7 @@ function coefHSMoyen(a){
   let totHS = 0, totCoef = 0;
   let hsR = hsRows(a);
   for(let m=0;m<12;m++){
-    let hsM = hsR.reduce(function(s,r){return s+hsDuMois(a,r,m);},0); // semaine à cheval : HS attribuées là où est le déficit
-    if(hsM>0){ totHS += hsM; totCoef += hsM * coefHSMois(a, m); }
+    hsR.forEach(function(r){ let h = hsDuMois(a,r,m); if(h>0){ totHS += h; totCoef += h*coefHSSemaine(a,r,m); } }); // semaine à cheval : HS attribuées là où est le déficit
   }
   if(totHS>0) return totCoef/totHS;
   // Pas de HS : coefficient moyen simple des mois renseignés, sinon 1,25
@@ -122,8 +155,7 @@ function coutHSTotal(a){
   let ch = (+a.costHour||0);
   let total = 0;
   for(let m=0;m<12;m++){
-    let hsM = hsR.reduce(function(s,r){return s+hsDuMois(a,r,m);},0); // semaine à cheval : HS attribuées là où est le déficit
-    total += hsM * chMois(a, m) * coefHSMois(a, m);
+    total += hsR.reduce(function(s,r){ let h = hsDuMois(a,r,m); return h ? s + h*coefHSSemaine(a,r,m) : s; },0) * chMois(a, m); // semaine à cheval : HS attribuées là où est le déficit
   }
   return total;
 }
@@ -306,7 +338,7 @@ function impactCPSemaine(a, week, deltaCPjours) {
   let hr = hsRows(a).find(function(r){ return r.week === week; }) || {hs:0, gap:0};
   let hsDelta = -deltaCPjours * CP_HEURES_JOUR; // retirer CP augmente les HS
   let costHour = chMois(a, mainMonth(a, week)) || 28.5;
-  let coefHS = coefHSMois(a, mainMonth(a, week));
+  let coefHS = coefHSSemaine(a, hr.week===undefined ? {hs:0,av:0} : hr, mainMonth(a, week), Math.max(0,(hr.hs||0)+hsDelta));
   if (hr.gap > 0) {
     // Semaine en tension : chaque heure compte
     return Math.round(hsDelta * costHour * coefHS);
@@ -388,7 +420,7 @@ function payrollMonthCivil(a,m){
     let ratio=daysMonth/daysWeek;
     // Semaine à cheval : coût hors HS au prorata des jours, HS selon leur mois (cf. partsMoisSemaine)
     let horsHS=coutRoulantSemaine(a,r,m,0);
-    return s+horsHS*ratio+hsDuMois(a,r,m)*chMois(a,m)*coefHSMois(a,m)*(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week));
+    return s+horsHS*ratio+hsDuMois(a,r,m)*chMois(a,m)*coefHSSemaine(a,r,m)*(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week));
   },0);
   // MS improductifs : ligne globale CG (coût mensuel, absences au ratio de maintien).
   // À défaut, ancien calcul : coût journalier x jours travaillés.
@@ -495,7 +527,7 @@ function payrollPayMonth(a, moisIdx) {
       }).length;
       let ratio = daysInPeriode / daysOfWeek.length;
       if (ratio <= 0) return;
-      msHSImp += hs * coutHoraireImproductif(a) * coefHSMois(a,mainMonth(a,r.week)) * ratio;
+      msHSImp += hs * coutHoraireImproductif(a) * coefHSSemaine(a,r,mainMonth(a,r.week)) * ratio;
     });
   }
 
@@ -550,9 +582,9 @@ function coutHSPeriodePaie(a, moisIdx){
     if(!dedans) return;
     let ratio = dedans / jours.length, m = mainMonth(a, r.week);
     let hsP = hsDesJours(a, r, function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; });
-    total += hsP * chMois(a, m) * coefHSMois(a, m) * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
+    total += hsP * chMois(a, m) * coefHSSemaine(a, r, m) * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
     let hsImp = a.hsImproductif && a.hsImproductif[r.week] ? +a.hsImproductif[r.week] : 0;
-    if(hsImp) total += hsImp * coutHoraireImproductif(a) * coefHSMois(a, m) * ratio;
+    if(hsImp) total += hsImp * coutHoraireImproductif(a) * coefHSSemaine(a, r, m) * ratio;
   });
   if(moisIdx === 0){
     let det = varDecDetail(a);
@@ -687,7 +719,18 @@ function chargesREXRemplies(a){return LIGNES_CHARGES_REX.filter(function(r){let 
 const SEUIL_MS_CA=62;
 function sig(a,m){let v=l=>manual(a,l,m),ca=monthCA(a,m),marge=ca-v("Achats Matières premières et sous traitance")-v("Variations stock marchandises et autres approvisionnements"),aa=["Electricité - eau - chauffage","Matériels ambulances","Carburant","Entretiens petits équipements","Fourniture bureau - vêtements","Sous traitance","Crédit bail et location véhicules","Location téléphonie - informatique - mobilité","Location immobilières et charges locatives","Entretiens véhicules - batîment","Maintenance informatique","Assurance","Formation - documentation","Honoraires et prestations de services","Publicité - cadeaux","Frais de déplacement - missions réceptions","Péages","Affranchissement","Téléphonie - internet","Frais bancaires et cotisations"].reduce((s,l)=>s+v(l),0),va=marge-aa,pay=payrollMonth(a,m),qp=estStructure(a)?0:v("Quote-part MS siège")+v("Quote-part régulation mutualisée"),ebe=va+v("Subventions d'exploitation")-v("Impôts, taxes et versements assimilés")-pay-qp,rex=ebe+v("Reprises s/ charges et transferts")+v("Autres produits")-v("Dotations amortissements et provisions")-v("Autres charges"),rf=v("Produits financiers")-v("Charges financières"),rcai=rex+rf,re=v("Produits exceptionnels")-v("Charges exceptionnelles"),rn=rcai+re-v("Impôt sur les sociétés")-v("Participation aux bénéfices");return {"Chiffre d'affaires":ca,"Charges de personnel":pay+qp,"MARGE BRUTE GLOBALE":marge,"Autres Achats et charges externes":aa,"VALEUR AJOUTEE":va,"EXCEDENT BRUT D'EXPLOITATION":ebe,"RESULTAT D'EXPLOITATION":rex,"RESULTAT FINANCIER":rf,"RESULTAT COURANT AVANT IMPOT":rcai,"RESULTAT EXCEPTIONNEL":re,"RESULTAT NET":rn}}
 
+// Part à +50 % du mois (0 à 1) : calculée (auto) ou saisie (manuel)
 function tauxHS50Mois(a, mois){
+  if(hs50Auto(a)) return parts50AutoMois(a).parMois[mois] || 0;
+  return tauxHS50Saisi(a, mois);
+}
+// Part annuelle à +50 % (0 à 1), pondérée par les HS en auto, moyenne simple des mois saisis en manuel
+function partHS50Annuelle(a){
+  if(hs50Auto(a)){ let x = parts50AutoMois(a), t = x.hs.reduce(function(s,v){return s+v;},0); return t>0 ? x.h50.reduce(function(s,v){return s+v;},0)/t : 0; }
+  let v = (a.hs50 || []).filter(function(x){ return x!==null && x!==undefined; });
+  return v.length ? v.reduce(function(s,x){ return s + (+x||0); },0) / v.length / 100 : 0;
+}
+function tauxHS50Saisi(a, mois){
   if(!a.hs50) return 0;
   let v = a.hs50[mois];
   if(v===null || v===undefined) return 0;
@@ -878,7 +921,7 @@ function coutRoulantSemaine(a, r, mTaux, hsForce){
   // Heures travaillées + heures supplémentaires + maintien sur arrêts + indemnité de congés payés (salaire maintenu)
   // + absences payées (formation, événements familiaux, récupération…) au taux horaire comme les congés
   let hsW = hsForce===undefined ? r.hs : hsForce;
-  let cout = (r.av*ch) + (hsW*ch*coefHSMois(a, mTaux===undefined ? m : mTaux)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch) + ((r.ferieH||0)*ch);
+  let cout = (r.av*ch) + (hsW*ch*coefHSSemaine(a, r, mTaux===undefined ? m : mTaux, hsW)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch) + ((r.ferieH||0)*ch);
   return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
 }
 
@@ -959,7 +1002,7 @@ function msRoulantBaseMois(a,m){
 // (part de la maladie non maintenue, absences non payées), précarité CDD comprise
 function variablesRoulantSemaine(a,r){
   let m=mainMonth(a,r.week),ch=chMois(a,m);
-  let v=(r.hs||0)*ch*coefHSMois(a,m)-(r.mal||0)*ch*(1-ratioMaintien(a))-(r.otherH||0)*ch;
+  let v=(r.hs||0)*ch*coefHSSemaine(a,r,m)-(r.mal||0)*ch*(1-ratioMaintien(a))-(r.otherH||0)*ch;
   return v*(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week));
 }
 function chargesReport2028(a){
@@ -973,7 +1016,7 @@ function chargesReport2028(a){
     if(ratio <= 0) return;
     ms += variablesRoulantSemaine(a, r) * ratio;
     let hsImp = a.hsImproductif && a.hsImproductif[r.week] ? +a.hsImproductif[r.week] : 0;
-    if(hsImp) ms += hsImp * coutHoraireImproductif(a) * coefHSMois(a, mainMonth(a, r.week)) * ratio;
+    if(hsImp) ms += hsImp * coutHoraireImproductif(a) * coefHSSemaine(a, r, mainMonth(a, r.week)) * ratio;
   });
   return Math.round(ms);
 }
@@ -985,5 +1028,5 @@ export { txrDuMois, txrModule, txrEffectif };
 export {
   cleJour,
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, couvertParLigneNR, lignesStructure, totalLignesMois, totalLigneAn, ligneStructureVide, etpNR, coutJourCPNR, cpNRPrisMois, variationStockCPNRMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
-  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSSemaine, part50Semaine, partHS50Annuelle, hs50Auto, HS25_PAR_ETP, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

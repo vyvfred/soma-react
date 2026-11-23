@@ -23,7 +23,7 @@ describe('fonctions feuilles — valeurs calculées à la main', () => {
   });
 
   it('tauxHS50Mois : null → 0, valeurs bornées à [0,100] puis /100', () => {
-    const a = { hs50: [null, 0, 50, 100, 130, -5, undefined, 25, 0, 0, 0, 0] };
+    const a = { hs50Mode: 'manuel', hs50: [null, 0, 50, 100, 130, -5, undefined, 25, 0, 0, 0, 0] };
     expect(tauxHS50Mois(a, 0)).toBe(0);
     expect(tauxHS50Mois(a, 2)).toBe(0.5);
     expect(tauxHS50Mois(a, 3)).toBe(1);
@@ -33,7 +33,7 @@ describe('fonctions feuilles — valeurs calculées à la main', () => {
   });
 
   it('coefHSMois : (1 - p50)·1,25 + p50·1,50', () => {
-    const a = { hs50: [null, 100, 50, 25, 0, 0, 0, 0, 0, 0, 0, 0] };
+    const a = { hs50Mode: 'manuel', hs50: [null, 100, 50, 25, 0, 0, 0, 0, 0, 0, 0, 0] };
     expect(coefHSMois(a, 0)).toBeCloseTo(1.25, 10); // 0 % à 50
     expect(coefHSMois(a, 1)).toBeCloseTo(1.5, 10); // 100 % à 50
     expect(coefHSMois(a, 2)).toBeCloseTo(1.375, 10); // 50 % à 50

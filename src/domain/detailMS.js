@@ -1,4 +1,4 @@
-import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR, hsDesJours } from './calculations.js';
+import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, coefHSSemaine, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR, hsDesJours } from './calculations.js';
 // Détail du calcul de la masse salariale d'un mois de paie (écran Périodes de paie, nov. 2026).
 // Chaque ligne donne son montant et sa formule avec les chiffres ; la somme des lignes est égale à payrollPayMonth(a, m).
 const LIGNES_DETAIL_MS = [
@@ -27,11 +27,11 @@ function detailMSMois(a,m){
     if(ratio<=0)return;
     let mm=mainMonth(a,r.week),ch=chMois(a,mm),k=(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week))*ratio;
     let hsP=hsDesJours(a,r,function(d){let dt=new Date(2027,d.month,d.day);return dt>=debut&&dt<=fin;}); // semaine à cheval : HS selon leur mois
-    hsH+=hsP;hsE+=hsP*ch*coefHSMois(a,mm)*k/ratio;
+    hsH+=hsP;hsE+=hsP*ch*coefHSSemaine(a,r,mm)*k/ratio;
     malH+=(r.mal||0)*(1-rm)*ratio;malE+=(r.mal||0)*ch*(1-rm)*k;
     absH+=(r.otherH||0)*ratio;absE+=(r.otherH||0)*ch*k;
     let hi=a.hsImproductif&&a.hsImproductif[r.week]?+a.hsImproductif[r.week]:0;
-    if(hi){hiH+=hi*ratio;hiE+=hi*coutHoraireImproductif(a)*coefHSMois(a,mm)*ratio;}
+    if(hi){hiH+=hi*ratio;hiE+=hi*coutHoraireImproductif(a)*coefHSSemaine(a,r,mm)*ratio;}
     let w=r.week,v=function(o){return o&&o[w]?+o[w]:0;};
     repas+=(v(a.repasRoulant)+v(a.repasNonRoulant)+v(a.idjfRoulant)+v(a.idjfNonRoulant))*ratio;
   });

@@ -64,8 +64,8 @@ describe('Présence mois par mois', () => {
   });
 
   it('moyenne de la part des HS à +50 %', () => {
-    expect(moyenneHS50({ hs50: [null, 10, 20] })).toBe(15);
-    expect(moyenneHS50({ hs50: Array(12).fill(null) })).toBe(0);
+    expect(moyenneHS50({ hs50Mode: 'manuel', hs50: [null, 10, 20] })).toBe(15);
+    expect(moyenneHS50({ hs50Mode: 'manuel', hs50: Array(12).fill(null) })).toBe(0);
   });
 });
 

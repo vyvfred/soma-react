@@ -3,7 +3,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { setAbsPartMois } from '../../domain/calculations.js';
-import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR } from '../../domain/calculations.js';
+import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto, ajusterCPMinimal } from '../../domain/repartitionCP.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
@@ -266,6 +266,7 @@ export default function PresenceScreen() {
     muter((x) => { const av = etatConges(x); x.sick = x.sick.slice(); x.sick[m] = v === '' ? null : +v; rafraichirConges(x, av, ajusterCPMinimal); });
   };
   const rebalance = () => muter((x) => { const av = etatConges(x); x.sick = reequilibrerSick(x.sick, +x.targetAbsRate || 0); rafraichirConges(x, av, ajusterCPMinimal); });
+  const setHS50Mode = (mode) => update((draft) => { draft.hs50Mode = mode; return draft; });
   const setHS50 = (m) => (e) => {
     const v = e.target.value;
     update((draft) => { draft.hs50 = (draft.hs50 || Array(12).fill(null)).slice(); draft.hs50[m] = v === '' ? null : Math.max(0, Math.min(100, +v)); return draft; });
@@ -316,6 +317,9 @@ export default function PresenceScreen() {
 
   const hs50 = a.hs50 || Array(12).fill(null);
   const moy50 = moyenneHS50(a);
+  const auto50 = hs50Auto(a);
+  const calc50 = M.map((_, i) => tauxHS50Mois(a, i) * 100);
+  const sem50 = auto50 ? rows.filter((r) => part50Semaine(r) > 0).length : 0;
   const ind = indemnites(a);
   const imp = hsImproductives(a);
 
@@ -421,20 +425,29 @@ export default function PresenceScreen() {
         <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
           <span>⏱️</span>
           <div>Les 8 premières heures supplémentaires par semaine et par salarié sont majorées à <b>+25%</b>, au-delà à <b>+50%</b>.
-            Indiquez, pour chaque mois, la <b>part de vos heures supplémentaires qui part à +50%</b> — d'après la réalité de votre agence.
-            Beaucoup d'agences restent à <b>0%</b> toute l'année : c'est normal, tant que les heures supp restent réparties.</div>
+            {auto50
+              ? <> SOMA calcule la part à +50% <b>semaine par semaine</b> : chaque salarié présent absorbe ses 8 premières heures à +25% (équipe présente = heures disponibles ÷ 35), le reste part à +50%. On suppose les heures supp réparties entre les présents ; si elles se concentrent sur quelques personnes, la part réelle à +50% sera plus forte.</>
+              : <> Indiquez, pour chaque mois, la <b>part de vos heures supplémentaires qui part à +50%</b> — d'après la réalité de votre agence.</>}</div>
+        </div>
+        <div role="radiogroup" aria-label="Mode de calcul de la part à +50%" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, marginBottom: 8 }}>
+          <label><input type="radio" name="hs50Mode" data-testid="hs50-mode-auto" checked={auto50} disabled={!editable} onChange={() => setHS50Mode('auto')} /> Calcul automatique (règle des 8 h)</label>
+          <label><input type="radio" name="hs50Mode" data-testid="hs50-mode-manuel" checked={!auto50} disabled={!editable} onChange={() => setHS50Mode('manuel')} /> Saisie manuelle par mois</label>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead><tr><th style={{ textAlign: 'left', padding: '4px 8px' }}>Mois</th>{M.map((m) => <th key={m} style={{ padding: '4px 6px' }}>{m}</th>)}<th style={{ padding: '4px 8px' }}>Moy</th></tr></thead>
+            <thead><tr><th style={{ textAlign: 'left', padding: '4px 8px' }}>Mois</th>{M.map((m) => <th key={m} style={{ padding: '4px 6px' }}>{m}</th>)}<th style={{ padding: '4px 8px' }}>{auto50 ? 'Année' : 'Moy'}</th></tr></thead>
             <tbody>
               <tr>
                 <td style={{ padding: '4px 8px' }}><b>% HS à +50%</b></td>
-                {hs50.map((v, i) => (
-                  <td key={i} style={{ padding: '2px 4px' }}>
-                    <input data-testid={'hs50-' + i} data-saisie-dr={estSaisieDR(a, 'hs50.' + i) ? '1' : undefined} type="number" min="0" max="100" value={v ?? ''} placeholder="0" disabled={!editable} onChange={setHS50(i)} style={{ width: '100%', minWidth: 52, padding: '6px 4px', textAlign: 'center' }} />
-                  </td>
-                ))}
+                {auto50
+                  ? calc50.map((v, i) => (
+                    <td key={i} className="num" data-testid={'hs50-calc-' + i} style={{ padding: '6px 6px', textAlign: 'center', color: v > 0 ? 'var(--orange, #c45300)' : 'var(--ink65)' }}>{v > 0 ? pct(v) : '0%'}</td>
+                  ))
+                  : hs50.map((v, i) => (
+                    <td key={i} style={{ padding: '2px 4px' }}>
+                      <input data-testid={'hs50-' + i} data-saisie-dr={estSaisieDR(a, 'hs50.' + i) ? '1' : undefined} type="number" min="0" max="100" value={v ?? ''} placeholder="0" disabled={!editable} onChange={setHS50(i)} style={{ width: '100%', minWidth: 52, padding: '6px 4px', textAlign: 'center' }} />
+                    </td>
+                  ))}
                 <td className="num" style={{ padding: '4px 8px' }}><b>{pct(moy50)}</b></td>
               </tr>
             </tbody>
@@ -443,7 +456,9 @@ export default function PresenceScreen() {
         <div style={{ marginTop: 8, fontSize: 12, color: moy50 <= 0 ? 'var(--green, #2e7d6f)' : 'var(--ink65)' }}>
           {moy50 <= 0
             ? '✓ Toutes vos heures supplémentaires sont à +25% — répartition saine.'
-            : <>En moyenne <b>{pct(moy50)}</b> de vos heures supplémentaires partent à +50% sur l'année. Le coût moyen de vos HS sera calculé en conséquence.</>}
+            : auto50
+              ? <><b>{pct(moy50)}</b> de vos heures supplémentaires partent à +50% sur l'année ({sem50} semaine{sem50 > 1 ? 's' : ''} dépasse{sem50 > 1 ? 'nt' : ''} 8 h par salarié présent). Placer des congés ailleurs ou renforcer l'équipe sur ces semaines réduit ce surcoût.</>
+              : <>En moyenne <b>{pct(moy50)}</b> de vos heures supplémentaires partent à +50% sur l'année. Le coût moyen de vos HS sera calculé en conséquence.</>}
         </div>
       </Repli>
 

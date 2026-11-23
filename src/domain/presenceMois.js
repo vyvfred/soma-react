@@ -3,7 +3,7 @@
 // deverrouillerMois, resetCP, renderIndemnites, renderHSImproductif.
 import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
-  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois, hsDuMois, ferieChomeSemaine
+  chMois, coefHSMois, coefHSSemaine, partHS50Annuelle, tauxHS50Mois, hs50Auto, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois, hsDuMois, ferieChomeSemaine
 } from './calculations.js';
 import { repartirCPAuto, ajusterCPMinimal, cpParMois, bilanRecalculCP, cpProposeMois } from './repartitionCP.js';
 import { coutHSTotal } from './calculations.js';
@@ -36,7 +36,7 @@ export function etatMois(a, m, rows = hsRows(a)) {
     nbVac: jours.filter((d) => d.type === 'vacances').length,
     tensions, warnings,
     cpPoss: sem.filter((r) => r.t === 'sous-charge').length,
-    coutHsM: hsM * (chMois(a, m) || 28.5) * coefHSMois(a, m),
+    coutHsM: sem.reduce((s, r) => s + hsDuMois(a, r, m) * coefHSSemaine(a, r, m), 0) * (chMois(a, m) || 28.5),
     txHsM,
     tension: txHsM > 0.20 ? 'forte' : txHsM > 0.10 ? 'moyenne' : 'faible',
     tensionRate: sem.length ? Math.round(((tensions + warnings * 0.5) / sem.length) * 100) : 0,
@@ -76,7 +76,7 @@ export function impactMois(a, m, rows = hsRows(a)) {
   const msMois = payrollMonth(a, m);
   return {
     caMois, msMois, tauxMS: caMois > 0 ? (msMois / caMois) * 100 : 0,
-    hsM, coutHSM: hsM * (chMois(a, m) || 28.5) * coefHSMois(a, m),
+    hsM, coutHSM: sem.reduce((s, r) => s + hsDuMois(a, r, m) * coefHSSemaine(a, r, m), 0) * (chMois(a, m) || 28.5),
     cpM: sem.reduce((s, r) => s + absPartMois(a, r.week, 'cp', m), 0),
     critM: sem.filter((r) => r.t === 'critique').length,
     okM: sem.filter((r) => r.t === 'ok').length
@@ -159,11 +159,13 @@ export function indemnites(a) {
 // HS des improductifs : lignes par semaine, coût estimé et rappel de l'absentéisme aligné
 export function hsImproductives(a) {
   const coutH = coutHoraireImproductif(a);
+  const rows = hsRows(a);
   const lignes = needWeeks(a).map((wk) => {
     const w = wk.week;
+    const r = rows.find((x) => x.week === w);
     const hs = a.hsImproductif && a.hsImproductif[w] ? +a.hsImproductif[w] : 0;
     const d = a.cal.find((x) => x.week === w);
-    return { week: w, mois: d ? d.month : -1, hs, cout: hs ? Math.round(hs * coutH * coefHSMois(a, mainMonth(a, w))) : 0 };
+    return { week: w, mois: d ? d.month : -1, hs, cout: hs ? Math.round(hs * coutH * (r ? coefHSSemaine(a, r, mainMonth(a, w)) : coefHSMois(a, mainMonth(a, w)))) : 0 };
   });
   const totalHS = a.hsImproductif ? Object.values(a.hsImproductif).reduce((s, v) => s + (+v || 0), 0) : 0;
   const absMoy = M.reduce((s, _, m) => s + tauxAbsMois(a, m) * 100, 0) / 12;
@@ -171,9 +173,9 @@ export function hsImproductives(a) {
 }
 
 // Répartition HS 25 % / 50 % : moyenne de la part à +50 %
+// (auto : part calculée, pondérée par les HS ; manuel : moyenne des mois saisis), en %
 export function moyenneHS50(a) {
-  const v = (a.hs50 || []).filter((x) => x !== null && x !== undefined);
-  return v.length ? v.reduce((s, x) => s + (+x || 0), 0) / v.length : 0;
+  return partHS50Annuelle(a) * 100;
 }
 
 // Relance manuelle de la répartition (bouton) : même bilan qu'après une validation

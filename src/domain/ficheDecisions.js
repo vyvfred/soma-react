@@ -4,7 +4,7 @@ import { annuel, montant } from './memoSIG.js';
 // référence fiable : médiane réseau, historique de l'agence, absentéisme RH 2026.
 // Différence assumée : les médianes réseau portent sur tous les budgets chargés
 // (le mono-fichier ne voyait que les agences ouvertes dans la session).
-import { isRoulant, hsTot, coutDuChoixREX } from './calculations.js';
+import { isRoulant, hsTot, coutDuChoixREX, partHS50Annuelle } from './calculations.js';
 import { euro, pct } from './format.js';
 
 const median = (arr) => { const s = arr.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -24,8 +24,7 @@ export function ficheDecisions(d, autres = []) {
   const sick = (d.sick || []).filter((v) => v !== null && v !== undefined);
   const absMoy = sick.length ? sick.reduce((s, v) => s + (+v || 0), 0) / sick.length : null;
   const hsParSalSem = nbRoulants > 0 ? hsAn(d) / nbRoulants / 52 : 0;
-  const h50 = (d.hs50 || []).filter((v) => v !== null && v !== undefined);
-  const hs50Moy = h50.length ? h50.reduce((s, v) => s + (+v || 0), 0) / h50.length : 0;
+  let hs50Moy = 0; try { hs50Moy = partHS50Annuelle(d) * 100; } catch (e) { /* données incomplètes */ }
   let choix = null; try { choix = coutDuChoixREX(d); } catch (e) { /* données incomplètes */ }
   const croissance = histCA > 0 ? ((targetCA - histCA) / histCA) * 100 : null;
 
