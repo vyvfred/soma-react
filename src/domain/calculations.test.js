@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isRoulant, coefHSMois, tauxHS50Mois, between, baseH, baseHWeek,
-  annualCA, monthCA, cpGeneres, payrollMonth, coutHSTotal, sig, weeks, ann, hsTot
-} from './calculations.js';
+  annualCA, monthCA, cpGeneres, payrollMonth, coutHSTotal, sig, weeks, ann, hsTot, ferieChomeJour } from './calculations.js';
 import { agenceReference } from './__fixtures__/agenceReference.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -140,6 +139,9 @@ describe('Corrections de l\'audit (nov. 2026)', () => {
   });
   it('capacité annuelle hors HS : maladie et congés retirés', () => {
     const a = unTempsPlein(); a.sick = Array(12).fill(10);
-    expect(heuresDispoAnnuelles(a)).toBeCloseTo(baseH(a) * 52 * 0.9 - cpGeneres(a) * 35 / 6, 6);
+    // + fériés chômés du lundi au samedi (7 h par ETP, hors permanence)
+    const feries = a.cal.reduce((s, d) => s + ferieChomeJour(a, d), 0);
+    expect(feries).toBeGreaterThan(0);
+    expect(heuresDispoAnnuelles(a)).toBeCloseTo(baseH(a) * 52 * 0.9 - cpGeneres(a) * 35 / 6 - feries, 6);
   });
 });

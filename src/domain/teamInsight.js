@@ -1,4 +1,4 @@
-import { baseH, baseHWeek, needWeeks, isRoulant, heuresDispoAnnuelles, partRoulant, estRoulantPart, txrEffectif } from './calculations.js';
+import { baseH, baseHWeek, needWeeks, ferieChomeJour, isRoulant, heuresDispoAnnuelles, partRoulant, estRoulantPart, txrEffectif } from './calculations.js';
 import { euro } from './format.js';
 
 // KPI + interprétation de l'équipe — port fidèle de renderTeamKpis().
@@ -11,7 +11,8 @@ export function teamInsight(a) {
   const etpContrats = emps.filter(estRoulantPart).reduce((s, e) => s + (+e.hours || 0) * partRoulant(e) / 35, 0);
   const etpTotal = baseH(a) / 35;
   const cddSansDates = emps.filter((e) => (e.contract || e.contrat) === 'CDD' && !e.dateEntree && !e.dateSortie && estRoulantPart(e)).length;
-  const capaciteAn = Math.round(baseH(a) * 52);
+  // Capacité contractuelle de l'année, moins les fériés chômés (lundi-samedi, 7 h par ETP, hors permanence)
+  const capaciteAn = Math.round(baseH(a) * 52 - ((a.cal || []).reduce((s, d) => s + ferieChomeJour(a, d), 0)));
 
   const caObj = +a.targetCA || 0;
   const txr = txrEffectif(a);

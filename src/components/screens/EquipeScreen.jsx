@@ -142,7 +142,7 @@ export default function EquipeScreen() {
       <div className="teamKpiRow" style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
         <Kpi label="Salariés" value={nbSal} sub={nbSal > 1 ? 'personnes' : 'personne'} />
         <Kpi label="Effectif moyen" value={etpTotal.toFixed(1) + ' ETP'} sub={Math.abs(etpContrats - etpTotal) >= 0.05 ? 'sur l\'année, selon les dates (' + etpContrats.toFixed(1) + ' ETP au total des contrats)' : 'roulants, équivalent temps plein'} />
-        <Kpi label="Capacité" value={capaciteAn > 0 ? capaciteAn.toLocaleString('fr-FR') + ' h' : '—'} sub="heures / an" />
+        <Kpi label="Capacité" value={capaciteAn > 0 ? capaciteAn.toLocaleString('fr-FR') + ' h' : '—'} sub="heures / an, fériés chômés déduits" />
       </div>
 
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}

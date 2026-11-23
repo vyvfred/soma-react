@@ -1,3 +1,4 @@
+import { ferieChomeJour } from './calculations.js';
 import { describe, it, expect } from 'vitest';
 import { teamInsight } from './teamInsight.js';
 import { agenceReference } from './__fixtures__/agenceReference.js';
@@ -9,7 +10,10 @@ describe('teamInsight — KPI et interprétation', () => {
     expect(r.nbSal).toBe(4); // aucun FACTURIERE dans la référence
     // ETP roulant = (35+35+24 + 30 % × 35 du régulateur)/35 = 2.985…
     expect(r.etpTotal).toBeCloseTo((35 + 35 + 24 + 10.5) / 35, 5);
-    expect(r.capaciteAn).toBe(Math.round(104.5 * 52));
+    // Capacité : heures contractuelles de l'année moins les fériés chômés (lundi-samedi, hors permanence)
+    const feries = a.cal.reduce((x, d) => x + ferieChomeJour(a, d), 0);
+    expect(feries).toBeGreaterThan(0);
+    expect(r.capaciteAn).toBe(Math.round(104.5 * 52 - feries));
   });
 
   it('sans salarié : invite à saisir l’équipe', () => {

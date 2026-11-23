@@ -100,9 +100,9 @@ export default function JustifScreen() {
       <>
         <p className="hint" style={{ fontSize: 12 }}>Heures des roulants par mois civil (une semaine à cheval sur deux mois est répartie au prorata des jours). Besoin = CA des jours du calendrier ÷ TXR. Disponibles = heures du contrat − congés − maladie − absences. HS = besoin − disponibles, calculé semaine par semaine.</p>
         <Tableau testid="justif-h"
-          entetes={[['Mois'], ['Besoin'], ['Heures contrat'], ['Congés'], ['Maladie'], ['Abs. payées'], ['Abs. non payées'], ['Disponibles'], ['HS']]}
-          lignes={h.map((x) => [x.lib, n0(x.besoin), n0(x.base), n0(x.cp), n0(x.maladie), n0(x.absPayees), n0(x.absNonPayees), n0(x.dispo), n0(x.hs)])}
-          total={['Année', n0(sum(h, 'besoin')), n0(sum(h, 'base')), n0(sum(h, 'cp')), n0(sum(h, 'maladie')), n0(sum(h, 'absPayees')), n0(sum(h, 'absNonPayees')), n0(sum(h, 'dispo')), n0(sum(h, 'hs'))]} />
+          entetes={[['Mois'], ['Besoin'], ['Heures contrat'], ['Congés'], ['Maladie'], ['Abs. payées'], ['Abs. non payées'], ['Fériés chômés'], ['Disponibles'], ['HS']]}
+          lignes={h.map((x) => [x.lib, n0(x.besoin), n0(x.base), n0(x.cp), n0(x.maladie), n0(x.absPayees), n0(x.absNonPayees), n0(x.feries), n0(x.dispo), n0(x.hs)])}
+          total={['Année', n0(sum(h, 'besoin')), n0(sum(h, 'base')), n0(sum(h, 'cp')), n0(sum(h, 'maladie')), n0(sum(h, 'absPayees')), n0(sum(h, 'absNonPayees')), n0(sum(h, 'feries')), n0(sum(h, 'dispo')), n0(sum(h, 'hs'))]} />
       </>
     );
   }

@@ -3,7 +3,7 @@
 // deverrouillerMois, resetCP, renderIndemnites, renderHSImproductif.
 import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
-  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois, hsDuMois
+  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois, hsDuMois, ferieChomeSemaine
 } from './calculations.js';
 import { repartirCPAuto, ajusterCPMinimal, cpParMois, bilanRecalculCP, cpProposeMois } from './repartitionCP.js';
 import { coutHSTotal } from './calculations.js';
@@ -56,7 +56,7 @@ export function semainesMois(a, m, rows = hsRows(a)) {
     const impact = impactCPSemaine(a, hr.week, -1);
     const abs = Math.abs(impact);
     return {
-      week: hr.week, base: p.base, cp: p.cp,
+      week: hr.week, base: p.base, cp: p.cp, ferieH: ferieChomeSemaine(a, hr.week, m),
       // Semaine à cheval sur deux mois : part de ce mois (saisie) et total de la semaine
       aCheval: moisDeSemaine(a, hr.week).length > 1,
       parts: { cp: absPartMois(a, hr.week, 'cp', m), otherPaid: absPartMois(a, hr.week, 'otherPaid', m), other: absPartMois(a, hr.week, 'other', m) }, rate: p.rate, mal: p.mal, other: p.other, av: p.av,

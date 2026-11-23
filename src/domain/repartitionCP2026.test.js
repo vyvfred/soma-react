@@ -16,7 +16,7 @@ const semainesDuMois = (a, m) => needWeeks(a).filter((w) => moisDeSemaine(a, w.w
 
 describe('Répartition des CP des roulants (refonte nov. 2026)', () => {
   it('ne crée aucune heure supplémentaire quand l\'équipe a assez de marge', () => {
-    const a = agence(1800000); repartirCPAuto(a);
+    const a = agence(1500000); repartirCPAuto(a);
     expect(cpPlanifies(a)).toBeCloseTo(cpGeneres(a), 0);
     expect(coutHSTotal(a)).toBe(0);
   });
@@ -58,9 +58,11 @@ describe('Répartition des CP des roulants (refonte nov. 2026)', () => {
     expect(cpParMois(a)[7]).toBeCloseTo(propose, 0);
     expect(moisModifiesHorsPropo(a, 6)).toEqual([]);
   });
-  it('fait au moins aussi bien qu\'avant sur le coût des HS', () => {
+  it('coûte moins d\'HS qu\'un étalement uniforme des congés', () => {
     const a = agence(2000000); repartirCPAuto(a);
-    expect(coutHSTotal(a)).toBeLessThanOrEqual(32442);
+    const b = agence(2000000); const ws = needWeeks(b); const gen = cpGeneres(b);
+    ws.forEach((w) => { b.presence[w.week] = { cp: gen / ws.length, other: 0 }; });
+    expect(coutHSTotal(a)).toBeLessThan(coutHSTotal(b));
   });
 });
 

@@ -202,7 +202,9 @@ function repartirCPNRAuto(a){
 function heuresDispoAnnuelles(a) {
   let remplis = (a.sick||[]).filter(function(v){ return v!==null && v!==undefined; });
   let mal = remplis.length ? remplis.reduce(function(s,v){ return s+(+v||0); },0)/remplis.length/100 : (+a.targetAbsRate||0)/100;
-  return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*CP_HEURES_JOUR);
+  // Fériés chômés (lundi-samedi, hors permanence) : heures en moins
+  let feries = (a.cal&&a.cal.length) ? a.cal.reduce(function(s,d){return s+ferieChomeJour(a,d);},0) : 0;
+  return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*CP_HEURES_JOUR - feries);
 }
 
 // Semaine à cheval sur deux mois (nov. 2026) : CP et autres absences se saisissent mois par mois, en jours, selon les jours
@@ -285,7 +287,7 @@ function partsMoisSemaine(a,w,p,hs){
     let j=jrs.filter(function(d){return d.month===m;}),k=j.length/jrs.length,t=txrDuMois(a,m);
     besoin[m]=t>0?j.reduce(function(s,d){return s+d.total/t;},0):0;
     let tx=a.sick&&a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
-    let abs=absPartMois(a,w,'cp',m)*CP_HEURES_JOUR+absPartMois(a,w,'other',m)*7+absPartMois(a,w,'otherPaid',m)*7;
+    let abs=absPartMois(a,w,'cp',m)*CP_HEURES_JOUR+absPartMois(a,w,'other',m)*7+absPartMois(a,w,'otherPaid',m)*7+ferieChomeSemaine(a,w,m);
     dispo[m]=Math.max(0,p.base*k*(1-tx/100)-abs);
     deficit[m]=Math.max(0,besoin[m]-dispo[m]);total+=deficit[m];
   });
@@ -589,6 +591,18 @@ function lissage5eSemaine(a, moisIdx){
   return nbSemPeriode(periodes[moisIdx]) === 4 ? x / 2 : 0;
 }
 
+// Jours fériés (nov. 2026) : un férié du lundi au samedi retire 7 h par ETP roulant présent ce jour-là (au prorata des heures
+// et de la part roulante) ; le dimanche ne compte pas. L'équipe de permanence reste disponible à hauteur du besoin du jour
+// (CA du férié ÷ TXR) : seules les heures au-delà sont retirées. Ces heures fériées chômées restent payées (comme un congé).
+function ferieChomeJour(a,d){
+  if(!d||d.type!=='ferie')return 0;
+  if(new Date(2027,d.month,d.day).getDay()===0)return 0;
+  let cle=cleJour(d.month,d.day);
+  let h=7*a.employees.filter(estRoulantPart).reduce(function(s,e){return empPresent(e,cle)?s+(+e.hours||0)/35*partRoulant(e):s;},0);
+  let t=txrDuMois(a,d.month),besoin=t>0?(+d.total||0)/t:0;
+  return Math.max(0,h-besoin);
+}
+function ferieChomeSemaine(a,w,m){return joursSemaine(a,w).reduce(function(s,d){return (m===undefined||d.month===m)?s+ferieChomeJour(a,d):s;},0);}
 function pres(a,w){
   let base=baseHWeek(a,w);
   // Semaine partielle de l'année (1er-3 janvier, 27-31 décembre) : base au prorata des jours
@@ -605,8 +619,9 @@ function pres(a,w){
   let otherH=(+p.other||0)*7;
   let otherPaidH=(+p.otherPaid||0)*7;
   let mal=base*rate/100;
-  let av=Math.max(0,base-cpH-mal-otherH-otherPaidH);
-  return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,m,rate,mal,av,etp:av/35};
+  let ferieH=ferieChomeSemaine(a,w);
+  let av=Math.max(0,base-cpH-mal-otherH-otherPaidH-ferieH);
+  return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,ferieH,m,rate,mal,av,etp:av/35};
 }
 
 function refAgenceSeuils(a) {
@@ -863,7 +878,7 @@ function coutRoulantSemaine(a, r, mTaux, hsForce){
   // Heures travaillées + heures supplémentaires + maintien sur arrêts + indemnité de congés payés (salaire maintenu)
   // + absences payées (formation, événements familiaux, récupération…) au taux horaire comme les congés
   let hsW = hsForce===undefined ? r.hs : hsForce;
-  let cout = (r.av*ch) + (hsW*ch*coefHSMois(a, mTaux===undefined ? m : mTaux)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch);
+  let cout = (r.av*ch) + (hsW*ch*coefHSMois(a, mTaux===undefined ? m : mTaux)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch) + ((r.ferieH||0)*ch);
   return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
 }
 
@@ -963,6 +978,7 @@ function chargesReport2028(a){
   return Math.round(ms);
 }
 
+export { ferieChomeJour, ferieChomeSemaine };
 export { partsMoisSemaine, hsDuMois, hsDesJours };
 export { partsEntieres };
 export { txrDuMois, txrModule, txrEffectif };
