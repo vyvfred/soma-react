@@ -52,6 +52,16 @@ const btnSec = { width: 'auto', margin: 0, background: 'transparent', color: 'va
 const btnPrim = { width: 'auto', margin: 0, background: 'linear-gradient(135deg,var(--violet),var(--violet2))', color: '#fff', border: 'none', padding: '7px 14px', fontSize: 12, fontWeight: 700 };
 const cell = { padding: '4px 6px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 
+// Semaine à cheval : valeur de la part du mois, total de la semaine en petit
+function PartSemaine({ mois, semaine }) {
+  return (
+    <span title={'Part de ce mois ; semaine entière : ' + Math.round(semaine) + ' h'}>
+      {Math.round(mois)}
+      <div style={{ fontSize: 9, fontWeight: 400, color: 'var(--ink65)', whiteSpace: 'nowrap' }}>sem. {Math.round(semaine)}</div>
+    </span>
+  );
+}
+
 // ── Enveloppes de la règle 60 / 20 / 20 : cible, déjà figé sur les mois validés, posé par la répartition ──
 function EnveloppesCP({ env }) {
   return (
@@ -195,15 +205,15 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
           <tbody>
             {sem.map((s) => (
               <tr key={s.week} style={{ textAlign: 'right' }}>
-                <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b>{s.aCheval ? <div data-testid={'a-cheval-' + s.week} style={{ fontSize: 10, color: 'var(--ink65)' }} title="Semaine à cheval sur deux mois : saisissez les jours de ce mois, ils s'additionnent à ceux de l'autre mois">à cheval · sem. {fmt1(+((a.presence[s.week] || {}).cp) || 0)} J CP</div> : null}</td>
+                <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b>{s.aCheval ? <div data-testid={'a-cheval-' + s.week} style={{ fontSize: 10, color: 'var(--ink65)' }} title="Semaine à cheval sur deux mois : saisissez les jours de ce mois, ils s'additionnent à ceux de l'autre mois. Les HS sont calculées sur la semaine entière et attribuées au mois où le besoin dépasse l'équipe ; disponible, besoin et HS affichés sont ceux de ce mois (semaine entière en petit).">à cheval · sem. {fmt1(+((a.presence[s.week] || {}).cp) || 0)} J CP</div> : null}</td>
                 <td style={cell}>{Math.round(s.base)}</td>
                 <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="1" value={s.parts.cp || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).cp) || 0) + ' J' : undefined} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={s.parts.otherPaid || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).otherPaid) || 0) + ' J' : 'Absences payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.other') ? '1' : undefined} min="0" step="0.5" value={s.parts.other || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).other) || 0) + ' J' : 'Absences non payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}>{Math.round(s.mal)}</td>
-                <td style={cell}>{Math.round(s.av)}</td>
-                <td style={cell}>{Math.round(s.besoin)}</td>
-                <td style={{ ...cell, fontWeight: 700, color: s.hs > 0.5 ? 'var(--orange, #c45300)' : 'var(--ink65)' }}>{Math.round(s.hs)}</td>
+                <td style={cell}>{s.aCheval ? <PartSemaine mois={s.dispoMois} semaine={s.av} /> : Math.round(s.av)}</td>
+                <td style={cell}>{s.aCheval ? <PartSemaine mois={s.besoinMois} semaine={s.besoin} /> : Math.round(s.besoin)}</td>
+                <td data-testid={'hs-' + s.week} style={{ ...cell, fontWeight: 700, color: (s.aCheval ? s.hsMois : s.hs) > 0.5 ? 'var(--orange, #c45300)' : 'var(--ink65)' }}>{s.aCheval ? <PartSemaine mois={s.hsMois} semaine={s.hs} /> : Math.round(s.hs)}</td>
                 <td style={cell}>{s.hsParPers != null ? <b>{(+s.hsParPers).toFixed(1)}</b> : '—'}</td>
                 <td style={{ ...cell, color: COUL_IMPACT[s.impactNiveau], fontWeight: 600 }}>{s.impact > 0 ? '+' : ''}{euro(s.impact)}</td>
                 <td style={{ ...cell, textAlign: 'left', color: 'var(--ink65)' }}>{s.charge}</td>

@@ -1,4 +1,4 @@
-import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR } from './calculations.js';
+import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR, hsDesJours } from './calculations.js';
 // Détail du calcul de la masse salariale d'un mois de paie (écran Périodes de paie, nov. 2026).
 // Chaque ligne donne son montant et sa formule avec les chiffres ; la somme des lignes est égale à payrollPayMonth(a, m).
 const LIGNES_DETAIL_MS = [
@@ -26,7 +26,8 @@ function detailMSMois(a,m){
     let ratio=j.filter(function(d){let dt=new Date(2027,d.month,d.day);return dt>=debut&&dt<=fin;}).length/j.length;
     if(ratio<=0)return;
     let mm=mainMonth(a,r.week),ch=chMois(a,mm),k=(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week))*ratio;
-    hsH+=(r.hs||0)*ratio;hsE+=(r.hs||0)*ch*coefHSMois(a,mm)*k;
+    let hsP=hsDesJours(a,r,function(d){let dt=new Date(2027,d.month,d.day);return dt>=debut&&dt<=fin;}); // semaine à cheval : HS selon leur mois
+    hsH+=hsP;hsE+=hsP*ch*coefHSMois(a,mm)*k/ratio;
     malH+=(r.mal||0)*(1-rm)*ratio;malE+=(r.mal||0)*ch*(1-rm)*k;
     absH+=(r.otherH||0)*ratio;absE+=(r.otherH||0)*ch*k;
     let hi=a.hsImproductif&&a.hsImproductif[r.week]?+a.hsImproductif[r.week]:0;

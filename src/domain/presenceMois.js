@@ -3,7 +3,7 @@
 // deverrouillerMois, resetCP, renderIndemnites, renderHSImproductif.
 import {
   M, hsRows, needWeeks, monthCA, mainMonth, pres, hsParPersonne, impactCPSemaine, refAgenceSeuils,
-  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois
+  chMois, coefHSMois, coefHSMoyen, payrollMonth, cpGeneres, coutHoraireImproductif, tauxAbsMois, ratioMaintien, absPartMois, moisDeSemaine, partSemaineMois, hsDuMois
 } from './calculations.js';
 import { repartirCPAuto, ajusterCPMinimal, cpParMois, bilanRecalculCP, cpProposeMois } from './repartitionCP.js';
 import { coutHSTotal } from './calculations.js';
@@ -22,7 +22,7 @@ export function etatMois(a, m, rows = hsRows(a)) {
   const sem = semainesDe(a, rows, m);
   const jours = a.cal.filter((d) => d.month === m);
   // Semaine à cheval sur deux mois : HS et capacité comptées au prorata des jours du mois (pas en double)
-  const hsM = sem.reduce((s, r) => s + (r.hs || 0) * partSemaineMois(a, r.week, m), 0);
+  const hsM = sem.reduce((s, r) => s + hsDuMois(a, r, m), 0); // semaine à cheval : HS du mois là où est le déficit
   const baseM = sem.reduce((s, r) => s + pres(a, r.week).base * partSemaineMois(a, r.week, m), 0);
   const txHsM = baseM > 0 ? hsM / baseM : 0;
   const tensions = sem.filter((r) => r.t === 'critique').length;
@@ -61,6 +61,8 @@ export function semainesMois(a, m, rows = hsRows(a)) {
       aCheval: moisDeSemaine(a, hr.week).length > 1,
       parts: { cp: absPartMois(a, hr.week, 'cp', m), otherPaid: absPartMois(a, hr.week, 'otherPaid', m), other: absPartMois(a, hr.week, 'other', m) }, rate: p.rate, mal: p.mal, other: p.other, av: p.av,
       besoin: hr.hours, gap: hr.gap, hs: hr.hs, hsParPers: hp.hs >= 0.5 ? hp.ratio : null,
+      // Semaine à cheval : besoin et HS de la part de ce mois (la semaine entière reste affichée en petit)
+      besoinMois: hr.besoinMois ? +hr.besoinMois[m] || 0 : hr.hours, dispoMois: hr.dispoMois ? +hr.dispoMois[m] || 0 : p.av, hsMois: hsDuMois(a, hr, m),
       charge, impact, impactNiveau: abs <= seuils.seuilFaible ? 'faible' : abs <= seuils.seuilMoyen ? 'moyen' : 'fort'
     };
   });
@@ -69,7 +71,7 @@ export function semainesMois(a, m, rows = hsRows(a)) {
 // Bandeau « Impact de ce mois »
 export function impactMois(a, m, rows = hsRows(a)) {
   const sem = semainesDe(a, rows, m);
-  const hsM = sem.reduce((s, r) => s + (r.hs || 0) * partSemaineMois(a, r.week, m), 0);
+  const hsM = sem.reduce((s, r) => s + hsDuMois(a, r, m), 0); // semaine à cheval : HS du mois là où est le déficit
   const caMois = monthCA(a, m);
   const msMois = payrollMonth(a, m);
   return {

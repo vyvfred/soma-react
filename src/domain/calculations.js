@@ -108,7 +108,7 @@ function coefHSMoyen(a){
   let totHS = 0, totCoef = 0;
   let hsR = hsRows(a);
   for(let m=0;m<12;m++){
-    let hsM = hsR.reduce(function(s,r){return s+(r.hs||0)*partSemaineMois(a,r.week,m);},0); // semaine à cheval : HS réparties au prorata des jours
+    let hsM = hsR.reduce(function(s,r){return s+hsDuMois(a,r,m);},0); // semaine à cheval : HS attribuées là où est le déficit
     if(hsM>0){ totHS += hsM; totCoef += hsM * coefHSMois(a, m); }
   }
   if(totHS>0) return totCoef/totHS;
@@ -122,7 +122,7 @@ function coutHSTotal(a){
   let ch = (+a.costHour||0);
   let total = 0;
   for(let m=0;m<12;m++){
-    let hsM = hsR.reduce(function(s,r){return s+(r.hs||0)*partSemaineMois(a,r.week,m);},0); // semaine à cheval : HS réparties au prorata des jours
+    let hsM = hsR.reduce(function(s,r){return s+hsDuMois(a,r,m);},0); // semaine à cheval : HS attribuées là où est le déficit
     total += hsM * chMois(a, m) * coefHSMois(a, m);
   }
   return total;
@@ -270,9 +270,32 @@ function hsRowsCalc(a){
   return needWeeks(a).map(n=>{
     let p=pres(a,n.week),gap=n.hours-p.av,hs=Math.max(0,gap),under=Math.max(0,-gap);
     let t=hs>seuils.seuilTensionCrit?'critique':hs>seuils.seuiltensionWarn?'warning':under>seuils.seuiltensionWarn?'sous-charge':'ok';
-    return {...n,...p,gap,hs,under,t};
+    return {...n,...p,gap,hs,under,t,...partsMoisSemaine(a,n.week,p,hs)};
   });
 }
+// Semaine à cheval sur deux mois (nov. 2026) : les HS restent calculées sur la semaine entière (35 h hebdomadaires),
+// mais sont attribuées aux mois là où le besoin dépasse l'équipe. Chaque morceau de semaine a son besoin (CA de ses jours
+// ÷ TXR de son mois) et son équipe disponible (base au prorata de ses jours, maladie de son mois, congés et absences
+// saisis sur la part de ce mois) ; les HS vont aux mois au prorata de leur déficit (à défaut, au prorata des jours).
+function partsMoisSemaine(a,w,p,hs){
+  let jrs=joursSemaine(a,w),ms=moisDeSemaine(a,w);
+  if(ms.length<2){let m=ms.length?ms[0]:p.m,o={};o[m]=hs;return {hsMois:o,besoinMois:null,dispoMois:null};}
+  let besoin={},dispo={},deficit={},total=0;
+  ms.forEach(function(m){
+    let j=jrs.filter(function(d){return d.month===m;}),k=j.length/jrs.length,t=txrDuMois(a,m);
+    besoin[m]=t>0?j.reduce(function(s,d){return s+d.total/t;},0):0;
+    let tx=a.sick&&a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
+    let abs=absPartMois(a,w,'cp',m)*CP_HEURES_JOUR+absPartMois(a,w,'other',m)*7+absPartMois(a,w,'otherPaid',m)*7;
+    dispo[m]=Math.max(0,p.base*k*(1-tx/100)-abs);
+    deficit[m]=Math.max(0,besoin[m]-dispo[m]);total+=deficit[m];
+  });
+  let o={};ms.forEach(function(m){o[m]=hs>0?(total>0?hs*deficit[m]/total:hs*partSemaineMois(a,w,m)):0;});
+  return {hsMois:o,besoinMois:besoin,dispoMois:dispo};
+}
+// HS d'une semaine attribuées au mois m
+function hsDuMois(a,r,m){return r&&r.hsMois?(+r.hsMois[m]||0):(r?(r.hs||0)*partSemaineMois(a,r.week,m):0);}
+// HS d'une semaine attribuées à une partie de ses jours (période de paie) : part de chaque mois au prorata de ses jours retenus
+function hsDesJours(a,r,garder){let jrs=joursSemaine(a,r.week);if(!jrs.length)return 0;let t=0;moisDeSemaine(a,r.week).forEach(function(m){let j=jrs.filter(function(d){return d.month===m;});if(!j.length)return;t+=hsDuMois(a,r,m)*j.filter(garder).length/j.length;});return t;}
 
 function impactCPSemaine(a, week, deltaCPjours) {
   // Impact financier d'ajouter/retirer deltaCPjours sur cette semaine
@@ -361,8 +384,9 @@ function payrollMonthCivil(a,m){
     let daysMonth=joursSemaine(a,r.week).filter(d=>d.month===m).length;
     if(!daysMonth)return s;
     let ratio=daysMonth/daysWeek;
-    let weeklyCost=coutRoulantSemaine(a,r,m);
-    return s+weeklyCost*ratio;
+    // Semaine à cheval : coût hors HS au prorata des jours, HS selon leur mois (cf. partsMoisSemaine)
+    let horsHS=coutRoulantSemaine(a,r,m,0);
+    return s+horsHS*ratio+hsDuMois(a,r,m)*chMois(a,m)*coefHSMois(a,m)*(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week));
   },0);
   // MS improductifs : ligne globale CG (coût mensuel, absences au ratio de maintien).
   // À défaut, ancien calcul : coût journalier x jours travaillés.
@@ -523,7 +547,8 @@ function coutHSPeriodePaie(a, moisIdx){
     let dedans = jours.filter(function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; }).length;
     if(!dedans) return;
     let ratio = dedans / jours.length, m = mainMonth(a, r.week);
-    total += r.hs * chMois(a, m) * coefHSMois(a, m) * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week)) * ratio;
+    let hsP = hsDesJours(a, r, function(d){ let dt = new Date(2027, d.month, d.day); return dt >= debut && dt <= fin; });
+    total += hsP * chMois(a, m) * coefHSMois(a, m) * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
     let hsImp = a.hsImproductif && a.hsImproductif[r.week] ? +a.hsImproductif[r.week] : 0;
     if(hsImp) total += hsImp * coutHoraireImproductif(a) * coefHSMois(a, m) * ratio;
   });
@@ -832,12 +857,13 @@ function partCDDSemaine(a, week){
   return tot>0 ? cdd/tot : 0;
 }
 
-function coutRoulantSemaine(a, r, mTaux){
+function coutRoulantSemaine(a, r, mTaux, hsForce){
   let m = mainMonth(a, r.week);
   let ch = chMois(a, mTaux===undefined ? m : mTaux);
   // Heures travaillées + heures supplémentaires + maintien sur arrêts + indemnité de congés payés (salaire maintenu)
   // + absences payées (formation, événements familiaux, récupération…) au taux horaire comme les congés
-  let cout = (r.av*ch) + (r.hs*ch*coefHSMois(a, mTaux===undefined ? m : mTaux)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch);
+  let hsW = hsForce===undefined ? r.hs : hsForce;
+  let cout = (r.av*ch) + (hsW*ch*coefHSMois(a, mTaux===undefined ? m : mTaux)) + ((r.mal||0)*ch*ratioMaintien(a)) + ((r.cpH||0)*ch) + ((r.otherPaidH||0)*ch);
   return cout * (1 + TAUX_PRECARITE_CDD*partCDDSemaine(a, r.week));
 }
 
@@ -937,6 +963,7 @@ function chargesReport2028(a){
   return Math.round(ms);
 }
 
+export { partsMoisSemaine, hsDuMois, hsDesJours };
 export { partsEntieres };
 export { txrDuMois, txrModule, txrEffectif };
 export {

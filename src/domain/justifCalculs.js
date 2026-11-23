@@ -1,4 +1,4 @@
-import { M, chMois, CP_HEURES_JOUR, hsRows, pres, absPartMois, partSemaineMois, cpNRAcquisMois, cpAcquisMois, cpPrisMois, variationStockCPNRMois } from './calculations.js';
+import { M, chMois, CP_HEURES_JOUR, hsRows, pres, absPartMois, partSemaineMois, hsDuMois, cpNRAcquisMois, cpAcquisMois, cpPrisMois, variationStockCPNRMois } from './calculations.js';
 import { detailMSMois, feuillesDetailMS } from './detailMS.js';
 // Justification des calculs (écran « Détail des calculs », contrôleur de gestion et direction financière, nov. 2026).
 // Tous les montants viennent des mêmes fonctions que le reste de l'application : rien n'est recalculé autrement.
@@ -26,7 +26,8 @@ function tableauHeures(a){
     rows.forEach(function(r){
       let k=partSemaineMois(a,r.week,m);if(!k)return;
       let p=pres(a,r.week);
-      t.besoin+=(r.hours||0)*k;t.base+=p.base*k;t.maladie+=p.mal*k;t.dispo+=p.av*k;t.hs+=(r.hs||0)*k;
+      // Semaine à cheval : besoin, disponible et HS de la part du mois (cf. partsMoisSemaine)
+      t.besoin+=r.besoinMois?(+r.besoinMois[m]||0):(r.hours||0)*k;t.base+=p.base*k;t.maladie+=p.mal*k;t.dispo+=r.dispoMois?(+r.dispoMois[m]||0):p.av*k;t.hs+=hsDuMois(a,r,m);
       t.cp+=absPartMois(a,r.week,'cp',m)*CP_HEURES_JOUR;
       t.absPayees+=absPartMois(a,r.week,'otherPaid',m)*7;t.absNonPayees+=absPartMois(a,r.week,'other',m)*7;
     });
