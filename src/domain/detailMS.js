@@ -1,4 +1,4 @@
-import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, coefHSSemaine, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR, hsDesJours } from './calculations.js';
+import { buildPeriodesPaie, hsRows, joursSemaine, mainMonth, chMois, coefHSMois, coefHSSemaine, ratioMaintien, partCDDSemaine, TAUX_PRECARITE_CDD, coutHoraireImproductif, msNRMensuel, msNRMois, partRoulant, estRoulantPart, isCDD, empPresent, cleJour, msRoulantBaseMois, couvertParLigneNR, varDec2026Total, lissage5eSemaine, payrollPayMonth, nbSemPeriode, cpAcquisMois, cpPrisMois, variationStockCPMois, CP_HEURES_JOUR, cpNRAcquisMois, cpNRPrisMois, coutJourCPNR, variationStockCPNRMois, etpNR, hsDesJours, dateLocale } from './calculations.js';
 // Détail du calcul de la masse salariale d'un mois de paie (écran Périodes de paie, nov. 2026).
 // Chaque ligne donne son montant et sa formule avec les chiffres ; la somme des lignes est égale à payrollPayMonth(a, m).
 const LIGNES_DETAIL_MS = [
@@ -19,7 +19,7 @@ function fmtH(v){return (Math.round(v*10)/10).toLocaleString('fr-FR')+' h';}
 function detailMSMois(a,m){
   let periodes=a.periodesPaie||buildPeriodesPaie(),p=periodes[m];
   if(!p)return {mois:m,lignes:[],total:0};
-  let debut=new Date(p.debut),fin=new Date(p.fin),rm=ratioMaintien(a);
+  let debut=dateLocale(p.debut),fin=dateLocale(p.fin),rm=ratioMaintien(a);
   let hsH=0,hsE=0,malH=0,malE=0,absH=0,absE=0,hiH=0,hiE=0,repas=0;
   hsRows(a).forEach(function(r){
     let j=joursSemaine(a,r.week);if(!j.length)return;

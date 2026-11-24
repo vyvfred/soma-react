@@ -78,6 +78,9 @@ function partSemaineMois(a,w,m){let j=joursSemaine(a,w);if(!j.length)return 0;re
 
 function between(d,s,e){return d>=s&&d<=e}
 
+// Date « AAAA-MM-JJ » lue en heure locale (new Date('2027-03-08') est minuit UTC, soit la veille au soir
+// pour une date construite localement : en France, le premier jour de chaque période de paie était perdu)
+function dateLocale(iso){ if(iso instanceof Date) return iso; let m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); return m ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(iso); }
 function buildPeriodesPaie() {
   // Règle : 5 semaines en début de trimestre (jan/avr/juil/oct), 4 semaines les autres mois
   // Calcul basé sur la même logique que le calendrier 2026 fourni
@@ -445,21 +448,57 @@ function payrollMonthCivil(a,m){
     msHSImproductif += hs * coutHoraireImproductif(a) * coefHSMois(a,m) * ratio;
   });
   // Indemnités repas (roulants + non-roulants) : semaines rattachées au mois, pro-rata jours
-  let repasMois = 0;
-  let weeksRepas = a.cal.filter(d=>d.month===m).map(d=>d.week).filter((v,i,arr)=>arr.indexOf(v)===i);
-  weeksRepas.forEach(function(w){
-    let daysWeek=joursSemaine(a,w).length||7;
-    let daysMonth=joursSemaine(a,w).filter(d=>d.month===m).length;
-    let ratio=daysMonth/daysWeek;
-    let rR = a.repasRoulant&&a.repasRoulant[w] ? +a.repasRoulant[w] : 0;
-    let rNR = a.repasNonRoulant&&a.repasNonRoulant[w] ? +a.repasNonRoulant[w] : 0;
-    let iR = a.idjfRoulant&&a.idjfRoulant[w] ? +a.idjfRoulant[w] : 0;
-    let iNR = a.idjfNonRoulant&&a.idjfNonRoulant[w] ? +a.idjfNonRoulant[w] : 0;
-    repasMois += (rR + rNR + iR + iNR) * ratio;
-  });
+  let repasMois = indemnitesMoisCivil(a, m);
   // Quote-part DR : incluse dans la ligne globale non-roulante quand elle est saisie
   let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual||0)*(+a.drPct||0)/100/12;
   return msRoulant+msImproductif+msHSImproductif+repasMois+msDR+variationStockCPMois(a,m)+variationStockCPNRMois(a,m); // + variation du stock de congés payés
+}
+
+// Indemnités (repas, dimanche et jour férié, roulants et non-roulants) saisies pour une semaine
+function indemnitesSemaine(a, w){
+  let v=function(o){ return o&&o[w] ? +o[w] : 0; };
+  return v(a.repasRoulant)+v(a.repasNonRoulant)+v(a.idjfRoulant)+v(a.idjfNonRoulant);
+}
+// Indemnités d'un mois civil : semaines du mois au prorata de leurs jours
+function indemnitesMoisCivil(a, m){
+  let t=0;
+  a.cal.filter(d=>d.month===m).map(d=>d.week).filter((v,i,arr)=>arr.indexOf(v)===i).forEach(function(w){
+    let j=joursSemaine(a,w),n=j.length||7,dm=j.filter(d=>d.month===m).length;
+    t+=indemnitesSemaine(a,w)*dm/n;
+  });
+  return t;
+}
+// Indemnités payées sur une période de paie (du debut au fin inclus) : semaines au prorata de leurs jours dans la période
+function indemnitesPeriode(a, debut, fin){
+  let t=0;
+  a.cal.map(d=>d.week).filter((v,i,arr)=>arr.indexOf(v)===i).forEach(function(w){
+    let j=joursSemaine(a,w);if(!j.length)return;
+    let k=j.filter(function(d){ let dt=new Date(2027,d.month,d.day); return dt>=debut&&dt<=fin; }).length/j.length;
+    if(k>0) t+=indemnitesSemaine(a,w)*k;
+  });
+  return t;
+}
+// Indemnités comprises dans la ligne Charges de personnel du mois m (même règle que payrollMonth)
+function indemnitesMS(a, m){
+  if(estStructure(a)) return 0;
+  if(a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length){
+    let p=a.periodesPaie[m]; return p ? indemnitesPeriode(a, dateLocale(p.debut), dateLocale(p.fin)) : 0;
+  }
+  return a.cal ? indemnitesMoisCivil(a, m) : 0;
+}
+// Paie(s) sur laquelle(lesquelles) part une semaine : [{mois: 0..11 | 'jan2028', part}] (part des jours de la semaine)
+function paiesSemaine(a, w){
+  let j=joursSemaine(a,w);if(!j.length)return [];
+  let periodes=(a.periodesPaie&&a.periodesPaie.length&&a.costHour)?a.periodesPaie:null,o={};
+  j.forEach(function(d){
+    let dt=new Date(2027,d.month,d.day),cle;
+    if(periodes){
+      let i=periodes.findIndex(function(p){ return dt>=dateLocale(p.debut)&&dt<=dateLocale(p.fin); });
+      cle=i>=0?i:(dt>dateLocale(periodes[periodes.length-1].fin)?'jan2028':'dec2026');
+    } else cle=d.month;
+    o[cle]=(o[cle]||0)+1/j.length;
+  });
+  return Object.keys(o).map(function(k){ return {mois: isNaN(+k)?k:+k, part:o[k]}; });
 }
 
 function payrollPayMonth(a, moisIdx) {
@@ -468,8 +507,8 @@ function payrollPayMonth(a, moisIdx) {
   let periode = periodes[moisIdx];
   if (!periode) return 0;
 
-  let debut = new Date(periode.debut);
-  let fin = new Date(periode.fin);
+  let debut = dateLocale(periode.debut);
+  let fin = dateLocale(periode.fin);
 
   // Salaires mensualisés (nov. 2026) : le salaire de base des roulants est celui du mois civil, le même chaque mois ;
   // seules les variables suivent la période de paie de 4 ou 5 semaines.
@@ -532,23 +571,7 @@ function payrollPayMonth(a, moisIdx) {
   }
 
   // Indemnités repas sur la période de paie
-  let repasPeriode = 0;
-  let allWeeks = a.cal.map(d=>d.week).filter((v,i,arr)=>arr.indexOf(v)===i);
-  allWeeks.forEach(function(w){
-    let daysOfWeek = joursSemaine(a, w);
-    if(!daysOfWeek.length) return;
-    let daysInPeriode = daysOfWeek.filter(function(d){
-      let dt=new Date(2027,d.month,d.day);
-      return dt>=debut && dt<=fin;
-    }).length;
-    let ratio = daysInPeriode/daysOfWeek.length;
-    if(ratio<=0) return;
-    let rR = a.repasRoulant&&a.repasRoulant[w] ? +a.repasRoulant[w] : 0;
-    let rNR = a.repasNonRoulant&&a.repasNonRoulant[w] ? +a.repasNonRoulant[w] : 0;
-    let iR = a.idjfRoulant&&a.idjfRoulant[w] ? +a.idjfRoulant[w] : 0;
-    let iNR = a.idjfNonRoulant&&a.idjfNonRoulant[w] ? +a.idjfNonRoulant[w] : 0;
-    repasPeriode += (rR + rNR + iR + iNR) * ratio;
-  });
+  let repasPeriode = indemnitesPeriode(a, debut, fin);
 
   // DR pro-rata
   let msDR = msNRMensuel(a)!==null ? 0 : (+a.drCostAnnual || 0) * (+a.drPct || 0) / 100 / 12; // mensualisé
@@ -566,14 +589,14 @@ function payrollPayMonth(a, moisIdx) {
 // Le total du trimestre est inchangé ; chaque mois porte 4 semaines 1/3 de variables.
 function nbSemPeriode(p){
   if(!p || !p.debut || !p.fin) return 0;
-  return Math.round(((new Date(p.fin) - new Date(p.debut)) / 86400000 + 1) / 7);
+  return Math.round(((dateLocale(p.fin) - dateLocale(p.debut)) / 86400000 + 1) / 7);
 }
 // Coût des heures supplémentaires rattachées à un mois de paie (roulants + improductifs ;
 // pour janvier, les HS de décembre 2026 saisies dans « Variables déc. 2026 », charges comprises)
 function coutHSPeriodePaie(a, moisIdx){
   let periodes = a.periodesPaie || buildPeriodesPaie();
   let p = periodes[moisIdx]; if(!p) return 0;
-  let debut = new Date(p.debut), fin = new Date(p.fin);
+  let debut = dateLocale(p.debut), fin = dateLocale(p.fin);
   let total = 0;
   hsRows(a).forEach(function(r){
     let jours = joursSemaine(a, r.week);
@@ -601,7 +624,7 @@ function baseDec2026(a){
   let periodes = a.periodesPaie || buildPeriodesPaie();
   let p = periodes[0];
   if(!p || !p.debut || p.debut >= '2027-01-01') return 0;
-  let jours = Math.round((new Date('2027-01-01') - new Date(p.debut)) / 86400000);
+  let jours = Math.round((new Date(2027,0,1) - dateLocale(p.debut)) / 86400000);
   if(jours <= 0) return 0;
   let h = 0, hCDD = 0;
   (a.employees || []).forEach(function(e){
@@ -1028,5 +1051,5 @@ export { txrDuMois, txrModule, txrEffectif };
 export {
   cleJour,
   chargesReport2028, nbSemPeriode, coutHSPeriodePaie, lissage5eSemaine, baseDec2026, CP_JOURS_MOIS, CP_HEURES_JOUR, cpAcquisMois, cpPrisMois, variationStockCPMois, caFunMois, caFunJour, caFunAnnuel, msRoulantBaseMois, couvertParLigneNR, lignesStructure, totalLignesMois, totalLigneAn, ligneStructureVide, etpNR, coutJourCPNR, cpNRPrisMois, variationStockCPNRMois, variablesRoulantSemaine, CP_ACQUIS_MALADIE, moisDeSemaine, absPartMois, setAbsPartMois, partSemaineMois, heuresDispoAnnuelles, STRUCTURES, LIB_STRUCTURES, LIGNES_SIEGE, LIGNES_QUOTE_PART, estDetailSIG, libLigneSIG, partRoulant, estRoulantPart, estStructure, estSiege, vueExploitation, resultatAffiche, lignesSIG, caStructure,
-  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, coefHSMois, coefHSSemaine, part50Semaine, partHS50Annuelle, hs50Auto, HS25_PAR_ETP, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
+  TAUX_PRECARITE_CDD, VAR_DEC_RUBRIQUES, salariesNR, cpNRAcquisMois, cpNRAcquis, cpNRSaisis, cpNRVide, repartirCPNRAuto, avecCacheMoteur, joursSemaine, SEUIL_MS_CA, LIGNES_CHARGES_REX, modeChargeREX, valeursChargeREX, versSaisieREX, setChargeREX, chargesREXRemplies, fmtCoutH, costHourJuin, chMois, ratioMaintien, tauxAbsMois, isCDD, partCDDSemaine, coutRoulantSemaine, msNRMensuel, msNRMois, heuresRoulantesNR, transfertRoulantNR, varDecDetail, varDecCalc, varDec2026Total, chargesCGSaisies, payrollMonth, payrollMonthCivil, payrollPayMonth, needWeeks, manual, monthCA, pres, weekRefDate, T, M, amount, ann, hsTot, hsParPersonne, qualifierSemaine, coutDuChoixREX, memoriserRepartitionOptimale, chargesSummary, auditAlerts, isEditableREX, agency, annualCA, annualCAWeight, baseH, baseHWeek, between, buildPeriodesPaie, dateLocale, indemnitesMS, paiesSemaine, indemnitesSemaine, coefHSMois, coefHSSemaine, part50Semaine, partHS50Annuelle, hs50Auto, HS25_PAR_ETP, coefHSMoyen, coutHSTotal, coutHoraireImproductif, cpGeneres, cpPlanifies, empPresent, genCal, hsRows, impactCPSemaine, isRoulant, isVac, isoWeek, mainMonth, refAgenceSeuils, refAgenceSeuilsBase, refs, sig, tauxHS50Mois, typeDay, weeks,
 };

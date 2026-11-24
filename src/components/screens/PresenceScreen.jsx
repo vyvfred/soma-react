@@ -3,7 +3,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { setAbsPartMois } from '../../domain/calculations.js';
-import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
+import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, paiesSemaine, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto, ajusterCPMinimal } from '../../domain/repartitionCP.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
@@ -19,6 +19,12 @@ import { toast } from '../Toast.jsx';
 import ChargeCurve from './ChargeCurve.jsx';
 import { Pourquoi } from '../Vision.jsx';
 
+// « Payé en » d'une semaine : mois de paie (les deux si elle est à cheval sur deux périodes), paie 2028 signalée
+const libPaies = (ps) => ps.map((p) => p.mois === 'jan2028'
+  ? <span key="j28" style={{ color: 'var(--orange, #c45300)' }} title="Semaine payée sur la paie de janvier 2028 : sans effet sur le budget 2027">paie janv. 2028</span>
+  : p.mois === 'dec2026' ? <span key="d26">variables déc. 2026</span>
+    : <span key={p.mois}>{M[p.mois]}{ps.length > 1 ? ' (' + Math.round(p.part * 7) + ' j)' : ''}</span>)
+  .reduce((acc, el, i) => (i ? [...acc, ' + ', el] : [el]), []);
 const M = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 const MOIS_LONGS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -464,7 +470,7 @@ export default function PresenceScreen() {
 
       {/* ── Indemnités ── */}
       <Repli titre="Indemnités (repas et dimanche/jour férié)" testid="repli-indemnites" open={false}>
-        <p className="hint" style={{ margin: '6px 0 12px', fontSize: 12 }}>Saisissez pour chaque semaine le montant total des indemnités, en euros, séparément pour le personnel roulant et non-roulant. Ces montants sont intégrés à la masse salariale du prévisionnel.</p>
+        <p className="hint" style={{ margin: '6px 0 12px', fontSize: 12 }}>Saisissez pour chaque semaine le montant total des indemnités, en euros, séparément pour le personnel roulant et non-roulant. Ces montants sont intégrés à la masse salariale du prévisionnel (ligne « Charges de personnel », détail « dont indemnités »), <b>sur le mois de paie</b> indiqué dans la dernière colonne : une semaine de fin de mois est payée le mois suivant, et les semaines après le 5 décembre sur la paie de janvier 2028.</p>
         <div data-testid="indemnites-totaux" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
           <Kpi label="Repas" value={euro(ind.tot.repas)} note={'roulant ' + euro(ind.tot.rR) + ' · non-roulant ' + euro(ind.tot.rNR)} />
           <Kpi label="Dimanche & jour férié" value={euro(ind.tot.idjf)} note={'roulant ' + euro(ind.tot.iR) + ' · non-roulant ' + euro(ind.tot.iNR)} />
@@ -480,6 +486,7 @@ export default function PresenceScreen() {
                 <th style={cell}>IDJF roulant (€)</th>
                 <th style={cell}>IDJF non-roulant (€)</th>
                 <th style={{ ...cell, textAlign: 'right' }}>Total</th>
+                <th style={{ ...cell, textAlign: 'left' }} title="Mois de paie sur lequel la semaine est payée (périodes de paie)">Payé en</th>
               </tr>
             </thead>
             <tbody>
@@ -490,6 +497,7 @@ export default function PresenceScreen() {
                     <td key={k} style={cell}><input data-testid={k + '-' + l.week} data-saisie-dr={estSaisieDR(a, k + '.' + l.week) ? '1' : undefined} type="number" min="0" value={v || ''} placeholder="0" disabled={!editable} onChange={(e) => setMontant(k, l.week, e.target.value)} style={{ width: 80 }} /></td>
                   ))}
                   <td style={{ ...cell, textAlign: 'right', fontWeight: l.total ? 700 : 400 }}>{l.total ? euro(l.total) : '—'}</td>
+                  <td data-testid={'paye-en-' + l.week} style={{ ...cell, textAlign: 'left', whiteSpace: 'nowrap' }}>{libPaies(paiesSemaine(a, l.week))}</td>
                 </tr>
               ))}
             </tbody>
@@ -497,6 +505,7 @@ export default function PresenceScreen() {
               <tr style={{ fontWeight: 700 }}>
                 <td style={cell}>Total</td><td style={cell}>{euro(ind.tot.rR)}</td><td style={cell}>{euro(ind.tot.rNR)}</td><td style={cell}>{euro(ind.tot.iR)}</td><td style={cell}>{euro(ind.tot.iNR)}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{euro(ind.tot.total)}</td>
+                <td style={cell} />
               </tr>
             </tfoot>
           </table>

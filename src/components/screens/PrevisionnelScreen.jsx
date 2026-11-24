@@ -1,7 +1,7 @@
 import { annuel, montant, resultatMemo } from '../../domain/memoSIG.js';
 import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
-import { isRoulant, M, lignesSIG } from '../../domain/calculations.js';
+import { isRoulant, M, lignesSIG, indemnitesMS } from '../../domain/calculations.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { euro, pct } from '../../domain/format.js';
 
@@ -51,6 +51,8 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   if (!a) return <div className="card"><h2>Prévisionnel — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const ca = annuel(a, "Chiffre d'affaires");
+  const indMois = M.map((_, m) => indemnitesMS(a, m));
+  const indAn = indMois.reduce((x, v) => x + v, 0);
   const res = resultatMemo(a, role);
   const net = vueCG ? annuel(a, 'RESULTAT NET') : res.val;
   const ms = annuel(a, 'Charges de personnel');
@@ -104,11 +106,11 @@ export default function PrevisionnelScreen({ vueCG = false }) {
             </tr>
           </thead>
           <tbody>
-            {lignesSIG(a, role).map((r) => {
+            {lignesSIG(a, role).flatMap((r) => {
               const total = annuel(a, r.label);
               const pctCA = ca ? pct((total / ca) * 100) : '—';
               const zero = (v) => (!v || v === 0 ? ' zeroVal' : '');
-              return (
+              return [(
                 <tr key={r.label} className={r.type === 'subtotal' ? 'subtotal' : ''}>
                   {estDetailSIG(r.label) ? <td style={{ paddingLeft: 18, fontStyle: 'italic' }}>{libLigneSIG(r.label)}</td> : <td><b>{r.label}</b></td>}
                   {M.map((_, m) => {
@@ -118,7 +120,14 @@ export default function PrevisionnelScreen({ vueCG = false }) {
                   <td className={'num locked' + zero(total)}><b>{euro(total)}</b></td>
                   <td className="num locked">{pctCA}</td>
                 </tr>
-              );
+              )].concat(r.label === 'Charges de personnel' && indAn ? [(
+                <tr key="dont-indemnites" data-testid="prev-dont-indemnites">
+                  <td style={{ paddingLeft: 18, fontStyle: 'italic' }} title="Indemnités repas et dimanche/jour férié saisies dans Présence, sur leur mois de paie">dont indemnités (repas, IDJF)</td>
+                  {indMois.map((v, m) => <td key={m} className={'num locked' + zero(v)} style={{ fontStyle: 'italic' }}>{euro(v)}</td>)}
+                  <td className={'num locked' + zero(indAn)} style={{ fontStyle: 'italic' }}>{euro(indAn)}</td>
+                  <td className="num locked">{ca ? pct((indAn / ca) * 100) : '—'}</td>
+                </tr>
+              )] : []);
             })}
           </tbody>
         </table>
