@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isRoulant, coefHSMois, tauxHS50Mois, between, baseH, baseHWeek,
-  annualCA, monthCA, cpGeneres, payrollMonth, coutHSTotal, sig, weeks, ann, hsTot, ferieChomeJour } from './calculations.js';
+  annualCA, monthCA, cpGeneres, payrollMonth, coutHSTotal, sig, weeks, ann, hsTot, ferieChomeJour , partSemainePartielle } from './calculations.js';
 import { agenceReference } from './__fixtures__/agenceReference.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
 
   it('masse salariale de janvier', () => {
     // 1er-3 janvier (semaine 53) : 3/7 d'une semaine au lieu d'une semaine entière (−4/7 × 2 679 €)
-    expect(Math.round(payrollMonth(a, 0))).toBe(17523); // 16 276 + 1 241 de provision CP (congés acquis, aucun posé sur l'agence de référence) ; // part roulante du régulateur transférée de la ligne non-roulants : quasi neutre
+    expect(Math.round(payrollMonth(a, 0))).toBe(17250); // nov. 2026 : semaine du 1er-3 janvier au poids habituel de ses jours (vendredi + week-end) ; 16 276 + 1 241 de provision CP (congés acquis, aucun posé sur l'agence de référence) ; // part roulante du régulateur transférée de la ligne non-roulants : quasi neutre
   });
 
   it('découpage en semaines ISO 2027', () => {
@@ -99,15 +99,15 @@ describe('noyau composite — non-régression sur l’agence de référence', ()
   });
 
   it('compte de résultat de janvier — résultat net', () => {
-    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(64477); // − 1 241 de provision CP
+    expect(Math.round(sig(a, 0)['RESULTAT NET'])).toBe(64750); // − 1 241 de provision CP
   });
 
   it('agrégats annuels du compte de résultat (KPI Synthèse)', () => {
     expect(Math.round(ann(a, "Chiffre d'affaires"))).toBe(945400);
     // Semaines partielles au prorata : −4/7 (1er-3 janv.) − 2/7 (27-31 déc.) d'une semaine à 2 679 € = −2 296 €
-    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(208624); // + 14 891 : 89,6 j acquis non posés → le stock de congés augmente
-    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(736776);
-    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(736776);
+    expect(Math.round(ann(a, 'Charges de personnel'))).toBe(208692); // + 14 891 : 89,6 j acquis non posés → le stock de congés augmente
+    expect(Math.round(ann(a, "RESULTAT D'EXPLOITATION"))).toBe(736708);
+    expect(Math.round(ann(a, 'RESULTAT NET'))).toBe(736708);
     expect(Math.round(hsTot(a).hs)).toBe(0);
   });
 });
@@ -131,11 +131,16 @@ describe('Corrections de l\'audit (nov. 2026)', () => {
     const sansCP = { ...r, cpH: 0 };
     expect(coutRoulantSemaine(a, r) - coutRoulantSemaine(a, sansCP)).toBeCloseTo(35 * 28.5, 6);
   });
-  it('semaines partielles au prorata des jours', () => {
+  it('semaines partielles au poids habituel de leurs jours (lundi-vendredi pèsent plus que le week-end)', () => {
     const a = unTempsPlein();
-    expect(pres(a, 53).base).toBeCloseTo(35 * 3 / 7, 6);
-    expect(pres(a, 52).base).toBeCloseTo(35 * 5 / 7, 6);
+    const p53 = partSemainePartielle(a, 53), p52 = partSemainePartielle(a, 52);
+    expect(pres(a, 53).base).toBeCloseTo(35 * p53, 6);
+    expect(pres(a, 52).base).toBeCloseTo(35 * p52, 6);
+    expect(p52).toBeGreaterThan(5 / 7); // 27-31 décembre : 5 jours de semaine
+    expect(p53).toBeLessThan(3 / 7);    // 1er-3 janvier : vendredi, samedi, dimanche
     expect(pres(a, 10).base).toBe(35);
+    const b = unTempsPlein(); b.refs = { san: Array(12).fill({}), sai: Array(12).fill({}), tp: Array(12).fill({}) };
+    expect(partSemainePartielle(b, 52)).toBeCloseTo(5 / 7, 9); // sans activité de référence : au nombre de jours
   });
   it('capacité annuelle hors HS : maladie et congés retirés', () => {
     const a = unTempsPlein(); a.sick = Array(12).fill(10);

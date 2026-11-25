@@ -3,7 +3,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { setAbsPartMois } from '../../domain/calculations.js';
-import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, paiesSemaine, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
+import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, paiesSemaine, hsPayees2028, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto, ajusterCPMinimal } from '../../domain/repartitionCP.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
@@ -299,6 +299,7 @@ export default function PresenceScreen() {
   const tot = hsTot(a);
   const hsAnn = tot.hs;
   const hsCost = coutHSTotal(a);
+  const hs2028 = hsPayees2028(a);
   const empMoy = tot.av > 0 ? tot.av / 52 / 35 : 0;
   const s = refAgenceSeuils(a);
   const hsVerdict = hsAnn > s.seuilTensionCrit * 52 ? '⚠ élevé' : hsAnn > s.seuiltensionWarn * 52 ? 'niveau modéré' : 'niveau maîtrisé';
@@ -335,7 +336,7 @@ export default function PresenceScreen() {
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="HS estimées" value={hsAnn.toFixed(0) + ' h'} note={hsVerdict} />
-        <Kpi label="Coût HS" value={euro(hsCost)} note="sur l'année" />
+        <Kpi label="Coût HS" value={euro(hsCost)} note={hs2028.cout >= 1 ? 'réalisées en 2027 · dont ' + euro(hs2028.cout) + ' (' + Math.round(hs2028.hs) + ' h, 6-31 déc.) payés en janv. 2028' : "sur l'année"} />
         <Kpi label="Besoin / Dispo" value={tot.need.toFixed(0) + ' / ' + tot.av.toFixed(0) + ' h'} note={tot.av >= tot.need ? 'capacité suffisante' : 'déficit couvert par HS'} />
         <Kpi label="ETP moyen" value={empMoy.toFixed(2)} note="roulant" />
       </div>

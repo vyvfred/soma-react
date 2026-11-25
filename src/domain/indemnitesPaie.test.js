@@ -30,3 +30,16 @@ describe('Indemnités et périodes de paie', () => {
   });
 });
 function M12(a) { let t = 0; for (let m = 0; m < 12; m++) t += indemnitesMS(a, m); return t; }
+
+describe('HS de fin d\'année payées en janvier 2028', () => {
+  it('heures du 6 au 31 décembre 2027 isolées ; rien en calcul par mois civil', async () => {
+    const { hsPayees2028, hsRows, hsDesJours } = await import('./calculations.js');
+    const a = agence(); a.targetCA = a.targetCA * 1.6; const c = a.cal.reduce((x, d) => x + d.total, 0); a.cal.forEach((d) => { d.total = d.total * 1.6; });
+    const r = hsPayees2028(a);
+    const attendu = hsRows(a).reduce((s, x) => s + hsDesJours(a, x, (d) => d.month === 11 && d.day >= 6), 0);
+    expect(r.hs).toBeCloseTo(attendu, 6);
+    expect(r.cout >= 0).toBe(true);
+    const b = JSON.parse(JSON.stringify(a)); b.periodesPaie = [];
+    expect(hsPayees2028(b)).toEqual({ hs: 0, cout: 0 });
+  });
+});

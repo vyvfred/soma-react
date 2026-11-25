@@ -1,4 +1,4 @@
-import { ann, amount, monthCA, hsTot, coutHSTotal, estStructure, M } from './calculations.js';
+import { ann, amount, monthCA, hsTot, coutHSTotal, hsPayees2028, estStructure, M } from './calculations.js';
 import { anneeRep, atterrissage2026, annuel2025, completerAtterrissageCA, reperesAgence, ratioMoisRep, ratioLigneRep, serieRep, valRep } from './reperes.js';
 // Synthèse du budget (refonte nov. 2026), commune à tous les rôles : l'essentiel du budget 2027 face à 2026, 2025 et à la
 // moyenne du réseau, deux graphiques (CA mois par mois, passage du résultat 2026 au résultat 2027), les points à regarder.
@@ -25,8 +25,8 @@ function syntheseVue(a,r0,reseau,opts){
       comps:[{lib:'2026',val:svPct(ext26,ca26),type:'ratio',ref:svPct(ext,ca)},{lib:'réseau 2026',val:ratioLigneRep(res26,'Autres Achats et charges externes'),type:'ratio',ref:svPct(ext,ca)}]}
   ];
   if(!struct&&(a.employees||[]).length){
-    let t=hsTot(a),cout=coutHSTotal(a);
-    kpis.push({cle:'hs',label:'Heures supplémentaires',valeur:t.hs,type:'heures',sous:svK(cout)+' sur l\'année',comps:[{lib:'coût / CA',val:svPct(cout,ca),type:'ratioSimple'}]});
+    let t=hsTot(a),cout=coutHSTotal(a),h28=hsPayees2028(a);
+    kpis.push({cle:'hs',label:'Heures supplémentaires',valeur:t.hs,type:'heures',sous:svK(cout)+' réalisées en 2027'+(h28.cout>=1?', dont '+svK(h28.cout)+' payées en janv. 2028':''),comps:[{lib:'coût / CA',val:svPct(cout,ca),type:'ratioSimple'}]});
   }
   // CA mois par mois : budget 2027, 2026 (réalisé puis atterrissage), réalisé 2025
   let r26=anneeRep(r,2026),r25=anneeRep(r,2025);

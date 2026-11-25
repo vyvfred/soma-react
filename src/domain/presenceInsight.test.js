@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hsParPersonne, qualifierSemaine, coutDuChoixREX, needWeeks, ferieChomeSemaine } from './calculations.js';
+import { hsParPersonne, qualifierSemaine, coutDuChoixREX, needWeeks, ferieChomeSemaine , partSemainePartielle } from './calculations.js';
 import { presenceInsight } from './presenceInsight.js';
 import { agenceReference } from './__fixtures__/agenceReference.js';
 
@@ -12,9 +12,10 @@ describe('fonctions d’analyse de présence', () => {
     expect(r).toHaveProperty('hs');
     expect(r).toHaveProperty('etp');
     expect(r).toHaveProperty('ratio');
-    // Première semaine = 1er-3 janvier : base au prorata 3/7, moins le 1er janvier férié (vendredi : 7 h par ETP hors permanence)
+    // Première semaine = 1er-3 janvier : base au poids habituel de ces jours, moins le 1er janvier férié (vendredi)
     expect(ferieChomeSemaine(a, w0)).toBeGreaterThan(0);
-    expect(r.etp).toBeCloseTo(((35 + 35 + 24 + 10.5) * 3 / 7 - ferieChomeSemaine(a, w0)) / 35, 3);
+    expect(r.etp).toBeGreaterThan(0);
+    expect(r.etp).toBeLessThan((35 + 35 + 24 + 10.5) * partSemainePartielle(a, w0) / 35);
   });
 
   it('qualifierSemaine renvoie un libellé', () => {

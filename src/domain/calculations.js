@@ -403,11 +403,13 @@ function cpPrisMois(a,m){
   return s;
 }
 function variationStockCPMois(a,m){if(!a||estStructure(a)||!a.employees||!a.employees.length)return 0;return (cpAcquisMois(a,m)-cpPrisMois(a,m))*CP_HEURES_JOUR*chMois(a,m);}
+// La masse salariale suit les périodes de paie (sinon : mois civil)
+function paieParPeriodes(a){ return !!(a && a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length); }
 function payrollMonth(a,m){
   // Structure : charges de personnel saisies par le CG
   if(estStructure(a)) return lignesStructure(a,'lignesMS').length ? totalLignesMois(a,'lignesMS',m) : manual(a,'Charges de personnel',m);
   // Si les périodes de paie sont configurées, utiliser le calcul comptable
-  if(a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length){
+  if(paieParPeriodes(a)){
     return payrollPayMonth(a, m);
   }
   // Sinon fallback sur le calcul mois civil
@@ -481,7 +483,7 @@ function indemnitesPeriode(a, debut, fin){
 // Indemnités comprises dans la ligne Charges de personnel du mois m (même règle que payrollMonth)
 function indemnitesMS(a, m){
   if(estStructure(a)) return 0;
-  if(a.periodesPaie && a.periodesPaie.length && a.costHour && a.cal && a.cal.length){
+  if(paieParPeriodes(a)){
     let p=a.periodesPaie[m]; return p ? indemnitesPeriode(a, dateLocale(p.debut), dateLocale(p.fin)) : 0;
   }
   return a.cal ? indemnitesMoisCivil(a, m) : 0;
@@ -489,7 +491,7 @@ function indemnitesMS(a, m){
 // Paie(s) sur laquelle(lesquelles) part une semaine : [{mois: 0..11 | 'jan2028', part}] (part des jours de la semaine)
 function paiesSemaine(a, w){
   let j=joursSemaine(a,w);if(!j.length)return [];
-  let periodes=(a.periodesPaie&&a.periodesPaie.length&&a.costHour)?a.periodesPaie:null,o={};
+  let periodes=paieParPeriodes(a)?a.periodesPaie:null,o={};
   j.forEach(function(d){
     let dt=new Date(2027,d.month,d.day),cle;
     if(periodes){
@@ -658,10 +660,28 @@ function ferieChomeJour(a,d){
   return Math.max(0,h-besoin);
 }
 function ferieChomeSemaine(a,w,m){return joursSemaine(a,w).reduce(function(s,d){return (m===undefined||d.month===m)?s+ferieChomeJour(a,d):s;},0);}
+// Poids habituel d'un jour dans une semaine normale (activité de référence du mois : jour de semaine, samedi, dimanche),
+// null sans activité de référence
+function poidsJourSemaine(a,d){
+  let poids=function(type){ let t=0; ['san','sai','tp'].forEach(function(k){ let r=a.refs&&a.refs[k]&&a.refs[k][d.month]; if(r&&r[type]!=null) t+=+r[type]||0; }); return t; };
+  let sem=poids('semaine'),sam=poids('samedi'),dim=poids('dimanche'),tot=5*sem+sam+dim;
+  if(!(tot>0)) return null;
+  let j=new Date(2027,d.month,d.day).getDay();
+  return (j===0?dim:j===6?sam:sem)/tot;
+}
+// Part d'une semaine incomplète (1er-3 janvier, 27-31 décembre) dans une semaine normale : somme des poids habituels
+// des jours présents (lundi-vendredi pèsent bien plus que le week-end) ; 1 pour une semaine complète ; n/7 sans référence
+function partSemainePartielle(a,w){
+  let jrs=joursSemaine(a,w),n=jrs.length;
+  if(!n||n>=7) return 1;
+  let t=0; for(let i=0;i<n;i++){ let p=poidsJourSemaine(a,jrs[i]); if(p===null) return n/7; t+=p; }
+  return t;
+}
 function pres(a,w){
   let base=baseHWeek(a,w);
-  // Semaine partielle de l'année (1er-3 janvier, 27-31 décembre) : base au prorata des jours
-  let nbj=joursSemaine(a,w).length; if(nbj && nbj<7) base=base*nbj/7;
+  // Semaine partielle de l'année (1er-3 janvier, 27-31 décembre) : base au prorata du poids habituel de ces jours dans
+  // la semaine (lundi-vendredi pèsent bien plus que samedi-dimanche), et non au nombre de jours
+  base=base*partSemainePartielle(a,w);
   let p=a.presence[w]||{cp:0,other:0};
   let m=mainMonth(a,w);
   // Maladie : taux de chaque jour selon son mois (semaine à cheval = moyenne des deux mois pondérée par les jours)
@@ -675,6 +695,8 @@ function pres(a,w){
   let otherPaidH=(+p.otherPaid||0)*7;
   let mal=base*rate/100;
   let ferieH=ferieChomeSemaine(a,w);
+  // Semaine incomplète : un férié ne retire pas plus que la capacité habituelle de ce jour au-delà du besoin
+  if(jrs.length&&jrs.length<7&&ferieH>0){ let bp=baseHWeek(a,w); ferieH=jrs.reduce(function(s,d){ let f=ferieChomeJour(a,d); if(!f) return s; let pj=poidsJourSemaine(a,d),t=txrDuMois(a,d.month),bj=t>0?(+d.total||0)/t:0; return s+(pj===null?f:Math.min(f,Math.max(0,bp*pj-bj))); },0); }
   let av=Math.max(0,base-cpH-mal-otherH-otherPaidH-ferieH);
   return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,ferieH,m,rate,mal,av,etp:av/35};
 }
@@ -1028,6 +1050,18 @@ function variablesRoulantSemaine(a,r){
   let v=(r.hs||0)*ch*coefHSSemaine(a,r,m)-(r.mal||0)*ch*(1-ratioMaintien(a))-(r.otherH||0)*ch;
   return v*(1+TAUX_PRECARITE_CDD*partCDDSemaine(a,r.week));
 }
+// Heures supplémentaires réalisées du 06/12/2027 au 31/12/2027 : payées sur la paie de janvier 2028 (hors budget 2027
+// quand la masse salariale suit les périodes de paie). {hs, cout} ; zéro en calcul par mois civil.
+function hsPayees2028(a){
+  if(!paieParPeriodes(a)) return {hs:0,cout:0};
+  let debut=new Date(2027,11,6),hs=0,cout=0;
+  hsRows(a).forEach(function(r){
+    if(!(r.hs>0)) return;
+    let h=hsDesJours(a,r,function(d){ return new Date(2027,d.month,d.day)>=debut; });
+    if(h>0){ hs+=h; cout+=h*chMois(a,11)*coefHSSemaine(a,r,11); }
+  });
+  return {hs:hs,cout:cout};
+}
 function chargesReport2028(a){
   // Variables du 06/12/2027 au 31/12/2027 (HS, retenues, HS improductives) : payées sur la paie de janvier 2028.
   // Les salaires mensualisés de décembre (roulants, non-roulants, DR) sont payés en décembre : rien n'est reporté.
@@ -1044,7 +1078,7 @@ function chargesReport2028(a){
   return Math.round(ms);
 }
 
-export { ferieChomeJour, ferieChomeSemaine };
+export { ferieChomeJour, ferieChomeSemaine, partSemainePartielle, hsPayees2028, paieParPeriodes };
 export { partsMoisSemaine, hsDuMois, hsDesJours };
 export { partsEntieres };
 export { txrDuMois, txrModule, txrEffectif };
