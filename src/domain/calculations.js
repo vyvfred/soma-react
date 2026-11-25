@@ -69,11 +69,25 @@ function baseHWeek(a, week){
   return a.employees.filter(estRoulantPart).reduce((s,e)=>{
     let h=(+e.hours||0)*partRoulant(e);
     if(!jours.length || (!e.dateEntree && !e.dateSortie)) return s+h;
+    // jour par jour : chaque jour de présence compte pour son poids habituel dans la semaine
+    let pds=jours.map(function(d){ return poidsJourSemaine(a,d); });
+    if(pds.every(function(x){ return x!==null; })){
+      let tot=pds.reduce(function(t,x){ return t+x; },0);
+      if(tot>0) return s+h*jours.reduce(function(t,d,i){ return empPresent(e, cleJour(d.month, d.day)) ? t+pds[i] : t; },0)/tot;
+    }
     let presents=jours.filter(function(d){ return empPresent(e, cleJour(d.month, d.day)); }).length;
     return s+h*presents/jours.length;
   },0);
 }
 // Part d'une semaine qui tombe dans le mois m (jours du calendrier) : 1 pour une semaine entière du mois, 4/7 et 3/7 pour une semaine à cheval
+// Part de la capacité d'une semaine qui tombe dans le mois m : jours du mois à leur poids habituel (jour par jour)
+function partCapaciteMois(a,w,m){
+  let j=joursSemaine(a,w);if(!j.length)return 0;
+  let p=j.map(function(d){return poidsJourSemaine(a,d);});
+  if(p.some(function(x){return x===null;}))return partSemaineMois(a,w,m);
+  let t=p.reduce(function(s,x){return s+x;},0);if(!(t>0))return partSemaineMois(a,w,m);
+  return j.reduce(function(s,d,i){return d.month===m?s+p[i]:s;},0)/t;
+}
 function partSemaineMois(a,w,m){let j=joursSemaine(a,w);if(!j.length)return 0;return j.filter(function(d){return d.month===m;}).length/j.length;}
 
 function between(d,s,e){return d>=s&&d<=e}
@@ -239,7 +253,7 @@ function heuresDispoAnnuelles(a) {
   let mal = remplis.length ? remplis.reduce(function(s,v){ return s+(+v||0); },0)/remplis.length/100 : (+a.targetAbsRate||0)/100;
   // Fériés chômés (lundi-samedi, hors permanence) : heures en moins
   let feries = (a.cal&&a.cal.length) ? a.cal.reduce(function(s,d){return s+ferieChomeJour(a,d);},0) : 0;
-  return Math.max(0, baseH(a)*52*(1-mal) - cpGeneres(a)*CP_HEURES_JOUR - feries);
+  return Math.max(0, (baseH(a)*52 - feries)*(1-mal) - cpGeneres(a)*CP_HEURES_JOUR); // pas de maladie un jour férié chômé
 }
 
 // Semaine à cheval sur deux mois (nov. 2026) : CP et autres absences se saisissent mois par mois, en jours, selon les jours
@@ -319,7 +333,7 @@ function partsMoisSemaine(a,w,p,hs){
   if(ms.length<2){let m=ms.length?ms[0]:p.m,o={};o[m]=hs;return {hsMois:o,besoinMois:null,dispoMois:null};}
   let besoin={},dispo={},deficit={},total=0;
   ms.forEach(function(m){
-    let j=jrs.filter(function(d){return d.month===m;}),k=j.length/jrs.length,t=txrDuMois(a,m);
+    let j=jrs.filter(function(d){return d.month===m;}),k=partCapaciteMois(a,w,m),t=txrDuMois(a,m);
     besoin[m]=t>0?j.reduce(function(s,d){return s+d.total/t;},0):0;
     let tx=a.sick&&a.sick[m]!==null&&a.sick[m]!==undefined?+a.sick[m]:0;
     let abs=absPartMois(a,w,'cp',m)*CP_HEURES_JOUR+absPartMois(a,w,'other',m)*7+absPartMois(a,w,'otherPaid',m)*7+ferieChomeSemaine(a,w,m);
@@ -686,17 +700,30 @@ function pres(a,w){
   let m=mainMonth(a,w);
   // Maladie : taux de chaque jour selon son mois (semaine à cheval = moyenne des deux mois pondérée par les jours)
   let jrs=joursSemaine(a,w),tx=function(mm){return a.sick[mm]!==null&&a.sick[mm]!==undefined?+a.sick[mm]:0;};
-  let rate=jrs.length?jrs.reduce(function(s,d){return s+tx(d.month);},0)/jrs.length:tx(m);
+  // (jour par jour : chaque jour pèse selon son poids habituel dans la semaine)
+  let pds=jrs.map(function(d){return poidsJourSemaine(a,d);}),okP=pds.length&&pds.every(function(x){return x!==null;});
+  let sp=okP?pds.reduce(function(s,x){return s+x;},0):0;
+  let rate=!jrs.length?tx(m):(okP&&sp>0?jrs.reduce(function(s,d,i){return s+tx(d.month)*pds[i];},0)/sp:jrs.reduce(function(s,d){return s+tx(d.month);},0)/jrs.length);
   // CP en jours ouvrables (6 par semaine, 1 J = 35/6 h) ; autres absences en jours de 7 h.
   // Autres absences (décision nov. 2026) : « payées » (formation, événements familiaux,
   // récupération…) coûtées au taux horaire comme les congés ; « non payées » (sans solde) non coûtées.
-  let cpH=(+p.cp||0)*CP_HEURES_JOUR; // CP en jours ouvrables (6 par semaine)
-  let otherH=(+p.other||0)*7;
-  let otherPaidH=(+p.otherPaid||0)*7;
-  let mal=base*rate/100;
+  // Semaine incomplète (jour par jour, nov. 2026) : les jours saisis sont des jours de 2027 ; un jour d'absence retire
+  // la capacité moyenne d'un jour ouvrable de la semaine incomplète (sa capacité ÷ ses jours ouvrables), et non 35/6 h.
+  // Les jours fériés ne sont pas des jours de congé : ils sont retirés de la fenêtre d'absence.
+  let fJ=1;
+  if(jrs.length&&jrs.length<7){
+    let hors=jrs.filter(function(d){return d.type!=='ferie';}),ouvr=hors.filter(function(d){return new Date(2027,d.month,d.day).getDay()!==0;}).length;
+    let part=0; for(let i=0;i<hors.length;i++){ let q=poidsJourSemaine(a,hors[i]); if(q===null){ part=hors.length/7; break; } part+=q; }
+    fJ=ouvr>0?part*6/ouvr:0;
+  }
+  let cpH=(+p.cp||0)*CP_HEURES_JOUR*fJ; // CP en jours ouvrables (6 par semaine)
+  let otherH=(+p.other||0)*7*fJ;
+  let otherPaidH=(+p.otherPaid||0)*7*fJ;
   let ferieH=ferieChomeSemaine(a,w);
   // Semaine incomplète : un férié ne retire pas plus que la capacité habituelle de ce jour au-delà du besoin
   if(jrs.length&&jrs.length<7&&ferieH>0){ let bp=baseHWeek(a,w); ferieH=jrs.reduce(function(s,d){ let f=ferieChomeJour(a,d); if(!f) return s; let pj=poidsJourSemaine(a,d),t=txrDuMois(a,d.month),bj=t>0?(+d.total||0)/t:0; return s+(pj===null?f:Math.min(f,Math.max(0,bp*pj-bj))); },0); }
+  // Maladie sur les heures réellement prévues (jour par jour : un salarié en repos un jour férié n'y est pas malade)
+  let mal=Math.max(0,base-ferieH)*rate/100;
   let av=Math.max(0,base-cpH-mal-otherH-otherPaidH-ferieH);
   return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,ferieH,m,rate,mal,av,etp:av/35};
 }
@@ -1078,7 +1105,7 @@ function chargesReport2028(a){
   return Math.round(ms);
 }
 
-export { ferieChomeJour, ferieChomeSemaine, partSemainePartielle, hsPayees2028, paieParPeriodes };
+export { ferieChomeJour, ferieChomeSemaine, partSemainePartielle, poidsJourSemaine, partCapaciteMois, hsPayees2028, paieParPeriodes };
 export { partsMoisSemaine, hsDuMois, hsDesJours };
 export { partsEntieres };
 export { txrDuMois, txrModule, txrEffectif };

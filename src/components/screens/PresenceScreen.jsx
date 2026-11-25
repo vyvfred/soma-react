@@ -3,7 +3,7 @@ import { estSaisieDR } from '../../domain/saisiesDR.js';
 import { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { setAbsPartMois } from '../../domain/calculations.js';
-import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, paiesSemaine, hsPayees2028, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
+import { hsTot, coutHSTotal, refAgenceSeuils, cpGeneres, cpPlanifies, hsRows, cpNRAcquis, cpNRSaisis, cpNRVide, etpNR, repartirCPNRAuto, salariesNR, joursSemaine, paiesSemaine, hsPayees2028, hs50Auto, tauxHS50Mois, part50Semaine } from '../../domain/calculations.js';
 import { reequilibrerSick } from '../../domain/presence.js';
 import { repartirCPAuto, ajusterCPMinimal } from '../../domain/repartitionCP.js';
 import { etatConges, rafraichirConges } from '../../domain/rafraichirConges.js';
@@ -25,6 +25,8 @@ const libPaies = (ps) => ps.map((p) => p.mois === 'jan2028'
   : p.mois === 'dec2026' ? <span key="d26">variables déc. 2026</span>
     : <span key={p.mois}>{M[p.mois]}{ps.length > 1 ? ' (' + Math.round(p.part * 7) + ' j)' : ''}</span>)
   .reduce((acc, el, i) => (i ? [...acc, ' + ', el] : [el]), []);
+// Semaine incomplète (début/fin d'année) : « 3 j en 2027 (1er-3 janv.) »
+const libIncomplete = (j) => j.length + ' j en 2027 (' + j[0].day + (j.length > 1 ? '-' + j[j.length - 1].day : '') + ' ' + ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'][j[0].month] + ')';
 const M = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 const MOIS_LONGS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -211,7 +213,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
           <tbody>
             {sem.map((s) => (
               <tr key={s.week} style={{ textAlign: 'right' }}>
-                <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b>{s.aCheval ? <div data-testid={'a-cheval-' + s.week} style={{ fontSize: 10, color: 'var(--ink65)' }} title="Semaine à cheval sur deux mois : saisissez les jours de ce mois, ils s'additionnent à ceux de l'autre mois. Les HS sont calculées sur la semaine entière et attribuées au mois où le besoin dépasse l'équipe ; disponible, besoin et HS affichés sont ceux de ce mois (semaine entière en petit).">à cheval · sem. {fmt1(+((a.presence[s.week] || {}).cp) || 0)} J CP</div> : null}</td>
+                <td style={{ ...cell, textAlign: 'left' }}><b>S{s.week}</b>{joursSemaine(a, s.week).length < 7 ? <div data-testid={'incomplete-' + s.week} style={{ fontSize: 10, color: 'var(--orange, #c45300)' }} title="Semaine incomplète en 2027 : saisissez seulement les jours d'absence de ces dates. Besoin et ressources sont calculés jour par jour.">{libIncomplete(joursSemaine(a, s.week))}</div> : null}{s.aCheval ? <div data-testid={'a-cheval-' + s.week} style={{ fontSize: 10, color: 'var(--ink65)' }} title="Semaine à cheval sur deux mois : saisissez les jours de ce mois, ils s'additionnent à ceux de l'autre mois. Les HS sont calculées sur la semaine entière et attribuées au mois où le besoin dépasse l'équipe ; disponible, besoin et HS affichés sont ceux de ce mois (semaine entière en petit).">à cheval · sem. {fmt1(+((a.presence[s.week] || {}).cp) || 0)} J CP</div> : null}</td>
                 <td style={cell}>{Math.round(s.base)}</td>
                 <td style={cell}><input data-testid={'cp-' + s.week} data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.cp') ? '1' : undefined} type="number" min="0" step="1" value={s.parts.cp || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).cp) || 0) + ' J' : undefined} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'cp', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={s.parts.otherPaid || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).otherPaid) || 0) + ' J' : 'Absences payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value, m)} style={{ width: 56 }} /></td>

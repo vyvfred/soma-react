@@ -1,4 +1,4 @@
-import { M, chMois, CP_HEURES_JOUR, hsRows, pres, absPartMois, partSemaineMois, hsDuMois, ferieChomeSemaine, cpNRAcquisMois, cpAcquisMois, cpPrisMois, variationStockCPNRMois } from './calculations.js';
+import { M, chMois, CP_HEURES_JOUR, partCapaciteMois, moisDeSemaine, hsRows, pres, absPartMois, partSemaineMois, hsDuMois, ferieChomeSemaine, cpNRAcquisMois, cpAcquisMois, cpPrisMois, variationStockCPNRMois } from './calculations.js';
 import { detailMSMois, feuillesDetailMS } from './detailMS.js';
 // Justification des calculs (écran « Détail des calculs », contrôleur de gestion et direction financière, nov. 2026).
 // Tous les montants viennent des mêmes fonctions que le reste de l'application : rien n'est recalculé autrement.
@@ -27,7 +27,8 @@ function tableauHeures(a){
       let k=partSemaineMois(a,r.week,m);if(!k)return;
       let p=pres(a,r.week);
       // Semaine à cheval : besoin, disponible et HS de la part du mois (cf. partsMoisSemaine)
-      t.besoin+=r.besoinMois?(+r.besoinMois[m]||0):(r.hours||0)*k;t.base+=p.base*k;t.maladie+=p.mal*k;t.dispo+=r.dispoMois?(+r.dispoMois[m]||0):p.av*k;t.hs+=hsDuMois(a,r,m);
+      t.besoin+=r.besoinMois?(+r.besoinMois[m]||0):(r.hours||0)*k;let kc=partCapaciteMois(a,r.week,m);t.base+=p.base*kc;t.maladie+=p.mal*kc;t.dispo+=r.dispoMois?(+r.dispoMois[m]||0):p.av*k;t.hs+=hsDuMois(a,r,m);
+      if(moisDeSemaine(a,r.week).length<2){ t.cp+=p.cpH;t.absPayees+=p.otherPaidH;t.absNonPayees+=p.otherH;t.feries+=p.ferieH; return; } // semaine d'un seul mois (dont 1er-3 janv., 27-31 déc.) : heures de la semaine
       t.cp+=absPartMois(a,r.week,'cp',m)*CP_HEURES_JOUR;
       t.absPayees+=absPartMois(a,r.week,'otherPaid',m)*7;t.absNonPayees+=absPartMois(a,r.week,'other',m)*7;
       t.feries+=ferieChomeSemaine(a,r.week,m); // fériés chômés du lundi au samedi (hors permanence)

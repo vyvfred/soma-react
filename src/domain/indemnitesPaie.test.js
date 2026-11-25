@@ -43,3 +43,22 @@ describe('HS de fin d\'année payées en janvier 2028', () => {
     expect(hsPayees2028(b)).toEqual({ hs: 0, cout: 0 });
   });
 });
+
+describe('Ressource jour par jour (semaines incomplètes)', () => {
+  it('un CP du 1er-3 janvier retire la capacité moyenne d\'un jour ouvrable non férié de ces dates, pas 35/6 h', async () => {
+    const { pres, poidsJourSemaine, joursSemaine, baseHWeek } = await import('./calculations.js');
+    const a = agence(); a.presence[53] = { cp: 1, other: 0 };
+    const j = joursSemaine(a, 53).filter((d) => d.type !== 'ferie');
+    const ouvr = j.filter((d) => new Date(2027, d.month, d.day).getDay() !== 0).length;
+    const part = j.reduce((s, d) => s + poidsJourSemaine(a, d), 0);
+    expect(pres(a, 53).cpH).toBeCloseTo(35 / 6 * part * 6 / ouvr, 6);
+    a.presence[10] = { cp: 1, other: 0 }; expect(pres(a, 10).cpH).toBeCloseTo(35 / 6, 9); // semaine complète : inchangé
+    expect(baseHWeek(a, 10)).toBeGreaterThan(0);
+  });
+  it('pas de maladie sur les heures d\'un férié chômé', async () => {
+    const { pres } = await import('./calculations.js');
+    const a = agence(); a.sick = Array(12).fill(10);
+    const p = pres(a, 53);
+    expect(p.mal).toBeCloseTo((p.base - p.ferieH) * 0.1, 6);
+  });
+});

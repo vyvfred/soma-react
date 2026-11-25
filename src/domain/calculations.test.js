@@ -147,6 +147,6 @@ describe('Corrections de l\'audit (nov. 2026)', () => {
     // + fériés chômés du lundi au samedi (7 h par ETP, hors permanence)
     const feries = a.cal.reduce((s, d) => s + ferieChomeJour(a, d), 0);
     expect(feries).toBeGreaterThan(0);
-    expect(heuresDispoAnnuelles(a)).toBeCloseTo(baseH(a) * 52 * 0.9 - cpGeneres(a) * 35 / 6 - feries, 6);
+    expect(heuresDispoAnnuelles(a)).toBeCloseTo((baseH(a) * 52 - feries) * 0.9 - cpGeneres(a) * 35 / 6, 6);
   });
 });

@@ -146,22 +146,26 @@ describe('Semaine à cheval — absences payées et non payées', () => {
 });
 
 describe('Semaines à cheval et calendrier — besoins et ressources', () => {
-  it('entrée en milieu de semaine : heures au prorata des jours présents', async () => {
-    const { baseHWeek, joursSemaine, genCal, isoWeek } = await import('./calculations.js');
+  it('entrée en milieu de semaine : heures au prorata des jours présents, chacun à son poids habituel', async () => {
+    const { baseHWeek, joursSemaine, genCal, isoWeek, poidsJourSemaine } = await import('./calculations.js');
     const a = agenceReference(); genCal(a);
     a.employees = [{ qual: 'DEA', hours: 35, pctRoulant: 100, dateEntree: '2027-03-17' }]; // mercredi
     const w = isoWeek(new Date(2027, 2, 17));
     expect(joursSemaine(a, w).length).toBe(7);
-    expect(baseHWeek(a, w)).toBeCloseTo(35 * 5 / 7, 6);
+    const j = joursSemaine(a, w), p = j.map((d) => poidsJourSemaine(a, d)), tot = p.reduce((x, v) => x + v, 0);
+    const attendu = 35 * j.reduce((x, d, i) => (d.day >= 17 ? x + p[i] : x), 0) / tot; // mercredi → dimanche
+    expect(baseHWeek(a, w)).toBeCloseTo(attendu, 6);
+    expect(attendu).toBeLessThan(35 * 5 / 7); // lundi et mardi pèsent plus qu'un jour de week-end
     expect(baseHWeek(a, w + 1)).toBe(35);
     expect(baseHWeek(a, w - 1)).toBe(0);
   });
-  it('maladie d\'une semaine à cheval : moyenne des deux mois pondérée par les jours', async () => {
-    const { pres, moisDeSemaine, needWeeks, joursSemaine } = await import('./calculations.js');
+  it('maladie d\'une semaine à cheval : moyenne des deux mois pondérée par le poids des jours', async () => {
+    const { pres, moisDeSemaine, needWeeks, joursSemaine, poidsJourSemaine } = await import('./calculations.js');
     const a = prete(); a.sick = Array(12).fill(0); a.sick[2] = 14; // mars 14 %, avril 0 %
     const w = needWeeks(a).map((x) => x.week).find((k) => { const ms = moisDeSemaine(a, k); return ms[0] === 2 && ms[1] === 3; });
-    const nMars = joursSemaine(a, w).filter((d) => d.month === 2).length;
-    expect(pres(a, w).rate).toBeCloseTo(14 * nMars / 7, 6);
+    const j = joursSemaine(a, w), p = j.map((d) => poidsJourSemaine(a, d)), tot = p.reduce((x, v) => x + v, 0);
+    const pMars = j.reduce((x, d, i) => (d.month === 2 ? x + p[i] : x), 0) / tot;
+    expect(pres(a, w).rate).toBeCloseTo(14 * pMars, 6);
   });
   it('HS des 12 mois = HS de l\'année (semaines à cheval non comptées deux fois)', async () => {
     const { hsTot, partSemaineMois } = await import('./calculations.js');
