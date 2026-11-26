@@ -15,6 +15,7 @@ import { useNav } from '../../context/NavContext.jsx';
 import { feuillesConsolidation, nomFichierConsolidation } from '../../domain/exportConsolidation.js';
 import BoutonExportDetaille from '../BoutonExportDetaille.jsx';
 import { fichierDepuisReseau } from '../../domain/exportAgenceSources.js';
+import { classeurReseau, nomFichierReseau } from '../../domain/exportReseau.js';
 import { telechargerClasseur } from '../../lib/importExcel.js';
 import DossierOmnisian from '../DossierOmnisian.jsx';
 
@@ -105,7 +106,8 @@ export default function ConsolidationScreen() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <h2 style={{ margin: 0 }}>{region ? 'Consolidation de ma région' : 'Consolidation réseau'}</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{lienDetail || estDR ? <BoutonExportDetaille testid="export-detaille-toutes" libelle="📦 Budgets détaillés (zip)" nomZip={'SOMA_budgets_detailles_2027_' + new Date().toISOString().slice(0, 10) + '.zip'} titre="Un classeur Excel détaillé par agence, avec tous les calculs"
-          fichiers={() => Object.keys(mapAgences).map((nom) => { try { return fichierDepuisReseau(nom, mapAgences[nom], profile.role); } catch (e) { return null; } })} /> : null}<button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button><button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
+          fichiers={() => Object.keys(mapAgences).map((nom) => { try { return fichierDepuisReseau(nom, mapAgences[nom], profile.role); } catch (e) { return null; } })} /> : null}{lienDetail || estDR ? <BoutonExportDetaille testid="export-reseau-compile" libelle={region ? '📊 Budget région compilé (Excel)' : '📊 Budget réseau compilé (Excel)'} titre="Un seul classeur avec toutes les agences : synthèse, compte de résultat par entité et consolidé par mois, heures supplémentaires, base de données"
+          fichiers={() => ({ nom: nomFichierReseau(region), modele: classeurReseau(state.map || {}, ops, { region }) })} /> : null}<button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button><button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
           onClick={async () => {
             setExportEtat('cours');
             try { await telechargerClasseur(feuillesConsolidation(mapAgences, ops).concat(conso && !conso.erreur ? [feuilleConsolide(conso, region)] : []), nomFichierConsolidation()); setExportEtat('ok'); }
