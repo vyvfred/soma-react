@@ -54,6 +54,10 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   const { profile } = useAuth();
   const saisieCGRef = useRef(false);
   saisieCGRef.current = !!(profile && ['cg', 'df', 'admin'].includes(profile.role));
+  // La version active enregistrée est celle du REX de l'agence : un DR, un CG ou la direction qui parcourt ou saisit une
+  // autre version ne la change pas pour lui (sinon le REX rouvrait son budget sur la version consultée par un autre)
+  const proprietaireRef = useRef(false);
+  proprietaireRef.current = !!(profile && profile.role === 'rex');
   // État chargé (ou dernier état enregistré) : point de départ de la fusion à l'enregistrement
   const baseRef = useRef(null);
   const metaBaseRef = useRef(null);
@@ -301,7 +305,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     const a = agenceDeVersion(agenceNom, data, v);
     versionRef.current = v;
     setActiveVersion(v);
-    majMeta({ ...(metaRef.current || DEFAULT_META()), activeVersion: v });
+    if (proprietaireRef.current) majMeta({ ...(metaRef.current || DEFAULT_META()), activeVersion: v });
     snapRef.current = null; viderHisto();    setAgency(a);
     const remplie = !!(data.versions && data.versions[v] && Object.keys(data.versions[v]).length);
     baseRef.current = remplie ? JSON.parse(JSON.stringify(data.versions[v])) : null;

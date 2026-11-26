@@ -179,6 +179,11 @@ export default function BudgetBar() {
                 style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid={'version-supprimer-' + v}>🗑 Supprimer la {VERSION_LABELS[v]}</button>
             ))}
           </div>
+          {!lectureSeule && profile && profile.role !== 'rex' && meta.activeVersion && meta.activeVersion !== activeVersion ? (
+            <div data-testid="version-autre-que-rex" style={{ fontSize: 12, color: 'var(--orange, #c45300)', marginBottom: 8 }}>
+              ⚠ Vous êtes sur la {VERSION_LABELS[activeVersion]} ; le REX travaille sur la {VERSION_LABELS[meta.activeVersion]}. Vos saisies vont dans la {VERSION_LABELS[activeVersion]} ; sa version de travail ne change pas.
+            </div>
+          ) : null}
           {lectureSeule ? (
             <div data-testid="versions-consultation" style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 8 }}>
               👁 {VERSIONS.filter((v) => versionsRemplies[v]).length > 1
