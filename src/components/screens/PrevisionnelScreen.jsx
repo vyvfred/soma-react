@@ -3,6 +3,8 @@ import { estDetailSIG, libLigneSIG } from '../../domain/calculations.js';
 import { useBudget } from '../../context/BudgetContext.jsx';
 import { isRoulant, M, lignesSIG, indemnitesMS } from '../../domain/calculations.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import BoutonExportDetaille from '../BoutonExportDetaille.jsx';
+import { fichierDepuisAgence } from '../../domain/exportAgenceSources.js';
 import { euro, pct } from '../../domain/format.js';
 
 // Écran Prévisionnel — port fidèle de renderPrevisionnel() : 4 KPI décisifs,
@@ -41,7 +43,7 @@ function KpiCard({ label, value, note }) {
 }
 
 export default function PrevisionnelScreen({ vueCG = false }) {
-  const { loading, error, agency: a, agenceNom } = useBudget();
+  const { loading, error, agency: a, agenceNom, activeVersion, meta, statut } = useBudget();
   const { profile } = useAuth();
   const role = vueCG ? 'cg' : profile.role;
 
@@ -77,7 +79,11 @@ export default function PrevisionnelScreen({ vueCG = false }) {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Prévisionnel — {agenceNom}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+        <h2 style={{ margin: 0 }}>Prévisionnel — {agenceNom}</h2>
+        <BoutonExportDetaille testid="export-budget-detaille" libelle="📥 Budget détaillé (Excel)" titre="Classeur Excel avec tous les calculs en formules : calendrier, semaines, heures supplémentaires, masse salariale, compte de résultat"
+          fichiers={() => fichierDepuisAgence(a, agenceNom, { activeVersion, meta, statut }, role)} />
+      </div>
       {vueCG ? <p className="hint" style={{ margin: '0 0 14px', fontSize: 13 }}>📊 <b>Prévisionnel de l'agence sélectionnée.</b> Ce tableau de résultat (SIG) est calculé automatiquement à partir des données du REX et des charges que vous avez saisies. Vue en lecture seule.</p> : null}
 
       <div className="kpis" data-visite="previsionnel" style={{ marginBottom: 16 }}>

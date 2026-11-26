@@ -725,7 +725,7 @@ function pres(a,w){
   // Maladie sur les heures réellement prévues (jour par jour : un salarié en repos un jour férié n'y est pas malade)
   let mal=Math.max(0,base-ferieH)*rate/100;
   let av=Math.max(0,base-cpH-mal-otherH-otherPaidH-ferieH);
-  return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,ferieH,m,rate,mal,av,etp:av/35};
+  return {base,cp:+p.cp||0,cpH,other:+p.other||0,otherH,otherPaid:+p.otherPaid||0,otherPaidH,ferieH,m,rate,mal,av,etp:av/35,fJ};
 }
 
 function refAgenceSeuils(a) {

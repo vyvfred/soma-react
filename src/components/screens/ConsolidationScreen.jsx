@@ -13,6 +13,8 @@ import { detailAvancement } from '../../domain/avancement.js';
 import { euro } from '../../domain/format.js';
 import { useNav } from '../../context/NavContext.jsx';
 import { feuillesConsolidation, nomFichierConsolidation } from '../../domain/exportConsolidation.js';
+import BoutonExportDetaille from '../BoutonExportDetaille.jsx';
+import { fichierDepuisReseau } from '../../domain/exportAgenceSources.js';
 import { telechargerClasseur } from '../../lib/importExcel.js';
 import DossierOmnisian from '../DossierOmnisian.jsx';
 
@@ -102,7 +104,8 @@ export default function ConsolidationScreen() {
     <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <h2 style={{ margin: 0 }}>{region ? 'Consolidation de ma région' : 'Consolidation réseau'}</h2>
-        <div style={{ display: 'flex', gap: 8 }}><button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button><button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{lienDetail || estDR ? <BoutonExportDetaille testid="export-detaille-toutes" libelle="📦 Budgets détaillés (zip)" nomZip={'SOMA_budgets_detailles_2027_' + new Date().toISOString().slice(0, 10) + '.zip'} titre="Un classeur Excel détaillé par agence, avec tous les calculs"
+          fichiers={() => Object.keys(mapAgences).map((nom) => { try { return fichierDepuisReseau(nom, mapAgences[nom], profile.role); } catch (e) { return null; } })} /> : null}<button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button><button data-testid="export-consolidation" disabled={exportEtat === 'cours'}
           onClick={async () => {
             setExportEtat('cours');
             try { await telechargerClasseur(feuillesConsolidation(mapAgences, ops).concat(conso && !conso.erreur ? [feuilleConsolide(conso, region)] : []), nomFichierConsolidation()); setExportEtat('ok'); }
@@ -150,7 +153,7 @@ export default function ConsolidationScreen() {
               }
               return (
                 <tr key={r.nom}>
-                  <td style={{ padding: '4px 8px' }}><b>{r.nom}</b><br /><span style={{ fontSize: 10, color: 'var(--ink65)' }}>Zone {r.zone}</span>{lienDetail ? <> · <button type="button" data-testid={'detail-calculs-' + r.nom} onClick={() => nav('justif', r.nom)} title="Détail des calculs de l'agence (lecture seule)" style={{ all: 'unset', cursor: 'pointer', fontSize: 10, color: 'var(--violet)', textDecoration: 'underline' }}>détail des calculs</button></> : null}</td>
+                  <td style={{ padding: '4px 8px' }}><b>{r.nom}</b><br /><span style={{ fontSize: 10, color: 'var(--ink65)' }}>Zone {r.zone}</span>{lienDetail || estDR ? <> · <BoutonExportDetaille petit testid={'export-detaille-' + r.nom} libelle="Excel détaillé" titre="Budget détaillé de l'agence avec tous les calculs (Excel)" fichiers={() => fichierDepuisReseau(r.nom, mapAgences[r.nom], profile.role)} /></> : null}{lienDetail ? <> · <button type="button" data-testid={'detail-calculs-' + r.nom} onClick={() => nav('justif', r.nom)} title="Détail des calculs de l'agence (lecture seule)" style={{ all: 'unset', cursor: 'pointer', fontSize: 10, color: 'var(--violet)', textDecoration: 'underline' }}>détail des calculs</button></> : null}</td>
                   <td style={{ padding: '4px 8px' }}><StatutConsultable agence={r.nom} statut={r.statut} /></td>
                   <td style={{ padding: '4px 8px' }}><Avancement av={r.av} statut={r.statut} /></td>
                   <td className="num" style={{ padding: '4px 8px' }}>{r.caB > 0 ? euro(r.caB) : '—'}</td>
