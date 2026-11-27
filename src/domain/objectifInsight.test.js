@@ -8,7 +8,7 @@ describe('objectifInsight — cas de guidage', () => {
     a.targetCA = 0; a.targetTXR = 0;
     const r = objectifInsight(a);
     expect(r.banner).toBeNull();
-    expect(r.phrase).toMatch(/Renseignez votre objectif/);
+    expect(r.phrase).toMatch(/Saisissez votre objectif|Renseignez l.objectif/);
   });
 
   it('objectif posé mais effectif absent : renvoie à l’étape équipe', () => {

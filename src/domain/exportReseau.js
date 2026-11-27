@@ -43,7 +43,7 @@ export function classeurReseau(map, ops, { region = false, perimetre = '' } = {}
   });
 
   // ── Base : entité × rubrique × mois ───────────────────────────────────────────
-  const base = [[titre('Base de données — montants SOMA par entité, rubrique et mois')],
+  const base = [[titre('Base de données : montants SOMA par entité, rubrique et mois')],
     [note('Une ligne par entité et par rubrique. Les onglets de synthèse et de consolidation sont calculés à partir de cette base (formules SOMME.SI.ENS) : filtrez-la ou faites-en un tableau croisé dynamique.')],
     ['Entité', 'Type', 'Rubrique'].concat(MOIS, ['Année']).map(entete)];
   const ajout = (e, rub, vals, fmt) => {
@@ -64,7 +64,7 @@ export function classeurReseau(map, ops, { region = false, perimetre = '' } = {}
   const SIall = (rub, colonne) => 'SUMIFS(' + BASE + '!$' + colonne + '$4:$' + colonne + '$' + finBase + ',' + BASE + '!$C$4:$C$' + finBase + ',"' + esc(rub) + '")';
 
   // ── Synthèse réseau : une ligne par entité ───────────────────────────────────
-  const syn = [[titre('Budget 2027 — ' + (perimetre || (region ? 'ma région' : 'réseau')))],
+  const syn = [[titre('Budget 2027 · ' + (perimetre || (region ? 'ma région' : 'réseau')))],
     [note('Export du ' + new Date().toLocaleDateString('fr-FR') + ' · ' + entites.length + ' entités' + (erreurs.length ? ' · non lues : ' + erreurs.join(', ') : '') + ' · Montants annuels issus de l\'onglet Base.')],
     ['Entité', 'Statut', 'Version', 'CA', 'Charges de personnel', 'MS / CA', 'EBE', 'Résultat d\'exploitation', 'Résultat net', 'Besoin (h)', 'Disponible (h)', 'Tension', 'HS (h)', 'Part HS à +50 %', 'Coût des HS', 'ETP roulants', 'Salariés', 'CP générés (j)', 'CP planifiés (j)'].map(entete)];
   entites.forEach((e, i) => {

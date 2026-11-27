@@ -78,7 +78,7 @@ export default function ChargesREXScreen() {
           </tbody>
         </table>
       </div>
-      {!caAn ? <p className="hint" style={{ fontSize: 12, marginTop: 6 }}>Le chiffre d'affaires n'est pas encore construit (étape Références CA) : les montants s'afficheront dès qu'il le sera.</p> : null}
+      {!caAn ? <p className="hint" style={{ fontSize: 12, marginTop: 6 }}>Le CA n'est pas encore construit (Références CA). Les montants s'afficheront ensuite.</p> : null}
       <h3 style={{ margin: '18px 0 8px' }}>Montant fixe par mois (€)</h3>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>

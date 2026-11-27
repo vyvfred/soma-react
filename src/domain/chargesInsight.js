@@ -26,11 +26,11 @@ export function chargesInsight(a) {
 
   let text = 'Vous avez saisi <b>' + saisis + ' postes de charges sur ' + totalPostes + '</b> pour ' + a.name + '. ';
   if (!coutHoraire) {
-    text += 'Renseignez le taux horaire brut et les charges patronales pour calculer le coût horaire.';
+    text += 'Renseignez le taux horaire brut et les charges patronales : SOMA en déduit le coût horaire.';
   } else if (saisis < totalPostes) {
-    text += 'Le coût horaire est établi à ' + fmtCoutH(coutHoraire) + (costHourJuin(a) ? ' (puis ' + fmtCoutH(costHourJuin(a)) + ' à partir de juin)' : '') + '. Complétez les postes restants pour un budget prévisionnel complet.';
+    text += 'Le coût horaire est établi à ' + fmtCoutH(coutHoraire) + (costHourJuin(a) ? ' (puis ' + fmtCoutH(costHourJuin(a)) + ' à partir de juin)' : '') + '. Complétez les postes restants.';
   } else {
-    text += 'Toutes les charges sont renseignées et le coût horaire est établi. Le budget de cette agence est prêt côté charges.';
+    text += 'Toutes les charges sont saisies et le coût horaire est calculé.';
   }
 
   return { kpis, text, saisis, totalPostes, coutHoraire };

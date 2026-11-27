@@ -7,7 +7,7 @@ export default function LoginScreen() {
   // Lien expiré ou déjà utilisé (souvent ouvert d'avance par l'antivirus de la messagerie)
   const [oubli, setOubli] = useState(LIEN_EXPIRE);
   const [emailOubli, setEmailOubli] = useState('');
-  const [msgOubli, setMsgOubli] = useState(LIEN_EXPIRE ? { ok: false, message: 'Ce lien a expiré ou a déjà été utilisé. Saisissez votre e-mail et demandez un nouveau lien, puis ouvrez-le aussitôt.' } : null);
+  const [msgOubli, setMsgOubli] = useState(LIEN_EXPIRE ? { ok: false, message: 'Ce lien a expiré ou a déjà servi. Demandez-en un nouveau avec votre e-mail et ouvrez-le tout de suite.' } : null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,11 +27,11 @@ export default function LoginScreen() {
     <div className="soma-auth">
       <div className="soma-auth-brand">
         <h1>SOMA</h1>
-        <p className="sub">Copilote de construction budgétaire — VYV Ambulance</p>
+        <p className="sub">Construction des budgets · VYV Ambulance</p>
         <div className="soma-auth-tags">
           <span>Préparer le travail</span>
           <span>Sécuriser les décisions</span>
-          <span>Rendre chaque budget justifiable</span>
+          <span>Des budgets que l'on peut expliquer</span>
         </div>
       </div>
 

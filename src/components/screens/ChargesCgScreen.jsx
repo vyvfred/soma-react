@@ -27,7 +27,7 @@ export default function ChargesCgScreen() {
       <ClasseurChargesCard agenceOuverte={agenceNom} onImporte={recharger} />
       {agenceNom
         ? <ChargesAgence />
-        : <div className="card hint" data-testid="cg-sans-agence">Pour saisir ou corriger les charges d'une seule agence poste par poste, ouvrez-la avec « Ouvrir une agence ».</div>}
+        : <div className="card hint" data-testid="cg-sans-agence">Pour une seule agence, ouvrez-la avec Ouvrir une agence.</div>}
     </>
   );
 }
@@ -38,7 +38,7 @@ function ChargesAgence() {
   if (!agenceNom) return <div className="card"><h2>Charges CG</h2><p className="hint">Ouvrez une agence pour saisir ses charges.</p></div>;
   if (loading) return <div className="card"><h2>Charges CG</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Charges CG</h2><p className="hint">Erreur : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Charges CG — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Charges CG · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const insight = chargesInsight(a);
 
@@ -116,11 +116,11 @@ function ChargesAgence() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Charges — {a.name}</h2>
+      <h2 style={{ marginBottom: 14 }}>Charges · {a.name}</h2>
 
       {estStructure(a) ? (
         <div data-testid="structure-note" style={{ marginBottom: 14, padding: '10px 14px', background: 'rgba(74,158,255,.08)', border: '1px solid var(--blue2)', fontSize: 13, color: 'var(--blue2)' }}>
-          ℹ <b>{a.name}</b> est une structure hors agence : vous saisissez ici ses charges poste par poste. Son <b>chiffre d'affaires</b> et sa <b>masse salariale</b> se saisissent en lignes nommées, mois par mois, dans « Ouvrir une agence » (pas de calendrier ni d'équipe).
+          <b>{a.name}</b> est une structure : ses charges se saisissent ici, son <b>chiffre d'affaires</b> et sa <b>masse salariale</b> dans Ouvrir une agence, en lignes mois par mois.
           {estSiege(a) ? <> Le Siège porte aussi l'<b>impôt sur les sociétés</b> et la <b>participation aux bénéfices</b> : résultat net = résultat courant avant impôt + résultat exceptionnel − IS − participation.</> : null}
         </div>
       ) : null}
@@ -142,7 +142,7 @@ function ChargesAgence() {
           ))}
         </div>
         {editable ? (
-          <button data-testid="prefill-charges" onClick={() => { if (window.confirm('Pré-remplir les postes standards (carburant, crédit-bail, loyers, assurance, impôts, honoraires, péages, charges financières) à partir du CA ? Les montants actuels de ces postes seront remplacés.')) update((draft) => prefillCharges(JSON.parse(JSON.stringify(draft)))); }}
+          <button data-testid="prefill-charges" onClick={() => { if (window.confirm('Pré-remplir carburant, crédit-bail, loyers, assurance, impôts, honoraires, péages et charges financières à partir du CA ? Les montants actuels de ces postes seront remplacés.')) update((draft) => prefillCharges(JSON.parse(JSON.stringify(draft)))); }}
             style={{ width: 'auto', margin: '10px 0 0', fontSize: 12, padding: '7px 14px' }}>Pré-remplir standards</button>
         ) : null}
         <p className="hint" style={{ fontSize: 12, margin: '10px 0 0' }}>

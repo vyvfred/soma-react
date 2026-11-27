@@ -64,7 +64,7 @@ function RatioMSMensuel({ a, rep }) {
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Masse salariale = charges de personnel du mois (quotes-parts comprises). Les lignes grisées situent le budget face au réalisé 2026 (estimation du contrôle de gestion pour les mois non clos), à 2025 et à la moyenne du réseau.</div>
+      <div style={{ fontSize: '0.85em', color: 'var(--ink65)', marginTop: 6 }}>Masse salariale = charges de personnel du mois, quotes-parts comprises. En gris : 2026 (réalisé, puis estimation du contrôle de gestion), 2025 et la moyenne du réseau.</div>
     </div>
   );
 }
@@ -80,7 +80,7 @@ export default function SyntheseScreen() {
   if (!agenceNom) return <div className="card"><h2>Synthèse</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Synthèse</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Synthèse</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Synthèse — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Synthèse · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const s = syntheseBudget(a, profile && profile.role);
   const choix = coutChoix(a);
@@ -98,8 +98,8 @@ export default function SyntheseScreen() {
     <div className="card syntheseGrand">
       <div className="sv-entete">
         <div>
-          <h2>Synthèse 2027 — {a.name || agenceNom}</h2>
-          <div className="sv-soustitre">L'essentiel du budget, comparé à 2026, à 2025 et à la moyenne du réseau. Aucune valeur n'est imposée : les écarts servent à expliquer les choix.</div>
+          <h2>Synthèse 2027 · {a.name || agenceNom}</h2>
+          <div className="sv-soustitre">L'essentiel du budget, comparé à 2026, à 2025 et à la moyenne du réseau. Aucune valeur n'est imposée.</div>
         </div>
       </div>
 
@@ -138,9 +138,9 @@ export default function SyntheseScreen() {
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--ink65)', marginTop: 4 }}>
                       {choix.surcout <= 0
-                        ? 'Votre répartition des CP minimise le recours aux heures supplémentaires. Aucun surcoût.'
-                        : <>Vous avez réparti certains congés différemment de l'optimum, pour {choix.semaines.length} semaine{choix.semaines.length > 1 ? 's' : ''}.
-                          {' '}Ce choix (souvent pour le climat social) représente environ <b>{choix.hsSup} h supplémentaires</b> sur l'année. C'est une décision de gestion à assumer et à valider.</>}
+                        ? 'Votre répartition des congés est celle qui coûte le moins en heures supplémentaires.'
+                        : <>Vous avez placé certains congés autrement que la proposition de SOMA, sur {choix.semaines.length} semaine{choix.semaines.length > 1 ? 's' : ''}.
+                          {' '}Ça représente environ <b>{choix.hsSup} h supplémentaires</b> sur l'année, à expliquer à la validation.</>}
                     </div>
                   </div>
                 </div>

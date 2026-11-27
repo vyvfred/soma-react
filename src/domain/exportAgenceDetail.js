@@ -37,7 +37,7 @@ const Q = (nom) => "'" + nom.replace(/'/g, "''") + "'";
 
 function feuilleParametres(a) {
   const L = [];
-  L.push([titre('Paramètres de calcul — ' + (a.name || 'agence'))]);
+  L.push([titre('Paramètres de calcul · ' + (a.name || 'agence'))]);
   L.push([note('Les cellules en bleu sont des hypothèses : modifiez-les, tout le classeur se recalcule. Les cellules grises viennent du moteur SOMA.')]);
   L.push([entete('Paramètre'), entete('Unité')].concat(MOIS.map(entete), [entete('Année')]));
   const ligneMois = (lib, unite, vals, fmt, tot) => [lib, unite].concat(vals.map((v) => saisie(v, fmt)), [tot || null]);
@@ -56,7 +56,7 @@ function feuilleParametres(a) {
 }
 
 function feuilleCalendrier(a) {
-  const L = [[titre('Calendrier 2027 — besoin d\'heures jour par jour')],
+  const L = [[titre('Calendrier 2027 : besoin d\'heures jour par jour')],
     [note('Besoin du jour = CA du jour ÷ TXR de son mois. Modifiez un CA ou le TXR (Paramètres, ligne 4) : besoins, heures supplémentaires et compte de résultat suivent.')],
     ['Date', 'Jour', 'Semaine', 'Mois', 'Type', 'CA sanitaire', 'CA saisonnier', 'CA transport de personnes', 'Ajustement', 'CA total', 'TXR', 'Besoin (h)'].map(entete)];
   const cal = (a.cal || []).slice();
@@ -91,7 +91,7 @@ function feuilleEquipe(a) {
 
 function feuilleSemaines(a) {
   const auto = hs50Auto(a);
-  const L = [[titre('Semaines — besoin, équipe disponible et heures supplémentaires')],
+  const L = [[titre('Semaines : besoin, équipe disponible et heures supplémentaires')],
     [note('Disponible = base des contrats − congés − absences − fériés chômés − maladie. HS = besoin − disponible quand le besoin dépasse. Les HS sont décomptées à la semaine (35 h). Colonnes grises : moteur SOMA (répartition des contrats jour par jour, fériés, maladie du mois).')],
     ['Semaine', 'Du', 'Au', 'Jours', 'Mois principal', 'CA', 'Besoin (h)', 'Base contrats (h)', 'CP (jours)', 'Facteur jour', 'CP (h)',
       'Absences payées (j)', 'Absences non payées (j)', 'Absences (h)', 'Fériés chômés (h)', 'Taux maladie (%)', 'Maladie (h)', 'Disponible (h)',
@@ -238,7 +238,7 @@ function feuilleResultat(a, role, cal, ms) {
 function feuilleSynthese(a, meta, res, sem, eq) {
   const cr = (lib) => (res.ligneDe[lib] ? Q('Compte de résultat') + '!O' + res.ligneDe[lib] : null);
   const t = hsTot(a);
-  const L = [[titre('Budget 2027 — ' + (a.name || 'agence'))],
+  const L = [[titre('Budget 2027 · ' + (a.name || 'agence'))],
     [note((meta.version ? 'Version : ' + meta.version + ' · ' : '') + (meta.statut ? 'Statut : ' + meta.statut + ' · ' : '') + 'Export du ' + new Date().toLocaleDateString('fr-FR') + ' depuis SOMA')],
     [],
     ['Indicateur', 'Valeur', 'D\'où vient le chiffre'].map(entete)];

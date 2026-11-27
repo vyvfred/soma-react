@@ -78,7 +78,7 @@ export default function ConsolidationScreen() {
 
   const ops = state.region ? agencesOps().filter((o) => state.region.includes(o.nom)) : agencesOps();
   if (state.region && !ops.length) {
-    return <div className="card"><h2>Consolidation de ma région</h2><p className="hint" data-testid="conso-region-vide">Aucune agence n'est encore rattachée à votre région. Le contrôleur de gestion fait l'affectation dans l'écran « Affectation DR » ; vos agences apparaîtront ici ensuite.</p></div>;
+    return <div className="card"><h2>Consolidation de ma région</h2><p className="hint" data-testid="conso-region-vide">Aucune agence n'est encore rattachée à votre région. Le contrôleur de gestion doit vous les affecter.</p></div>;
   }
   const region = !!state.region;
   const cols = region ? [] : STRUCTURES;
@@ -137,7 +137,7 @@ export default function ConsolidationScreen() {
           <thead>
             <tr>
               {['Agence', 'Statut', 'Avancement', 'CA budgété', 'Capacité max', 'Taux charge', 'HS estimées', 'CP à répartir', 'Alertes', 'Mis à jour'].map((h, i) => (
-                <th key={i} title={h === 'Avancement' ? 'Construction du budget par le REX : objectif, références CA, équipe, absentéisme, mois validés. Survolez pour le détail.' : undefined} style={{ textAlign: i >= 3 && i <= 7 ? 'right' : 'left', padding: '6px 8px' }}>{h}</th>
+                <th key={i} title={h === 'Avancement' ? 'Avancement du REX : objectif, références CA, équipe, absentéisme, mois validés. Survolez pour le détail.' : undefined} style={{ textAlign: i >= 3 && i <= 7 ? 'right' : 'left', padding: '6px 8px' }}>{h}</th>
               ))}
             </tr>
           </thead>

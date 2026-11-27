@@ -17,12 +17,12 @@ export function affectationInsight(ops, agMap, drs) {
 
   let text;
   if (!drs.length) {
-    text = 'Aucun directeur régional n\u2019est encore créé. Créez les comptes DR pour pouvoir affecter les agences.';
+    text = 'Aucun compte DR pour l\u2019instant. Créez-les pour affecter les agences.';
   } else if (sansDR.length === 0) {
-    text = 'Toutes les agences ont un DR affecté. Le circuit de validation peut démarrer : chaque budget soumis ira au bon directeur régional.';
+    text = 'Toutes les agences ont un DR. Chaque budget soumis ira au bon directeur régional.';
   } else {
     const liste = sansDR.slice(0, 4).map((a) => a.nom).join(', ') + (sansDR.length > 4 ? '…' : '');
-    text = '<b>' + affectees.length + ' agences sur ' + ops.length + '</b> ont un DR affecté. Il reste <b>' + sansDR.length + '</b> à affecter (' + liste + '). Sans DR, le budget de ces agences ne pourra pas être validé à la première étape.';
+    text = '<b>' + affectees.length + ' agences sur ' + ops.length + '</b> ont un DR affecté. Il reste <b>' + sansDR.length + '</b> à affecter (' + liste + '). Sans DR, leur budget ne peut pas être validé.';
   }
 
   return { kpis, text, affectees, sansDR };

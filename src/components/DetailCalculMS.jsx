@@ -20,7 +20,7 @@ export default function DetailCalculMS({ a, ouvertParDefaut = false, sansFermer 
         <button data-testid="detail-ms-export" className="secondary" style={{ fontSize: 12 }} onClick={() => telechargerClasseur(feuillesDetailMS(a), 'SOMA_detail_masse_salariale_' + a.name.replace(/\s+/g, '_') + '_2027.xlsx')}>⬇ Exporter (Excel)</button>
         {sansFermer ? null : <button className="secondary" style={{ fontSize: 12 }} onClick={() => setOuvert(false)}>Fermer</button>}
       </div>
-      <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>Salaires de base mensualisés ; variables (HS, retenues) rattachées à la période de paie, au prorata des jours. Cliquez sur un mois pour afficher ses formules. Le total de chaque colonne est la masse salariale du mois.</p>
+      <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>Salaire de base identique chaque mois. Les variables (HS, retenues) suivent la période de paie. Cliquez sur un mois pour voir ses formules.</p>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
           <thead>
@@ -52,7 +52,7 @@ export default function DetailCalculMS({ a, ouvertParDefaut = false, sansFermer 
       </div>
       {dm && dm.periode ? (
         <div data-testid="detail-ms-formules" style={{ marginTop: 12 }}>
-          <h4 style={{ margin: '0 0 6px', fontSize: 13 }}>Formules — paie {/^[aeiou]/i.test(dm.periode.mois) ? 'd\'' : 'de '}{dm.periode.mois.toLowerCase()} ({dm.periode.debut.split('-').reverse().join('/')} – {dm.periode.fin.split('-').reverse().join('/')})</h4>
+          <h4 style={{ margin: '0 0 6px', fontSize: 13 }}>Formules de la paie {/^[aeiou]/i.test(dm.periode.mois) ? 'd\'' : 'de '}{dm.periode.mois.toLowerCase()} ({dm.periode.debut.split('-').reverse().join('/')} – {dm.periode.fin.split('-').reverse().join('/')})</h4>
           <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
             <tbody>
               {dm.lignes.filter((l) => Math.abs(l.montant) >= 0.5 || l.cle === 'base').map((l) => (

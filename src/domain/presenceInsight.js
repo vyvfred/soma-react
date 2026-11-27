@@ -23,16 +23,16 @@ export function presenceInsight(a) {
   // État 1 : congés pas encore répartis.
   if (!cpRepartis) {
     const nbSal = a.employees.filter((e) => isRoulant(e.qual)).length;
-    return 'Votre équipe et votre objectif sont en place. Il reste à répartir les congés de vos <b>' + nbSal + ' salariés</b> sur l\u2019année. SOMA peut le faire en lissant la charge — utilisez <b>« Répartir les congés automatiquement »</b>.';
+    return 'Équipe et objectif sont en place. Reste à répartir les congés de vos <b>' + nbSal + ' salariés</b> : cliquez sur <b>Répartir les congés automatiquement</b>.';
   }
 
   // État 4 : choix REX coûteux.
   if (choix.mesurable && choix.surcout > 0) {
-    let phrase = 'Vos congés sont répartis. Vous avez choisi d\u2019accorder des congés différemment de l\u2019optimum sur <b>' + choix.semaines.length + ' semaine' + (choix.semaines.length > 1 ? 's' : '') + '</b>, soit un surcoût de <b>' + euro(choix.surcout) + '</b> — un arbitrage social que vous pourrez justifier à la validation.';
+    let phrase = 'Congés répartis. Vous avez placé des congés autrement que la proposition sur <b>' + choix.semaines.length + ' semaine' + (choix.semaines.length > 1 ? 's' : '') + '</b>, soit un surcoût de <b>' + euro(choix.surcout) + '</b>, à expliquer à la validation.';
     if (surcharge.length) {
       const pire = surcharge[0];
       const q1 = qualifierSemaine(a, pire.week);
-      phrase += ' Par ailleurs, la semaine ' + pire.week + (q1 ? ' (' + q1 + ')' : '') + ' reste tendue.';
+      phrase += ' Par ailleurs, la semaine ' + pire.week + (q1 ? ' (' + q1 + ')' : '') + ' reste chargée.';
     }
     return phrase;
   }
@@ -41,12 +41,12 @@ export function presenceInsight(a) {
   if (surcharge.length) {
     const pire = surcharge[0];
     const qual = qualifierSemaine(a, pire.week);
-    const ton = surcharge.length === 1 ? 'Une semaine reste un peu tendue' : '<b>' + surcharge.length + ' semaines</b> restent en surcharge';
-    return 'Vos congés sont répartis en lissant la charge. ' + ton + ' : la semaine <b>' + pire.week + '</b>' + (qual ? ' (<b>' + qual + '</b>)' : '') + ' à ' + pire.ratio.toFixed(1) + ' h/pers. Voulez-vous examiner <b>' + M[pire.mois] + '</b> en premier ?';
+    const ton = surcharge.length === 1 ? 'Une semaine reste chargée' : '<b>' + surcharge.length + ' semaines</b> restent en surcharge';
+    return 'Congés répartis. ' + ton + ' : la semaine <b>' + pire.week + '</b>' + (qual ? ' (<b>' + qual + '</b>)' : '') + ' à ' + pire.ratio.toFixed(1) + ' h/pers. Commencez par regarder <b>' + M[pire.mois] + '</b>.';
   }
 
   // État 2 : tout va bien.
   const minR = Math.min(...ratios.filter((r) => r.hs >= 0.5).map((r) => r.ratio).concat([0]));
   const maxR = Math.max(...ratios.map((r) => r.ratio).concat([0]));
-  return 'Vos congés sont répartis, la charge est lissée. Vos équipes présentes font entre <b>' + minR.toFixed(1) + '</b> et <b>' + maxR.toFixed(1) + ' h supplémentaires par personne</b>, sans pic. Votre socle de semaines standard est équilibré — votre année de présence est saine.';
+  return 'Congés répartis, charge régulière : entre <b>' + minR.toFixed(1) + '</b> et <b>' + maxR.toFixed(1) + ' h supplémentaires par personne</b> selon les semaines, sans pic.';
 }

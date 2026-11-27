@@ -101,12 +101,12 @@ function syntheseVueHTML(v,opts){
     +'<div class="sv-legende"><span><i class="sv-l-barre"></i>Budget 2027</span>'+(v.mensuel.ca26?'<span><i class="sv-l-c26"></i>2026'+(v.mensuel.moisClos26<12?' (pointillé : atterrissage)':'')+'</span>':'')+(v.mensuel.ca25?'<span><i class="sv-l-c25"></i>Réalisé 2025</span>':'')+'</div></div>';
   if(v.pont)h+='<div class="sv-carte" data-testid="sv-graphe-pont"><div class="sv-titre">Du résultat 2026 au résultat 2027</div>'+svGraphPont(v.pont)
     +'<div class="sv-legende"><span><i class="sv-l-plus"></i>améliore le résultat</span><span><i class="sv-l-moins"></i>le réduit</span></div></div>';
-  else h+='<div class="sv-carte sv-vide"><div class="sv-titre">Du résultat 2026 au résultat 2027</div><p>Disponible dès que le tableau de bord 2026 de l\'agence est importé par le contrôle de gestion.</p></div>';
+  else h+='<div class="sv-carte sv-vide"><div class="sv-titre">Du résultat 2026 au résultat 2027</div><p>Apparaît quand le contrôle de gestion a importé le tableau de bord 2026 de l\'agence.</p></div>';
   h+='</div>';
   if(v.points.length){
     let ic={alerte:'●',attention:'●',info:'●'};
     h+='<div class="sv-carte" data-testid="sv-points"><div class="sv-titre">'+(opts.valideur?'Points d\'attention pour votre décision':'À regarder')+'</div><ul class="sv-points">'
-      +v.points.map(function(p){return '<li class="sv-pt-'+p.niveau+'"><span>'+ic[p.niveau]+'</span>'+svEsc(p.texte)+'</li>';}).join('')+'</ul><div class="sv-note">Repères pour éclairer la décision, pas des blocages.</div></div>';
+      +v.points.map(function(p){return '<li class="sv-pt-'+p.niveau+'"><span>'+ic[p.niveau]+'</span>'+svEsc(p.texte)+'</li>';}).join('')+'</ul><div class="sv-note">Ce sont des repères, rien n\'est bloquant.</div></div>';
   }
   return h;
 }

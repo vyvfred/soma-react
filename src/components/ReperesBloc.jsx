@@ -22,7 +22,7 @@ export default function ReperesBloc({ a, r, titre, sansBudget }) {
   const evol = (l) => (l.v2026 && l.v2027 ? ((l.v2027 / l.v2026 - 1) * 100) : null);
   return (
     <div data-testid="reperes-2026" style={{ margin: '8px 0', padding: '10px 12px', border: '1px solid var(--border)', background: 'var(--card2)', fontSize: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--blue2, #3d6fd6)', marginBottom: 4 }}>{titre || 'Repères 2026 — tableau de bord'}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--blue2, #3d6fd6)', marginBottom: 4 }}>{titre || 'Repères 2026 (tableau de bord)'}</div>
       <div style={{ color: 'var(--ink65)', marginBottom: 6 }}>Atterrissage 2026 : {periodeReperes(r)}. Pour information : ces chiffres ne modifient pas le budget.</div>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>

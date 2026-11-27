@@ -60,7 +60,7 @@ export default function SuiviREXScreen() {
   if (state.loading && !state.suivi) return <div className="card"><h2>Suivi des REX</h2><p className="hint">Chargement…</p></div>;
   if (state.error) return <div className="card"><h2>Suivi des REX</h2><p className="hint">Erreur : {state.error}</p></div>;
   const { lignes, kpi } = state.suivi;
-  if (!lignes.length) return <div className="card"><h2>Suivi des REX</h2><p className="hint">Aucune agence n'est rattachée à votre région. Le contrôleur de gestion fait l'affectation.</p></div>;
+  if (!lignes.length) return <div className="card"><h2>Suivi des REX</h2><p className="hint">Aucune agence n'est rattachée à votre région. Voyez avec le contrôleur de gestion.</p></div>;
   const visibles = lignes.filter((l) => filtre === 'tous' || (filtre === 'relancer' ? l.aRelancer : filtre === 'brouillon' ? (l.etat === 'en_cours' || l.etat === 'non_commence') : l.etat === 'soumis' || l.etat === 'valide'));
 
   let phrase = kpi.aRelancer
@@ -81,7 +81,7 @@ export default function SuiviREXScreen() {
         <Kpi label="À relancer" value={kpi.aRelancer} note={kpi.aRelancer ? 'avant le 27 novembre' : '✓'} />
       </div>
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--ink65)', marginBottom: 14 }}>
-        💬 {phrase}Cliquez sur « Voir le budget » pour parcourir tous les écrans d'une agence en lecture seule, même en brouillon.
+        {phrase}Voir le budget ouvre tous les écrans d'une agence en lecture seule, même en brouillon.
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
         {[['tous', 'Toutes'], ['relancer', 'À relancer'], ['brouillon', 'En brouillon'], ['soumis', 'Soumis']].map(([v, lib]) => (

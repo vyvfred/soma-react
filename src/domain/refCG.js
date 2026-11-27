@@ -64,14 +64,14 @@ export function alertesParametrage(a) {
   if (msNRMensuel(a) === null) {
     const ancien = (a.employees || []).some((e) => !isRoulant(e.qual) && (+e.coutJour || 0) > 0) || (+a.drCostAnnual || 0) > 0;
     out.push({ t: 'warn', m: ancien
-      ? 'Ligne globale non-roulante non saisie — calcul provisoire sur les anciens coûts journaliers et la quote-part DR.'
-      : 'Ligne globale non-roulante non saisie — les improductifs ne sont pas dans la masse salariale.' });
+      ? 'Ligne non roulante non saisie : calcul provisoire sur les anciens coûts journaliers et la quote-part DR.'
+      : 'Ligne non roulante non saisie : les improductifs manquent dans la masse salariale.' });
   }
   if (a.ratioMaintien === null || a.ratioMaintien === undefined || a.ratioMaintien === '') {
-    out.push({ t: 'info', m: 'Ratio de maintien de salaire non renseigné — les absences sont déduites à 100 %.' });
+    out.push({ t: 'info', m: 'Ratio de maintien vide : les absences sont retirées à 100 %.' });
   }
   if (a.costHour && !costHourJuin(a)) {
-    out.push({ t: 'info', m: 'Taux horaire au 1er juin non renseigné — le taux de janvier s\'applique toute l\'année.' });
+    out.push({ t: 'info', m: 'Pas de taux au 1er juin : celui de janvier s\'applique toute l\'année.' });
   }
   return out;
 }

@@ -22,6 +22,6 @@ export const URL_APPLI = 'https://vyv2027-react.netlify.app/';
 export async function ecrire(req) {
   const res = await req.select('id');
   if (res.error) return res;
-  if (!res.data || !res.data.length) return { data: [], error: { message: 'Enregistrement refusé : vos droits ne permettent pas de modifier cette donnée.' } };
+  if (!res.data || !res.data.length) return { data: [], error: { message: 'Enregistrement refusé : vous n\'avez pas le droit de modifier cette donnée.' } };
   return res;
 }

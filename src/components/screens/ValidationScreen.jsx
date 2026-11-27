@@ -25,7 +25,7 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consul
 
   async function decide(decision) {
     if (!comment.trim()) { setMsg('Un commentaire est obligatoire.'); return; }
-    if (decision === 'refuse' && !window.confirm('Confirmer le refus de ce budget ?\n\nIl retournera au REX pour correction, et toutes les validations déjà faites seront effacées.')) return;
+    if (decision === 'refuse' && !window.confirm('Refuser ce budget ?\n\nIl repart chez le REX et les validations déjà données sont effacées.')) return;
     setBusy(true); setMsg(null);
     try {
       const res = await submitDecision({ agence, role, decision, commentaire: comment, parNom });
@@ -68,7 +68,7 @@ function BudgetCard({ item, role, parNom, onDecided, autres, onConsulter, consul
         <div className="valCardRefus">⚠ Déjà refusé le {new Date(dernierRefus.date).toLocaleDateString('fr-FR')} par {VALIDATOR_LABELS[dernierRefus.role] || dernierRefus.role} : « {dernierRefus.commentaire} »</div>
       ) : null}
       {consultatif ? (
-        <div data-testid="val-consultatif" className="valCardMeta" style={{ marginTop: 10 }}>👁 Profil consultatif : vous voyez la fiche et tous les écrans, la décision appartient au directeur financier.</div>
+        <div data-testid="val-consultatif" className="valCardMeta" style={{ marginTop: 10 }}>Profil consultatif : vous voyez la fiche et les écrans, la décision revient au directeur financier.</div>
       ) : <>
       <label className="valCardCommentLabel">Commentaire (obligatoire)</label>
       <textarea className="valCardComment" rows={2} placeholder="Justifiez votre décision…" value={comment} disabled={busy} onChange={(e) => setComment(e.target.value)} />
@@ -143,7 +143,7 @@ export default function ValidationScreen() {
         ))}
       </div>
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--ink65)', marginBottom: 16 }}>
-        💬 {state.aValider.length ? <><b>{state.aValider.length} budget{state.aValider.length > 1 ? 's' : ''}</b> attend{state.aValider.length > 1 ? 'ent' : ''} {profile.consultatif ? 'la décision du directeur financier (profil consultatif : lecture seule)' : 'votre décision'}.</> : 'Aucun budget n\'attend votre décision pour le moment. ' + (profile.role === 'dr' ? 'Les budgets de vos agences arrivent ici dès que leur responsable d\'exploitation les soumet. Suivez leur avancement dans « Consolidation région ».' : 'Un budget arrive ici quand l\'étape précédente du circuit l\'a validé. Suivez l\'avancement des agences dans « Consolidation ».')}
+        💬 {state.aValider.length ? <><b>{state.aValider.length} budget{state.aValider.length > 1 ? 's' : ''}</b> attend{state.aValider.length > 1 ? 'ent' : ''} {profile.consultatif ? 'la décision du directeur financier (profil consultatif : lecture seule)' : 'votre décision'}.</> : 'Aucun budget n\'attend votre décision pour le moment. ' + (profile.role === 'dr' ? 'Les budgets de vos agences arrivent ici dès que le REX les soumet. Leur avancement est dans Consolidation région.' : 'Un budget arrive ici une fois validé à l\'étape précédente. L\'avancement est dans Consolidation.')}
       </div>
 
       {state.aValider.map((it) => (
@@ -160,7 +160,7 @@ export default function ValidationScreen() {
               const dec = it.v.decisions[profile.role];
               return (
                 <div key={it.agence} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
-                  <b>{it.agence}</b> — {dec.decision === 'valide' ? <span style={{ color: 'var(--green)' }}>✓ validé</span> : <span style={{ color: 'var(--orange)' }}>✗ refusé</span>}
+                  <b>{it.agence}</b> · {dec.decision === 'valide' ? <span style={{ color: 'var(--green)' }}>✓ validé</span> : <span style={{ color: 'var(--orange)' }}>✗ refusé</span>}
                   <span style={{ color: 'var(--ink65)' }}> · {dec.commentaire || ''}</span>
                 </div>
               );

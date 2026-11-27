@@ -111,9 +111,9 @@ export function verrouillerMois(a, m) {
 }
 // Message d'encouragement après la validation du nb-ième mois
 export function messageValidation(nb, m) {
-  if (nb === 12) return 'Les 12 mois sont calés — le plus dur est fait !';
+  if (nb === 12) return 'Les 12 mois sont validés.';
   if (nb === 6) return 'Six mois validés, vous êtes à mi-parcours !';
-  if (nb === 1) return 'Premier mois validé. Continuez sur votre lancée.';
+  if (nb === 1) return 'Premier mois validé.';
   return M[m] + ' validé (' + nb + '/12 mois)';
 }
 export function deverrouillerMois(a, m) {

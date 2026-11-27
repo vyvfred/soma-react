@@ -65,7 +65,7 @@ export default function AffectationScreen() {
         dangerouslySetInnerHTML={{ __html: insight.text }} />
 
       {!drs.length ? (
-        <p className="hint">Aucun DR créé. Créez d'abord les comptes DR dans Supabase Auth.</p>
+        <p className="hint">Aucun compte DR pour l'instant. Créez-les d'abord dans l'administration.</p>
       ) : (
         <>
           {msg ? (

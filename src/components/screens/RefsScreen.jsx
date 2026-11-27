@@ -24,7 +24,7 @@ export default function RefsScreen() {
   if (!agenceNom) return <div className="card"><h2>Références CA</h2><p className="hint">Aucune agence rattachée.</p></div>;
   if (loading) return <div className="card"><h2>Références CA</h2><p className="hint">Chargement…</p></div>;
   if (error) return <div className="card"><h2>Références CA</h2><p className="hint">Erreur : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Références CA — {agenceNom}</h2><p className="hint">Budget non commencé.</p></div>;
+  if (!a) return <div className="card"><h2>Références CA · {agenceNom}</h2><p className="hint">Budget non commencé.</p></div>;
 
   // Modifie une référence puis régénère le calendrier (comme setRef → genCal).
   function setRef(act, m, type, value) {
@@ -58,7 +58,7 @@ export default function RefsScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 8 }}>Références CA — {a.name}</h2>
+      <h2 style={{ marginBottom: 8 }}>Références CA · {a.name}</h2>
       <p className="hint" style={{ marginBottom: 14 }}>
         Le CA de référence par type de jour alimente automatiquement le calendrier et le chiffre d'affaires prévisionnel.
       </p>
@@ -87,7 +87,7 @@ export default function RefsScreen() {
         const refs = (a.refs && a.refs[act.key]) || Array.from({ length: 12 }, () => ({}));
         return (
           <div key={act.key} data-visite="refs" style={{ marginBottom: 22 }}>
-            <h3 style={{ fontSize: 14, marginBottom: 8 }}>{act.label} — CA par jour (€)</h3>
+            <h3 style={{ fontSize: 14, marginBottom: 8 }}>{act.label} : CA par jour (€)</h3>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
@@ -117,8 +117,8 @@ export default function RefsScreen() {
 
       {a.actFun ? (
         <div data-testid="refs-fun" style={{ marginBottom: 22 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 4 }}>Funéraire — CA par mois (€)</h3>
-          <p className="hint" style={{ fontSize: 12, margin: '0 0 8px' }}>Activité commerciale sans besoin d'équipage : le montant du mois est réparti à parts égales sur chaque jour du calendrier. Il compte dans le chiffre d'affaires et le compte de résultat, mais pas dans les heures nécessaires, le TXR ni l'objectif de CA.</p>
+          <h3 style={{ fontSize: 14, marginBottom: 4 }}>Funéraire : CA par mois (€)</h3>
+          <p className="hint" style={{ fontSize: 12, margin: '0 0 8px' }}>Activité sans équipage. Le montant du mois est réparti à parts égales sur ses jours. Il entre dans le CA et le compte de résultat, pas dans le besoin d'heures, le TXR ni l'objectif.</p>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
               <thead><tr><th style={{ textAlign: 'left', padding: '4px 8px' }}>Mois</th>{M.map((m) => <th key={m} style={{ padding: '4px 4px' }}>{m}</th>)}<th style={{ padding: '4px 8px' }}>Total</th></tr></thead>

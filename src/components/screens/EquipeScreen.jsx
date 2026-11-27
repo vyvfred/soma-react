@@ -22,11 +22,11 @@ const td = { padding: '4px 8px', borderBottom: '1px solid var(--border)' };
 
 // Info-bulles des colonnes (reprises verbatim du mono-fichier)
 const AIDE_COLONNES = {
-  'Qualif.': 'DEA = ambulancier diplômé, AA = auxiliaire, TAXI = chauffeur taxi, TPMR = transport PMR. Ces qualifications sont roulantes. REGULATEUR et REX sont non-roulants.',
-  'H. base': 'Heures travaillées par semaine. Ex : 35h pour un temps plein, 17,5h pour un mi-temps.',
-  '% roul.': 'Part du temps passée en roulant (sur la route). 100% pour un ambulancier à temps plein roulant. Pour un salarié partagé, indiquez sa part roulante : par exemple 50% pour une personne mi-roulant, mi-régulation. Le reste est compté comme improductif. Vaut aussi pour un régulateur ou un REX qui roule une partie de son temps (0 % = ne roule pas) : sa part roulante compte dans les heures et les ETP roulants.',
-  'Entrée 2027': 'Date d\'arrivée en 2027. Laissez vide si la personne est déjà présente au 1er janvier.',
-  'Sortie 2027': 'Date de départ en 2027 (fin de CDD, retraite...). Laissez vide si la personne reste toute l\'année.',
+  'Qualif.': 'DEA, AA, TAXI et TPMR sont des roulants. RÉGULATEUR et REX ne roulent pas.',
+  'H. base': 'Heures par semaine : 35 h pour un temps plein, 17,5 h pour un mi-temps.',
+  '% roul.': 'Part du temps passée sur la route. 100 % pour un ambulancier, 50 % pour quelqu\'un qui partage son temps avec la régulation, 0 % s\'il ne roule pas. Le reste compte comme improductif.',
+  'Entrée 2027': 'Date d\'arrivée en 2027. Vide si la personne est là au 1er janvier.',
+  'Sortie 2027': 'Date de départ en 2027 (fin de CDD, retraite…). Vide si la personne reste toute l\'année.',
   'ETP': 'Équivalent temps plein : heures ÷ 35. Un temps plein = 1 ETP.'
 };
 
@@ -50,7 +50,7 @@ export default function EquipeScreen() {
   if (!agenceNom) return <div className="card"><h2>Équipe</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Équipe</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Équipe</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Équipe — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Équipe · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const sourcesEquipe = VERSIONS.filter((v) => v !== activeVersion && versionsRemplies && versionsRemplies[v]);
   etatTri.current = majOrdreEquipe(etatTri.current, a.employees, tri, agenceNom);
@@ -126,7 +126,7 @@ export default function EquipeScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Équipe — {agenceNom}</h2>
+      <h2 style={{ marginBottom: 14 }}>Équipe · {agenceNom}</h2>
 
       {editable && !a.employees.length && sourcesEquipe.length ? (
         <div data-testid="equipe-vide" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '12px 14px', border: '1px solid var(--orange)', background: 'var(--orange-light, rgba(196,83,0,.10))', fontSize: 13 }}>
@@ -149,7 +149,7 @@ export default function EquipeScreen() {
         dangerouslySetInnerHTML={{ __html: phrase }} />
       {cddSansDates ? (
         <p className="hint" data-testid="cdd-sans-dates" style={{ fontSize: 12, marginTop: -8, marginBottom: 14, color: 'var(--orange, #c45300)' }}>
-          {cddSansDates} CDD sans date{cddSansDates > 1 ? 's' : ''} d'entrée ni de sortie : {cddSansDates > 1 ? 'ils sont comptés' : 'il est compté'} présent{cddSansDates > 1 ? 's' : ''} toute l'année. Saisissez les dates pour qu'un CDD ne compte que sur sa période.
+          {cddSansDates} CDD sans date{cddSansDates > 1 ? 's' : ''} d'entrée ni de sortie : {cddSansDates > 1 ? 'ils sont comptés' : 'il est compté'} présent{cddSansDates > 1 ? 's' : ''} toute l'année. Saisissez les dates pour limiter le CDD à son contrat.
         </p>
       ) : null}
 
@@ -234,7 +234,7 @@ const LigneEmploye = memo(function LigneEmploye({ e, i, editable, onSet, onDel }
       <td style={td}>
         <input data-saisie-dr={champSaisiDR(e, 'name') ? '1' : undefined} type="text" value={nom} disabled={!editable} onChange={(ev) => onSet(i, 'name', ev.target.value)} style={{ width: 150 }} />
         {isCddSais ? <span style={{ fontSize: 9, background: 'var(--orange, #c45300)', color: '#fff', padding: '1px 4px', marginLeft: 4 }}>CDD</span> : null}
-        {cddSansDates ? <span title="Sans dates, ce CDD compte toute l'année : saisissez son entrée et sa sortie" style={{ fontSize: 9, border: '1px solid var(--orange, #c45300)', color: 'var(--orange, #c45300)', padding: '1px 4px', marginLeft: 4 }}>dates ?</span> : null}
+        {cddSansDates ? <span title="Sans dates, ce CDD compte toute l'année" style={{ fontSize: 9, border: '1px solid var(--orange, #c45300)', color: 'var(--orange, #c45300)', padding: '1px 4px', marginLeft: 4 }}>dates ?</span> : null}
       </td>
       <td style={td}>
         <select data-saisie-dr={champSaisiDR(e, 'qual') ? '1' : undefined} value={e.qual} disabled={!editable} onChange={(ev) => onSet(i, 'qual', ev.target.value)} style={{ width: 90 }}>

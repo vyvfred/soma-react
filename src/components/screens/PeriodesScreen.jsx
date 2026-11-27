@@ -13,7 +13,7 @@ export default function PeriodesScreen() {
   if (!agenceNom) return <div className="card"><h2>Périodes de paie</h2><p className="hint">Ouvrez une agence pour configurer ses périodes de paie.</p></div>;
   if (loading) return <div className="card"><h2>Périodes de paie</h2><p className="hint">Chargement…</p></div>;
   if (error) return <div className="card"><h2>Périodes de paie</h2><p className="hint">Erreur : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Périodes de paie — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Périodes de paie · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const periodes = (a.periodesPaie && a.periodesPaie.length) ? a.periodesPaie : buildPeriodesPaie();
   const nb5sem = periodes.filter((p) => p.nbSem === 5).length;
@@ -37,11 +37,11 @@ export default function PeriodesScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 12 }}>Périodes de paie 2027 — {a.name}</h2>
+      <h2 style={{ marginBottom: 12 }}>Périodes de paie 2027 · {a.name}</h2>
 
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', marginBottom: 16 }}>
-        Le calendrier de paie 2027 compte <b>{nb5sem} mois à 5 semaines</b> : les salaires de base sont mensualisés (le même montant chaque mois), seules les variables (heures supplémentaires, retenues d'absence) suivent la période de paie, et les heures supplémentaires de la 5e semaine sont lissées sur le trimestre. La paie de janvier comprend les variables de décembre 2026 de sa période.{' '}
-        {hasDec ? 'Les variables de décembre 2026 sont renseignées.' : 'Pensez à saisir les variables de décembre 2026 incluses dans la paie de janvier.'}
+        Le calendrier de paie 2027 compte <b>{nb5sem} mois à 5 semaines</b> . Le salaire de base est le même chaque mois. Seules les variables (heures supplémentaires, retenues d'absence) suivent la période de paie, et celles de la 5e semaine sont lissées sur le trimestre. La paie de janvier comprend les variables de décembre 2026.{' '}
+        {hasDec ? 'Les variables de décembre 2026 sont renseignées.' : 'Saisissez les variables de décembre 2026, payées en janvier.'}
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', padding: '12px 14px', border: '1px solid var(--blue2, #3d6fd6)', background: 'rgba(74,158,255,.08)' }}>
@@ -111,7 +111,7 @@ export default function PeriodesScreen() {
       {a.costHour && a.cal && a.cal.length && chargesReport2028(a) > 0 ? (
         <div data-testid="report-2028" style={{ marginTop: 14, padding: 14, background: 'rgba(196,83,0,.08)', border: '1px solid var(--orange, #c45300)' }}>
           <h3 style={{ margin: '0 0 8px', color: 'var(--orange, #c45300)', fontSize: 15 }}>Charges à reporter sur paie Janvier 2028</h3>
-          <p className="hint" style={{ margin: '0 0 8px', fontSize: 12 }}>Les variables du 06/12/2027 au 31/12/2027 (heures supplémentaires et retenues d'absence) ne seront pas comptabilisées en 2027 : elles apparaîtront en paie de janvier 2028. Les salaires de base de décembre 2027 sont payés en décembre.</p>
+          <p className="hint" style={{ margin: '0 0 8px', fontSize: 12 }}>Les variables du 6 au 31 décembre 2027 (heures supplémentaires, retenues d'absence) seront payées en janvier 2028, donc hors budget 2027. Le salaire de base de décembre reste payé en décembre.</p>
           <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 18, fontWeight: 700, color: 'var(--orange, #c45300)' }}>{euro(chargesReport2028(a))}</div>
         </div>
       ) : null}

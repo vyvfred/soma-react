@@ -56,7 +56,7 @@ export default function DossierOmnisian({ profile }) {
           {etat === 'cours' ? 'Préparation…' : etat === 'ok' ? '✓ Téléchargé : déposez-le dans Omnisian' : etat === 'copie' ? '✓ Copié : collez-le dans Omnisian' : etat === 'erreur' ? 'Échec, réessayez' : ''}
         </span>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--ink65)', marginTop: 8 }}>Si Omnisian n'accepte pas le format .md, prenez la version .txt : le contenu est le même.</div>
+      <div style={{ fontSize: 11, color: 'var(--ink65)', marginTop: 8 }}>Si Omnisian refuse le .md, prenez le .txt, le contenu est identique.</div>
     </div>
   );
 }

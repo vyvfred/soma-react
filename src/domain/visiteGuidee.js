@@ -1,4 +1,4 @@
-// Visite guidée du REX (nov. 2026) — texte identique dans le mono-fichier (index.html) et ici.
+// Visite guidée (nov. 2026).
 // Bulles d'aide posées sur les éléments marqués data-visite="…" dans les deux versions.
 // Lancée automatiquement à la première connexion d'un REX (une fois par compte et par navigateur),
 // relançable depuis l'écran Aide. aller(ecran) ouvre l'écran demandé (ids communs : objectif, refs…).
@@ -6,42 +6,42 @@ const CLE_VISITE_REX='soma.visiteREX.vue';
 const ETAPES_VISITE_REX=[
   {ecran:'objectif',cible:null,titre:'Bienvenue dans SOMA',texte:'En 2 minutes, voici comment construire le budget 2027 de votre agence. Vous pourrez revoir cette visite à tout moment depuis l\'écran Aide.'},
   {ecran:'objectif',cible:'menu',titre:'8 étapes, dans l\'ordre du menu',texte:'Suivez le menu de haut en bas, de l\'Objectif à la Synthèse. Votre équipe, vos historiques et vos taux sont déjà chargés par le contrôle de gestion.'},
-  {ecran:'objectif',cible:'contexte',titre:'1. Objectif : d\'abord le contexte 2027',texte:'Commencez par décrire ce qui change en 2027 : contrats, activité, effectifs, gardes… C\'est obligatoire : l\'objectif de CA et le TXR cible se débloquent une fois ce texte rédigé, et il accompagne votre budget jusqu\'à la direction.'},
-  {ecran:'objectif',cible:'objectif',titre:'Objectif de CA et TXR cible',texte:'Saisissez ensuite votre objectif de chiffre d\'affaires 2027 et votre TXR cible (CA par heure travaillée). SOMA vous dit aussitôt si votre effectif peut le tenir.'},
-  {ecran:'objectif',cible:'versions',titre:'Versions V1, V2, V3',texte:'Testez des hypothèses sans toucher à votre budget : dupliquez la version, reprenez l\'équipe d\'une autre version, comparez-les, puis choisissez celle à soumettre (★).'},
-  {ecran:'refs',cible:'refs',titre:'2. Références CA',texte:'Pour chaque mois, le CA moyen d\'une journée selon son type : semaine, vacances scolaires, samedi, dimanche, férié. C\'est la base de tout le calcul.'},
-  {ecran:'cal',cible:'cal-totaux',titre:'3. Calendrier',texte:'SOMA applique vos références au calendrier 2027 de votre zone scolaire. Vérifiez les totaux du mois. Un jour particulier, comme le transport de personnes le mercredi, s\'ajuste d\'un clic sur sa case.'},
-  {ecran:'team',cible:'equipe',titre:'4. Équipe',texte:'Contrôlez chaque salarié : qualification, contrat, heures, part roulante, dates d\'entrée et de sortie 2027. Ajoutez les postes prévus (CDD saisonniers).'},
-  {ecran:'rh',cible:'absenteisme',titre:'5. Présence & HS — absentéisme',texte:'Commencez par l\'absentéisme mois par mois, en gardant la moyenne fixée par le contrôle de gestion. Les congés se recalculent tout seuls ensuite.'},
-  {ecran:'rh',cible:'conges',titre:'Congés payés',texte:'Un clic sur « Répartir les congés automatiquement » pose les jours acquis (60 % juin-octobre, 20 % / 20 % le reste de l\'année), d\'abord là où l\'équipe a de la marge, puis là où les HS sont les plus basses.'},
-  {ecran:'rh',cible:'mois',titre:'Mois par mois',texte:'Ouvrez chaque mois, ajustez les congés et absences semaine par semaine, regardez les heures supplémentaires, puis « Valider ce mois ».'},
-  {ecran:'charges',cible:'charges',titre:'6. Charges',texte:'Six postes sont à vous : quatre en % du CA (matériel, carburant…), deux en montant fixe par mois. Les cases sont préremplies : ajustez-les.'},
-  {ecran:'previsionnel',cible:'previsionnel',titre:'7. Prévisionnel',texte:'Le compte d\'exploitation de l\'agence se construit tout seul à partir de vos saisies, jusqu\'au résultat d\'exploitation.'},
-  {ecran:'finance',cible:'ms-ca',titre:'8. Synthèse',texte:'Situez la masse salariale / CA mois par mois face à 2026, 2025 et à la moyenne du réseau. Les points à revoir sont signalés en haut de l\'écran.'},
-  {ecran:'finance',cible:'historique',titre:'Enregistrement automatique',texte:'Tout est enregistré quelques secondes après chaque saisie. Une erreur ? ↶ annule (Ctrl+Z), ↷ rétablit, jusqu\'à 50 actions.'},
-  {ecran:'objectif',cible:'soumettre',titre:'Soumettre au DR',texte:'Quand tout est prêt, « Soumettre au DR ». Votre budget passe en lecture seule ; s\'il vous est renvoyé, le motif s\'affiche ici. Date limite : 27 novembre.'},
-  {ecran:'objectif',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient la FAQ du REX et le bouton pour revoir cette visite. Bonne construction !'}
+  {ecran:'objectif',cible:'contexte',titre:'1. Objectif : d\'abord le contexte 2027',texte:'Décrivez d\'abord ce qui change en 2027 : contrats, activité, effectifs, gardes. C\'est obligatoire. L\'objectif de CA et le TXR se débloquent ensuite, et ce texte suit votre budget jusqu\'à la direction.'},
+  {ecran:'objectif',cible:'objectif',titre:'Objectif de CA et TXR cible',texte:'Saisissez votre objectif de CA 2027 et votre TXR cible (CA par heure travaillée). SOMA vous dit tout de suite si votre équipe peut suivre.'},
+  {ecran:'objectif',cible:'versions',titre:'Versions V1, V2, V3',texte:'Pour tester une hypothèse, dupliquez la version. Vous pouvez comparer les versions et reprendre des blocs de l\'une à l\'autre. Choisissez ensuite celle à soumettre (★).'},
+  {ecran:'refs',cible:'refs',titre:'2. Références CA',texte:'Pour chaque mois, indiquez le CA moyen d\'une journée selon son type : semaine, vacances scolaires, samedi, dimanche, férié. Tout le calcul part de là.'},
+  {ecran:'cal',cible:'cal-totaux',titre:'3. Calendrier',texte:'SOMA applique vos références aux jours de 2027, avec les vacances de votre zone. Vérifiez les totaux. Pour un jour particulier, cliquez sur sa case.'},
+  {ecran:'team',cible:'equipe',titre:'4. Équipe',texte:'Vérifiez chaque salarié : qualification, contrat, heures, part roulante, dates d\'entrée et de sortie. Ajoutez les recrutements prévus, comme les CDD d\'été.'},
+  {ecran:'rh',cible:'absenteisme',titre:'5. Présence & HS : l\'absentéisme',texte:'Commencez par l\'absentéisme mois par mois, en restant proche de la moyenne du contrôle de gestion. Les congés suivent.'},
+  {ecran:'rh',cible:'conges',titre:'Congés payés',texte:'Répartir les congés automatiquement pose les jours acquis : 60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai. SOMA les place d\'abord là où l\'équipe a de la marge.'},
+  {ecran:'rh',cible:'mois',titre:'Mois par mois',texte:'Ouvrez chaque mois, ajustez congés et absences semaine par semaine, regardez les heures supplémentaires, puis validez le mois.'},
+  {ecran:'charges',cible:'charges',titre:'6. Charges',texte:'Six postes sont à vous : quatre en % du CA (matériel, carburant…), deux en montant par mois. Les cases sont déjà remplies, ajustez-les.'},
+  {ecran:'previsionnel',cible:'previsionnel',titre:'7. Prévisionnel',texte:'Le compte d\'exploitation de l\'agence se calcule à partir de vos saisies, jusqu\'au résultat d\'exploitation.'},
+  {ecran:'finance',cible:'ms-ca',titre:'8. Synthèse',texte:'Comparez votre masse salariale / CA à 2026, 2025 et à la moyenne du réseau. Les points à revoir sont en haut de l\'écran.'},
+  {ecran:'finance',cible:'historique',titre:'Enregistrement automatique',texte:'Tout est enregistré au fur et à mesure. ↶ annule (Ctrl+Z) et ↷ rétablit, jusqu\'à 50 actions.'},
+  {ecran:'objectif',cible:'soumettre',titre:'Soumettre au DR',texte:'Quand tout est prêt, cliquez sur Soumettre au DR. Le budget n\'est plus modifiable. S\'il vous est renvoyé, le motif s\'affiche ici. Date limite : 27 novembre.'},
+  {ecran:'objectif',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient la FAQ et le bouton pour revoir cette visite.'}
 ];
 // Visite du DR : ses trois écrans (validation, saisie pour un REX, consolidation de la région)
 const ETAPES_VISITE_DR=[
-  {ecran:'validation',cible:null,titre:'Bienvenue dans SOMA',texte:'Vous validez en premier les budgets des agences de votre région. Voici vos écrans en une minute. Vous pourrez revoir cette visite depuis l\'écran Aide.'},
+  {ecran:'validation',cible:null,titre:'Bienvenue dans SOMA',texte:'Vous êtes le premier à valider les budgets de votre région. Voici vos écrans en une minute. La visite se relance depuis l\'écran Aide.'},
   {ecran:'validation',cible:'menu',titre:'Vos écrans',texte:'Budgets à valider, Saisir pour un REX, Consolidation région. L\'écran Aide contient votre FAQ et les supports de formation des REX.'},
   {ecran:'validation',cible:'val-kpis',titre:'Budgets à valider',texte:'Les compteurs donnent les budgets qui attendent votre décision, ceux que vous avez validés et ceux que vous avez refusés.'},
-  {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'Pour chaque budget soumis : CA, masse salariale / CA, résultat et choix de congés, avec un verdict. « Voir tous les écrans » ouvre le budget en lecture.'},
-  {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Validé, le budget passe au contrôle de gestion et au DF ; refusé, il revient au REX avec votre motif.'},
-  {ecran:'suivi',cible:'suivi-table',titre:'Suivi des REX',texte:'L\'avancement de chaque REX de votre région, jalon par jalon, brouillons compris, avec sa dernière activité. Les agences à relancer sont en tête ; « Voir le budget » ouvre tous ses écrans en lecture seule.'},
+  {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'Pour chaque budget soumis : CA, masse salariale / CA, résultat et choix de congés, avec une appréciation. Voir tous les écrans ouvre le budget en lecture.'},
+  {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Si vous validez, le budget passe au contrôle de gestion et au DF. Si vous refusez, il revient au REX avec votre motif.'},
+  {ecran:'suivi',cible:'suivi-table',titre:'Suivi des REX',texte:'L\'avancement de chaque REX de votre région, étape par étape, avec sa dernière activité. Les agences à relancer sont en haut. Voir le budget ouvre ses écrans en lecture seule.'},
   {ecran:'saisie',cible:'saisie-agences',titre:'Saisir pour un REX',texte:'Ouvrez le budget d\'une agence pour le saisir à la place du REX, pendant un accompagnement. Vos saisies s\'affichent en orange pour lui.'},
   {ecran:'consolidation',cible:'conso-kpis',titre:'Consolidation région',texte:'L\'état de chaque agence de votre région : non commencé, brouillon, soumis, validé, et le CA consolidé.'},
   {ecran:'consolidation',cible:'conso-table',titre:'Suivre et relancer',texte:'Le tableau donne l\'avancement de chaque budget. Relancez les agences qui n\'avancent plus : les REX doivent soumettre avant le 27 novembre.'},
-  {ecran:'consolidation',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient votre FAQ, la vidéo et la présentation de formation des REX, et le bouton pour revoir cette visite. Bonne validation !'}
+  {ecran:'consolidation',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient votre FAQ, la vidéo et la présentation de formation des REX, et le bouton pour revoir cette visite.'}
 ];
 // Visite des Directions (DF, DG, PDG) : validation après le DR et suivi du réseau
 const ETAPES_VISITE_DIRECTION=[
-  {ecran:'validation',cible:null,titre:'Bienvenue dans SOMA',texte:'Vous validez les budgets après le DR : le DF avec le contrôle de gestion, puis le DG et le PDG. Voici vos écrans en une minute.'},
+  {ecran:'validation',cible:null,titre:'Bienvenue dans SOMA',texte:'Vous validez après le DR : d\'abord le DF avec le contrôle de gestion, puis le DG et le PDG. Voici vos écrans en une minute.'},
   {ecran:'validation',cible:'menu',titre:'Vos écrans',texte:'Budgets à valider et Consolidation réseau. L\'écran Aide contient votre FAQ et les supports de formation des REX.'},
-  {ecran:'validation',cible:'val-kpis',titre:'Budgets à valider',texte:'N\'apparaissent ici que les budgets validés par l\'étage précédent. Les compteurs donnent ceux qui attendent votre décision.'},
-  {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'CA, masse salariale / CA, résultat et choix de congés de l\'agence, avec un verdict. « Voir tous les écrans » ouvre le budget en lecture.'},
-  {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Un refus renvoie le budget au REX et le circuit repart du DR. La validation du dernier étage rend le budget définitif.'},
+  {ecran:'validation',cible:'val-kpis',titre:'Budgets à valider',texte:'Vous ne voyez ici que les budgets validés à l\'étape précédente. Les compteurs donnent ceux qui attendent votre décision.'},
+  {ecran:'validation',cible:'val-fiche',titre:'La fiche de décisions',texte:'CA, masse salariale / CA, résultat et choix de congés, avec une appréciation. Voir tous les écrans ouvre le budget en lecture.'},
+  {ecran:'validation',cible:'val-decision',titre:'Valider ou refuser',texte:'Le commentaire est obligatoire. Un refus renvoie le budget au REX et la validation repart du DR. La dernière validation rend le budget définitif.'},
   {ecran:'consolidation',cible:'conso-kpis',titre:'Consolidation réseau',texte:'L\'état de chaque agence du réseau, le CA consolidé et l\'avancement des budgets. Date limite de soumission des REX : 27 novembre.'},
   {ecran:'consolidation',cible:'conso-table',titre:'Suivre l\'avancement',texte:'Le tableau détaille chaque agence.'},
   {ecran:'consolidation',cible:'nav-aide',titre:'Besoin d\'aide ?',texte:'L\'écran Aide contient votre FAQ, la vidéo et la présentation de formation des REX, et le bouton pour revoir cette visite.'}

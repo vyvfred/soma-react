@@ -29,9 +29,9 @@ export function syntheseBudget(a, role = 'rex') {
   if (caObj && ecart < -caObj * 0.03) problemes.push('objectif de CA non atteint');
   const verdict = problemes.length === 0
     ? { ok: true, icone: '✓', titre: 'Budget équilibré et cohérent',
-      detail: estValideur ? 'Ce budget est sain sur ses grands équilibres — vous pouvez le valider.' : 'Votre budget est prêt à être transmis pour validation.' }
+      detail: estValideur ? 'Les grands équilibres sont tenus. Rien ne s\'oppose à la validation.' : 'Votre budget peut être soumis.' }
     : { ok: false, icone: '⚠', titre: 'Points à examiner : ' + problemes.join(', '),
-      detail: estValideur ? 'Vérifiez ces points avant de valider ce budget.' : 'Nous vous conseillons de revoir ces points avant de soumettre votre budget.' };
+      detail: estValideur ? 'Vérifiez ces points avant de valider.' : 'Nous vous conseillons de revoir ces points avant de soumettre votre budget.' };
 
   let lecture = '';
   if (ca) {
@@ -69,7 +69,7 @@ export function bilanEnveloppesCP(a) {
     const cible = env.cible !== undefined ? env.cible : Math.round(generes * (env.pct || 0) * 10) / 10;
     const ecart = Math.round((poses - cible) * 10) / 10;
     const conforme = Math.abs(ecart) < 1;
-    if (!conforme && env.verrouille > 0) alertes.push(def.nom + ' : les mois verrouillés portent ' + env.verrouille + ' j — la répartition automatique a compensé sur les autres périodes.');
+    if (!conforme && env.verrouille > 0) alertes.push(def.nom + ' : les mois verrouillés portent ' + env.verrouille + ' j, compensés sur les autres périodes.');
     if (env.reporte > 0.05) alertes.push(def.nom + ' : tous les mois sont validés, les ' + env.reporte + ' j qui restaient à y poser ont été placés sur les autres périodes.');
     return { nom: def.nom, cible, poses, ecart, conforme, ecartTxt: conforme ? 'conforme' : (ecart > 0 ? '+' + ecart + ' j' : ecart + ' j') };
   });

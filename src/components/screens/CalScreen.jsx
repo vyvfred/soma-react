@@ -23,8 +23,8 @@ export default function CalScreen() {
   if (!agenceNom) return <div className="card"><h2>Calendrier</h2><p className="hint">Aucune agence rattachée.</p></div>;
   if (loading) return <div className="card"><h2>Calendrier</h2><p className="hint">Chargement…</p></div>;
   if (error) return <div className="card"><h2>Calendrier</h2><p className="hint">Erreur : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Calendrier — {agenceNom}</h2><p className="hint">Budget non commencé.</p></div>;
-  if (!a.cal || !a.cal.length) return <div className="card"><h2>Calendrier — {agenceNom}</h2><p className="hint">Le calendrier se génère à partir des références CA. Renseignez-les d'abord.</p></div>;
+  if (!a) return <div className="card"><h2>Calendrier · {agenceNom}</h2><p className="hint">Budget non commencé.</p></div>;
+  if (!a.cal || !a.cal.length) return <div className="card"><h2>Calendrier · {agenceNom}</h2><p className="hint">Renseignez d'abord les références CA : le calendrier en découle.</p></div>;
 
   const days = a.cal.filter((d) => d.month === month);
   const start = (new Date(2027, month, 1).getDay() + 6) % 7;
@@ -37,7 +37,7 @@ export default function CalScreen() {
   return (
     <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0 }}>Calendrier — {a.name}</h2>
+        <h2 style={{ margin: 0 }}>Calendrier · {a.name}</h2>
         <select value={month} onChange={(e) => setMonth(+e.target.value)}>
           {M.map((x, i) => <option key={i} value={i}>{x}</option>)}
         </select>
@@ -65,7 +65,7 @@ export default function CalScreen() {
             <div key={d.day} className="calJour" data-testid={'jour-' + d.day} role={editable ? 'button' : undefined} tabIndex={editable ? 0 : undefined}
               onClick={editable ? () => setSel(choisi ? null : { m: month, d: d.day }) : undefined}
               onKeyDown={editable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(choisi ? null : { m: month, d: d.day }); } } : undefined}
-              title={d.ref ? 'CA ajusté sur le calendrier — référence : ' + euro(d.ref.san + d.ref.sai + d.ref.tp) : (editable ? 'Cliquer pour ajuster le CA de ce jour' : undefined)}
+              title={d.ref ? 'CA modifié pour ce jour. Référence : ' + euro(d.ref.san + d.ref.sai + d.ref.tp) : (editable ? 'Cliquer pour ajuster le CA de ce jour' : undefined)}
               style={{ minHeight: 78, padding: 6, border: choisi ? '2px solid var(--violet)' : d.ref ? '1px dashed var(--violet)' : '1px solid ' + (st ? st.border : 'var(--border)'), background: st ? st.bg : 'var(--card)', fontSize: 11, cursor: editable ? 'pointer' : 'default', position: 'relative' }}>
               {d.ref ? <span data-testid={'ajuste-' + d.day} style={{ position: 'absolute', right: 4, bottom: 3, fontSize: 11, color: 'var(--violet)' }} aria-label="jour ajusté">✎</span> : null}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
@@ -189,7 +189,7 @@ function BandeauTotaux({ a, month, onMonth }) {
   const sel = { background: 'rgba(139,127,255,.14)' };
   return (
     <div data-testid="cal-totaux-mensuels" data-visite="cal-totaux" style={{ marginBottom: 16, border: '1px solid var(--border)', background: 'var(--bg3, var(--card))', padding: 12 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Récapitulatif — {M[month]}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Récapitulatif · {M[month]}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {kpis.map(([l, v, fort]) => (
           <div key={l} style={{ minWidth: 92, padding: '6px 10px', border: '1px solid var(--border)', background: 'var(--card)' }}>

@@ -18,13 +18,13 @@ export async function drDeLAgence(agenceNom) {
 
 export async function soumettreAvecConfirmations({ a, agenceNom, activeVersion, submit, parNom }) {
   // Perspectives & contexte 2027 : obligatoire pour soumettre
-  if (!contexteRedige(a)) { window.alert('Rédigez d\'abord les « Perspectives & contexte 2027 » (écran Objectif) : c\'est ce texte qui justifie votre budget auprès du DR et de la direction.'); return; }
+  if (!contexteRedige(a)) { window.alert('Rédigez d\'abord les perspectives et le contexte 2027, sur l\'écran Objectif. C\'est ce texte qui explique votre budget au DR.'); return; }
   const ecart = ecartAbsenteisme(a);
-  if (ecart && !window.confirm('Attention : votre taux d\'absentéisme moyen (' + pct(ecart.moyenne) + ') s\'écarte de la référence du contrôle de gestion (' + pct(ecart.cible) + ').\n\nVous pouvez le rééquilibrer avant de soumettre (bouton « Rééquilibrer automatiquement » de l\'écran Présence).\n\nSoumettre quand même ?')) return;
+  if (ecart && !window.confirm('Votre absentéisme moyen (' + pct(ecart.moyenne) + ') s\'écarte de la référence du contrôle de gestion (' + pct(ecart.cible) + ').\n\nVous pouvez le rééquilibrer sur l\'écran Présence avant de soumettre.\n\nSoumettre quand même ?')) return;
   // Agence sans DR affecté : le budget resterait sans valideur
   const dr = await drDeLAgence(agenceNom);
-  if (!dr && !window.confirm('Aucun directeur régional n\'est encore affecté à votre agence.\n\nVotre budget sera bien transmis, mais il ne pourra être validé qu\'une fois l\'affectation faite par le contrôleur de gestion.\n\nSoumettre quand même ?')) return;
-  if (!window.confirm('Soumettre la version ' + VERSION_LABELS[activeVersion] + ' au Directeur Régional ?\n\nCette version deviendra le budget officiel. Vous ne pourrez plus le modifier tant qu\'il est en validation.')) return;
+  if (!dr && !window.confirm('Aucun DR n\'est encore affecté à votre agence.\n\nLe budget sera transmis, mais il ne pourra être validé qu\'une fois le DR affecté par le contrôleur de gestion.\n\nSoumettre quand même ?')) return;
+  if (!window.confirm('Soumettre la version ' + VERSION_LABELS[activeVersion] + ' au DR ?\n\nElle devient le budget officiel et ne sera plus modifiable pendant la validation.')) return;
   const r = await submit(parNom);
   toast(r.message, r.ok ? 'success' : 'warn');
 }

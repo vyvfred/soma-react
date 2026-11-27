@@ -58,7 +58,7 @@ function scatterSvg(rows) {
     svg += '<line x1="' + xx + '" y1="' + (H - pad) + '" x2="' + xx + '" y2="' + (H - pad + 5) + '" stroke="var(--border2)"/>';
     svg += '<text x="' + xx + '" y="' + (H - pad + 18) + '" text-anchor="middle" font-size="10" fill="var(--ink65)">' + t + '</text>';
   }
-  svg += '<text x="' + ((W + pad) / 2) + '" y="' + (H - 14) + '" text-anchor="middle" font-size="12" fill="var(--ink)">TXR (€/h) — productivité</text>';
+  svg += '<text x="' + ((W + pad) / 2) + '" y="' + (H - 14) + '" text-anchor="middle" font-size="12" fill="var(--ink)">TXR (€/h)</text>';
   for (let c = 0; c <= maxCh; c += 20) {
     const yy = py(c);
     svg += '<line x1="' + (pad - 5) + '" y1="' + yy + '" x2="' + pad + '" y2="' + yy + '" stroke="var(--border2)"/>';
@@ -68,7 +68,7 @@ function scatterSvg(rows) {
   pts.forEach((p) => {
     const x = px(p.txr), yy = py(p.txCharge);
     const col = p.txCharge > 115 ? 'var(--orange)' : p.txCharge > 100 ? 'var(--amber)' : 'var(--accent-blue)';
-    svg += '<circle cx="' + x + '" cy="' + yy + '" r="6" fill="' + col + '" opacity="0.85"><title>' + p.nom + ' — TXR ' + p.txr + ' €/h, charge ' + p.txCharge + '%</title></circle>';
+    svg += '<circle cx="' + x + '" cy="' + yy + '" r="6" fill="' + col + '" opacity="0.85"><title>' + p.nom + ' : TXR ' + p.txr + ' €/h, charge ' + p.txCharge + '%</title></circle>';
     svg += '<text x="' + (x + 9) + '" y="' + (yy + 3) + '" font-size="9" fill="var(--ink65)">' + p.nom.slice(0, 12) + '</text>';
   });
   svg += '</svg>';

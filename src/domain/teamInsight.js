@@ -19,7 +19,7 @@ export function teamInsight(a) {
 
   let phrase;
   if (nbSal === 0) {
-    phrase = 'Ajoutez vos salariés ou importez votre équipe. SOMA calculera aussitôt votre capacité de production et la comparera à votre objectif.';
+    phrase = 'Ajoutez vos salariés ou importez l\u2019équipe. SOMA calculera votre capacité et la comparera à l\u2019objectif.';
   } else if (caObj && txr) {
     // Capacité hors HS : base moins la maladie ET les congés (audit nov. 2026)
     const caMaxSansHS = Math.round(heuresDispoAnnuelles(a) * txr);
@@ -30,7 +30,7 @@ export function teamInsight(a) {
       phrase = 'Votre équipe de <b>' + etpTotal.toFixed(1) + ' ETP</b> couvre l\u2019essentiel de votre objectif. Il manque environ <b>' + euro(Math.abs(ecart)) + '</b> de capacité, à combler par des heures supplémentaires ou un renfort.';
     }
   } else {
-    phrase = 'Votre équipe représente <b>' + etpTotal.toFixed(1) + ' ETP</b>. Renseignez votre objectif (étape 1) pour que SOMA vérifie qu\u2019il est réalisable.';
+    phrase = 'Votre équipe représente <b>' + etpTotal.toFixed(1) + ' ETP</b>. Renseignez l\u2019objectif pour savoir s\u2019il est tenable.';
   }
 
   return { nbSal, etpTotal, etpContrats, cddSansDates, capaciteAn, phrase };

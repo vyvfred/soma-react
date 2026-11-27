@@ -18,10 +18,10 @@ export function refAgencesInsight(map, ops) {
 
   let text;
   if (sansRef.length === 0) {
-    text = 'Toutes les agences ont leurs données de référence. Les REX peuvent démarrer leur budget sur des bases complètes.';
+    text = 'Toutes les agences ont leurs données de référence. Les REX peuvent démarrer.';
   } else {
     const liste = sansRef.slice(0, 4).join(', ') + (sansRef.length > 4 ? '…' : '');
-    text = '<b>' + avecRef + ' agences sur ' + total + '</b> ont leurs données de référence. Il reste <b>' + sansRef.length + '</b> à compléter (' + liste + '). Sans ces données, les REX concernés ne peuvent pas démarrer leur budget.';
+    text = '<b>' + avecRef + ' agences sur ' + total + '</b> ont leurs données de référence. Il reste <b>' + sansRef.length + '</b> à compléter (' + liste + '). Sans elles, leurs REX ne peuvent pas démarrer.';
   }
 
   return { kpis, text, avecRef, sansRef };

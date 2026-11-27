@@ -45,9 +45,9 @@ function BoutonsHistorique() {
   const n = histInfo.annuler, r = histInfo.retablir;
   return (
     <>
-      <button className="soma-btn-ghost" data-testid="btn-annuler" data-visite="historique" disabled={!n} title={n ? 'Annuler la dernière modification (Ctrl+Z) — ' + n + ' possible' + (n > 1 ? 's' : '') : 'Rien à annuler'}
+      <button className="soma-btn-ghost" data-testid="btn-annuler" data-visite="historique" disabled={!n} title={n ? 'Annuler (Ctrl+Z), ' + n + ' possible' + (n > 1 ? 's' : '') : 'Rien à annuler'}
         onClick={() => { if (annuler()) toast('Modification annulée', 'info'); }} style={{ opacity: n ? 1 : 0.4 }}>↶</button>
-      <button className="soma-btn-ghost" data-testid="btn-retablir" disabled={!r} title={r ? 'Rétablir (Ctrl+Y) — ' + r + ' possible' + (r > 1 ? 's' : '') : 'Rien à rétablir'}
+      <button className="soma-btn-ghost" data-testid="btn-retablir" disabled={!r} title={r ? 'Rétablir (Ctrl+Y), ' + r + ' possible' + (r > 1 ? 's' : '') : 'Rien à rétablir'}
         onClick={() => { if (retablir()) toast('Modification rétablie', 'info'); }} style={{ opacity: r ? 1 : 0.4 }}>↷</button>
     </>
   );
@@ -170,8 +170,8 @@ export default function AppShell() {
   const [retour, setRetour] = useState(null);
   const navRole = useMemo(() => navForRole(roleNav), [roleNav]);
   const { panels, landing, group } = consult
-    ? { panels: PANELS_REX.filter((p) => p[0] !== 'aide'), landing: 'finance', group: 'Consultation — ' + consult }
-    : saisiePour ? { panels: PANELS_REX, landing: 'objectif', group: 'Saisie pour le REX — ' + saisiePour } : navRole;
+    ? { panels: PANELS_REX.filter((p) => p[0] !== 'aide'), landing: 'finance', group: 'Consultation : ' + consult }
+    : saisiePour ? { panels: PANELS_REX, landing: 'objectif', group: 'Saisie pour le REX : ' + saisiePour } : navRole;
   const [active, setActive] = useState(landing);
   const allerVisite = useCallback((id) => { setMenuMobile(false); setActive(id); }, []);
   const basculerVue = (rex) => { setVueRex(rex); setActive(rex ? 'finance' : 'cgdash'); };
@@ -216,13 +216,13 @@ export default function AppShell() {
       {consult ? (
         <div className="consultBanner" data-testid="consult-banner" style={{ display: 'flex', position: 'static' }}>
           <span className="consultBannerDot" />
-          <span>Consultation du budget de {consult} — lecture seule, toutes ses versions</span>
+          <span>Budget de {consult} en lecture seule, toutes versions</span>
           <button data-testid="consult-retour" onClick={() => { setConsult(null); setActive(retour || 'validation'); }}>↩ Revenir {({ suivi: 'au suivi des REX', consolidation: 'à la consolidation', comparative: 'à la vue comparative', admin: 'à l\'administration', cgdash: 'au tableau de bord' })[retour] || 'à la validation'}</button>
         </div>
       ) : null}
       {profile.consultatif ? (
         <div data-testid="bandeau-consultatif" style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', flexWrap: 'wrap', padding: '6px 14px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', fontSize: 12.5, color: 'var(--ink65)' }}>
-          <span>👁 Vue « {roleLabel(profile.role)} » en consultation : vous voyez tout, rien ne peut être modifié ni validé. Changez de vue avec le sélecteur « Profil » en haut.</span>
+          <span>Vue {roleLabel(profile.role)} en consultation : vous voyez tout, sans rien modifier ni valider. Changez de vue avec le sélecteur Profil en haut.</span>
           <ChoixRegionConsult />
         </div>
       ) : null}
@@ -259,7 +259,7 @@ export default function AppShell() {
           <span className="soma-user-nom">{profile.nom}</span>
           <span className="soma-role-pill">{roleLabel(profile.role)}</span>
           {mesAgences.length > 1 && !consult ? (
-            <select data-testid="choix-agence-rex" title="Vos agences : choisissez celle dont vous construisez le budget" value={agenceREX}
+            <select data-testid="choix-agence-rex" title="Choisissez l'agence" value={agenceREX}
               onChange={(e) => setRexAgence(e.target.value)} style={{ width: 'auto', fontSize: 12, padding: '4px 8px' }}>
               {mesAgences.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -319,7 +319,7 @@ export default function AppShell() {
           {!consult && (profile.role === 'cg' || profile.role === 'df') ? <CgGuide panel={active} cle={activeAgence} /> : null}
 
           {showPicker && !activeAgence && active !== 'cg'
-            ? <div className="card"><p className="hint">Sélectionnez une agence ci-dessus pour ouvrir son budget.</p></div>
+            ? <div className="card"><p className="hint">Choisissez une agence pour ouvrir son budget.</p></div>
             : Screen ? <Screen /> : <PlaceholderPanel id={active} label={activeLabel} />}
           {(consult || ['rex', 'cg', 'df', 'admin'].includes(profile.role)) && !(showPicker && !activeAgence) ? <StepNav panel={active} onNavigate={setActive} /> : null}
         </VersionBorder>

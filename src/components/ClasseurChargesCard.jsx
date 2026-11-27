@@ -54,8 +54,8 @@ export default function ClasseurChargesCard({ agenceOuverte, onImporte }) {
     <div className="card" data-testid="classeur-charges" style={{ marginBottom: 16 }}>
       <h2 style={{ marginBottom: 8 }}>Classeur des charges du réseau</h2>
       <p className="hint" style={{ margin: '0 0 12px' }}>
-        Préparez les charges de <b>toutes les agences et structures</b> dans un seul fichier Excel : une ligne par poste, une colonne par agence.
-        Le classeur est pré-rempli avec ce qui est déjà saisi dans SOMA ; à l'import, SOMA vous montre les changements par agence avant d'enregistrer.
+        Les charges de toutes les agences et structures dans un seul fichier Excel : une ligne par poste, une colonne par agence.
+        Le fichier reprend ce qui est déjà dans SOMA. À l'import, vous voyez les changements agence par agence avant d'enregistrer.
       </p>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button onClick={telecharger}>⬇ Télécharger le classeur</button>

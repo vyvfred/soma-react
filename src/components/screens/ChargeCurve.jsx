@@ -60,7 +60,7 @@ export default function ChargeCurve({ agency: a }) {
   pts.forEach((p, i) => {
     const col = p.ratio > seuilCrit ? 'var(--orange)' : (p.ratio > seuilWarn ? 'var(--amber)' : 'var(--violet)');
     const r = p.ratio > seuilWarn ? 3.5 : 2.5;
-    svg += '<circle cx="' + cx(i).toFixed(1) + '" cy="' + cy(p.ratio).toFixed(1) + '" r="' + r + '" fill="' + col + '"><title>Semaine ' + p.week + ' — ' + p.ratio.toFixed(1) + ' h/pers (' + Math.round(p.hs) + ' h au total)</title></circle>';
+    svg += '<circle cx="' + cx(i).toFixed(1) + '" cy="' + cy(p.ratio).toFixed(1) + '" r="' + r + '" fill="' + col + '"><title>Semaine ' + p.week + ' : ' + p.ratio.toFixed(1) + ' h/pers (' + Math.round(p.hs) + ' h au total)</title></circle>';
   });
 
   // Étiquettes de mois.
@@ -75,7 +75,7 @@ export default function ChargeCurve({ agency: a }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Charge des équipes présentes sur l'année <Pourquoi k="lissage" /> <span style={{ fontWeight: 400, color: 'var(--ink65)', fontSize: 12 }}>— heures supplémentaires par personne, semaine par semaine</span></div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Charge des équipes présentes sur l'année <Pourquoi k="lissage" /> <span style={{ fontWeight: 400, color: 'var(--ink65)', fontSize: 12 }}>(heures supplémentaires par personne et par semaine)</span></div>
       <div dangerouslySetInnerHTML={{ __html: svg }} />
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, fontSize: 11, color: 'var(--ink65)' }}>
         {ENV_NAMES.map((name, i) => (
@@ -86,8 +86,8 @@ export default function ChargeCurve({ agency: a }) {
         ))}
       </div>
       <p className="hint" style={{ marginTop: 8, fontSize: 12 }}>
-        💡 Les heures supplémentaires sont lissées <b>à l'intérieur de chaque période légale de congés</b>.
-        Les niveaux peuvent différer entre périodes car la loi impose de concentrer 60 % des congés sur juin–octobre.
+        Les heures supplémentaires sont lissées à l'intérieur de chaque période de congés.
+        Le niveau change d'une période à l'autre, puisque 60 % des congés sont posés de juin à octobre.
         Une courbe <b>plate dans chaque zone</b> est le signe d'une bonne répartition.
       </p>
     </div>

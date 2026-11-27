@@ -107,7 +107,7 @@ export function AuthProvider({ children }) {
   const motDePasseOublie = useCallback(async (email) => {
     if (!email || !email.trim()) return { ok: false, message: 'Saisissez votre email.' };
     const { error: e } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: URL_APPLI });
-    return e ? { ok: false, message: 'Erreur : ' + e.message } : { ok: true, message: 'Lien envoyé ! Vérifiez votre boîte mail.' };
+    return e ? { ok: false, message: 'Erreur : ' + e.message } : { ok: true, message: 'Lien envoyé, regardez votre boîte mail.' };
   }, []);
   const changerMotDePasse = useCallback(async (p1, p2) => {
     if (!p1 || p1.length < 8) return { ok: false, message: 'Le mot de passe doit faire au moins 8 caractères.' };
@@ -115,7 +115,7 @@ export function AuthProvider({ children }) {
     const { error: e } = await sb.auth.updateUser({ password: p1 });
     if (e) return { ok: false, message: 'Erreur : ' + e.message };
     setRecuperation(false);
-    return { ok: true, message: 'Mot de passe modifié avec succès.' };
+    return { ok: true, message: 'Mot de passe modifié.' };
   }, []);
 
   // Journal des connexions : une connexion par ouverture de SOMA avec une session et un profil valides.

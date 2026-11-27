@@ -71,7 +71,7 @@ export default function AideScreen() {
             ) : null}
             <a data-testid="support-pdf" href={SUPPORTS_FORMATION.pdf} target="_blank" rel="noreferrer" style={{ alignSelf: 'center', fontSize: 13 }}>📄 Présentation de formation REX (PDF)</a>
           </div>
-          {profile.role === 'dr' && !saisieDR ? <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>La visite des écrans REX est proposée ici quand vous ouvrez une agence avec « Saisir pour un REX ».</p> : null}
+          {profile.role === 'dr' && !saisieDR ? <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>La visite des écrans REX apparaît ici quand vous saisissez pour un REX.</p> : null}
           <details data-testid="support-video">
             <summary style={{ cursor: 'pointer', fontSize: 13 }}>▶ Vidéo : le parcours du REX en 8 étapes (2 min 35)</summary>
             <video controls preload="none" src={SUPPORTS_FORMATION.video} style={{ width: '100%', maxWidth: 760, marginTop: 10, background: '#000' }} />

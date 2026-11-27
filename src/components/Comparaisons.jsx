@@ -93,7 +93,7 @@ export default function Comparaisons({ a, r: r0, reseau }) {
         </table>
       </div>
       <div style={{ fontSize: 11, color: 'var(--ink65)', marginTop: 6 }}>
-        2026 en % du CA : sur les mois clos ({anneeRep(r, 2026) ? M[0] + '–' + M[(anneeRep(r, 2026).moisClos || 1) - 1] : '—'}). Les écarts sont donnés à titre d'information : une agence peut avoir de bonnes raisons de s'écarter de la moyenne.
+        2026 en % du CA : sur les mois clos ({anneeRep(r, 2026) ? M[0] + '–' + M[(anneeRep(r, 2026).moisClos || 1) - 1] : '—'}). Un écart n'est pas une erreur : une agence peut avoir de bonnes raisons de s'éloigner de la moyenne.
       </div>
     </div>
   );

@@ -133,7 +133,7 @@ export function dossierOmnisian({ rows, ops, reperes = {}, role = 'dg', agence =
   const fichesSt = STRUCTURES.map((n) => ({ ...ficheEntite(n, rows[n], reperes, role), lib: LIB_STRUCTURES[n] || n }));
   const presentes = fichesAg.filter((f) => f.present);
   const l = [];
-  l.push('# SOMA — Dossier d\'analyse des budgets 2027' + (agence ? ' — ' + agence : ''), '');
+  l.push('# SOMA · Dossier d\'analyse des budgets 2027' + (agence ? ' · ' + agence : ''), '');
   l.push('Extraction du ' + maintenant.toLocaleDateString('fr-FR') + ' à ' + maintenant.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '. Source : SOMA (outil budgétaire de VYV Ambulance). Montants en euros.', '');
   l.push(METHODE);
 

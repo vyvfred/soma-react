@@ -4,186 +4,78 @@ export const FAQ_CG_SECTIONS = [
   {
     "t": "Démarrer",
     "items": [
-      [
-        "Quel est mon rôle dans SOMA ?",
-        "Vous préparez le cadre de chaque agence avant que les responsables d'exploitation (REX) construisent leur budget, vous saisissez les charges hors personnel, vous suivez l'avancement des agences et vous validez les budgets à la deuxième étape du circuit, avec le directeur financier. Les données que vous posez (historiques, taux, masse salariale non-roulante) sont verrouillées côté REX : elles font référence."
-      ],
-      [
-        "Dans quel ordre préparer le réseau ?",
-        "Suivez les 7 étapes du parcours CG, dans cet ordre : <b>1. Données agences</b> (références, taux, masse salariale non-roulante, ratio de maintien) ; <b>2. Périodes de paie</b> (vérifier le calendrier) ; <b>3. Variables déc. 2026</b> (variables payées en janvier) ; <b>4. Affectation DR</b> ; <b>5. Charges CG</b>, agence par agence ; <b>6. Suivre le réseau</b> (consolidation, vue comparative, graphiques) ; <b>7. Budgets à valider</b>. Les étapes 1 à 4 se font une fois pour tout le réseau, de préférence avant que les REX commencent. L'étape 5 peut se faire en parallèle du travail des REX."
-      ],
-      [
-        "Comment savoir où j'en suis ?",
-        "Le Tableau de bord affiche votre parcours en 7 étapes avec l'état de chacune (par exemple « 18/26 agences ») et un bouton pour reprendre là où vous en êtes. En haut de chaque écran du parcours, un encadré vous rappelle l'étape, ce qu'il faut faire, quand elle est terminée, et vous mène à l'étape suivante. Vous pouvez le replier ; il se souvient de votre choix. Son bouton « ? Aide détaillée » ouvre la bonne question de cette aide."
-      ],
-      [
-        "Mes saisies sont-elles enregistrées automatiquement ?",
-        "Cela dépend de l'écran. <b>Données agences</b> et <b>Variables déc. 2026</b> : cliquez sur « Enregistrer » ; tant que ce n'est pas fait, rien n'est sauvegardé (les lignes modifiées sont signalées « non enregistré »). <b>Charges CG</b> et <b>Périodes de paie</b>, sur l'agence ouverte : enregistrement automatique moins d'une seconde après la dernière modification. <b>Affectation DR</b> : enregistrée dès que vous choisissez un DR."
-      ]
+      ["Quel est mon rôle dans SOMA ?", "Vous préparez le cadre de chaque agence avant que les REX construisent leur budget. Vous saisissez les charges hors personnel, suivez l'avancement des agences et validez les budgets à la deuxième étape, avec le directeur financier. Ce que vous saisissez (historiques, taux, masse salariale non roulante) est verrouillé côté REX."],
+      ["Dans quel ordre préparer le réseau ?", "Suivez les 7 étapes du parcours : <b>1. Données agences</b> (références, taux, masse salariale non roulante, ratio de maintien), <b>2. Périodes de paie</b>, <b>3. Variables déc. 2026</b>, <b>4. Affectation DR</b>, <b>5. Charges CG</b> agence par agence, <b>6. Suivre le réseau</b>, <b>7. Budgets à valider</b>. Les étapes 1 à 4 se font une fois pour tout le réseau, de préférence avant que les REX démarrent. L'étape 5 peut avancer en même temps qu'eux."],
+      ["Comment savoir où j'en suis ?", "Le Tableau de bord affiche les 7 étapes avec leur état (par exemple « 18/26 agences ») et un bouton pour reprendre. En haut de chaque écran du parcours, un encadré rappelle quoi faire et mène à l'étape suivante. Vous pouvez le replier. Son bouton <b>? Aide détaillée</b> ouvre la bonne question ici."],
+      ["Mes saisies sont-elles enregistrées automatiquement ?", "Ça dépend de l'écran. <b>Données agences</b> et <b>Variables déc. 2026</b> : cliquez sur <b>Enregistrer</b>, sinon rien n'est sauvegardé (les lignes concernées sont marquées « non enregistré »). <b>Charges CG</b> et <b>Périodes de paie</b> : enregistrement automatique une seconde après la dernière modification. <b>Affectation DR</b> : enregistrée dès que vous choisissez."]
     ]
   },
   {
-    "t": "Étape 1 — Données agences",
+    "t": "Étape 1. Données agences",
     "items": [
-      ["Comment importer le tableau de bord 2026 et estimer les derniers mois ?", "Menu <b>Tableau de bord 2026</b>, bouton « Importer le tableau de bord (Excel) » : le classeur habituel, un onglet par agence et structure (nom en A1, réalisé et colonnes « B mm-26 » du budget) et l'onglet « 26 Vs 25 » pour 2025. Cliquez ensuite sur une agence : saisissez votre <b>estimation des mois non clos</b> (CA, charges externes, charges de personnel, résultat d'exploitation). L'atterrissage 2026 = réalisé des mois clos + votre estimation ; tant qu'elle manque, le budget 2026 du mois est retenu et l'atterrissage est signalé « provisoire ». Réimportez après chaque clôture : vos estimations sont conservées. Ces chiffres n'alimentent jamais le budget 2027 : ils informent les valideurs (fiche de validation, tableau de bord) et le REX sur son agence."],
-      [
-        "Comment bien préparer les références des agences ?",
-        "Pour chaque agence : le CA 2025 et 2026, le TXR 2026 (CA par heure travaillée), le taux d'absentéisme cible (maladie et accident du travail), le taux horaire brut au 1er janvier et au 1er juin, le taux de charges patronales des roulants, et la ligne de masse salariale non-roulante (salaire brut mensuel total et taux de charges). SOMA calcule le coût horaire chargé, affiché en fin de ligne (avec celui de juin). Ces données servent de socle au REX et de point de comparaison entre agences."
-      ],
-      [
-        "Que se passe-t-il quand je clique sur « Enregistrer » ?",
-        "Seuls les champs que vous avez modifiés sont enregistrés. Ils vont dans le budget de l'agence (toutes ses versions V1, V2, V3), le coût horaire est recalculé, et les champs de référence sont verrouillés côté REX. Le ratio de maintien de salaire est recopié dans toutes les agences qui ont un budget ; une agence créée plus tard le reprend à son ouverture. Si l'agence modifiée est celle que vous avez ouverte, son écran est mis à jour aussitôt. Un message indique le nombre d'agences enregistrées, et le nom de celles qui auraient été refusées par le serveur."
-      ],
-      [
-        "Comment saisir la masse salariale non-roulante ?",
-        "Une seule ligne par agence : le salaire brut mensuel total des non-roulants (régulateurs, responsables, administratifs et quote-part du DR) et leur taux de charges. SOMA en déduit le coût mensuel chargé. Cette ligne unique évite qu'un REX puisse déduire le salaire de son DR en consultant le budget. Elle se saisit dans Données agences ou sur l'écran Charges CG de l'agence. La masse salariale non roulante du mois est <b>exactement</b> cette ligne (brut × (1 + charges), par exemple 11 430 € × 1,3669 = 15 624 €), sans lien avec l'écran Équipe, les % roulants ni la maladie. Saisissez la ligne complète : si un régulateur ou un responsable a une part roulante dans l'écran Équipe (par exemple 30 %), elle compte dans les heures disponibles mais n'est pas payée une seconde fois en masse salariale roulante. Une facturière avec une part roulante compte en roulant (ETP, heures, masse salariale) : son coût n'est pas dans la ligne non-roulants. Saisissez aussi le <b>nombre d'ETP non roulants</b> : chaque ETP acquiert 2,5 jours de congés par mois, l'agence saisit les jours posés, et la variation du stock (acquis − posés) × coût d'un jour (ligne / ETP / 26) entre dans la masse salariale du mois."
-      ],
-      [
-        "Où régler le ratio de maintien de salaire ?",
-        "En haut de l'écran Données agences. C'est un paramètre unique pour tout le réseau : la part du salaire que l'entreprise continue de payer pendant un arrêt maladie ou AT. Il est recopié dans toutes les agences à l'enregistrement, et repris automatiquement par une agence dont le budget est créé plus tard. Tant qu'il est vide, SOMA déduit les absences à 100%, ce qui sous-estime la masse salariale des agences à fort absentéisme."
-      ],
-      [
-        "Pourquoi deux taux horaires ?",
-        "Le Smic est revalorisé en général au 1er janvier, et parfois en cours d'année. Le taux du 1er janvier s'applique aux heures de janvier à mai, celui du 1er juin aux heures de juin à décembre. Laissez le taux de juin vide s'il n'y a pas de revalorisation : celui de janvier s'applique alors toute l'année."
-      ],
-      [
-        "Peut-on importer les données ou les équipes depuis Excel ?",
-        "Oui, sur l'écran Données agences : « 📥 Importer données agences » charge les références et paramètres depuis le fichier Excel du réseau, et « 👥 Importer registre RH » charge les équipes. L'horaire mensuel du registre est converti en base hebdomadaire au coefficient exact (52/12), arrondi au quart d'heure : un temps plein noté 152 h donne 35 h. Contrôlez le compte rendu affiché après chaque import."
-      ],
-      [
-        "Les équipes ont été importées : que se passe-t-il si je réimporte le registre ?",
-        "Les équipes de toutes les agences ont été chargées à partir du registre du personnel. Un nouvel import ne remplace jamais une équipe déjà construite : seules les versions de budget dont l'équipe est vide sont remplies, et SOMA vous liste les agences non remplacées. Les REX gardent la main pour ajouter ou retirer des salariés."
-      ],
-      [
-        "Quel calendrier scolaire SOMA utilise-t-il ?",
-        "Le calendrier officiel de l'Éducation nationale (2026-2027 puis 2027-2028), selon la zone de l'agence (A, B ou C) : fin des vacances de Noël le 3 janvier, vacances d'hiver et de printemps selon la zone, été du 3 juillet au 1er septembre, Toussaint du 23 octobre au 7 novembre, Noël à partir du 18 décembre 2027. Les jours de reprise des cours sont des jours de semaine normaux. Les 11 jours fériés de 2027 sont appliqués."
-      ]
+      ["Comment importer le tableau de bord 2026 et estimer les derniers mois ?", "Menu <b>Tableau de bord 2026</b>, bouton <b>Importer le tableau de bord (Excel)</b> : le classeur habituel, un onglet par agence et structure, plus l'onglet « 26 Vs 25 » pour 2025. Cliquez ensuite sur une agence pour saisir votre estimation des mois non clos (CA, charges externes, charges de personnel, résultat d'exploitation). Atterrissage 2026 = réalisé des mois clos + estimation. Sans estimation, SOMA prend le budget du mois et marque l'atterrissage « provisoire ». Réimportez après chaque clôture, vos estimations sont gardées. Ces chiffres ne vont jamais dans le budget 2027 : ils servent aux valideurs et au REX."],
+      ["Comment bien préparer les références des agences ?", "Pour chaque agence : CA 2025 et 2026, TXR 2026 (CA par heure travaillée), taux d'absentéisme cible, taux horaire brut au 1er janvier et au 1er juin, taux de charges patronales des roulants, et la ligne de masse salariale non roulante (brut mensuel total et taux de charges). SOMA calcule le coût horaire chargé, affiché en bout de ligne. Ces données servent de base au REX et de comparaison entre agences."],
+      ["Que se passe-t-il quand je clique sur « Enregistrer » ?", "Seuls les champs modifiés sont enregistrés, dans toutes les versions du budget de l'agence. Le coût horaire est recalculé et les références sont verrouillées côté REX. Le ratio de maintien est recopié dans toutes les agences qui ont un budget, et une agence créée plus tard le reprend. Un message donne le nombre d'agences enregistrées et le nom de celles refusées par le serveur, s'il y en a."],
+      ["Comment saisir la masse salariale non-roulante ?", "Une ligne par agence : brut mensuel total des non-roulants (régulateurs, responsables, administratifs, quote-part du DR) et leur taux de charges. Une seule ligne, pour qu'un REX ne puisse pas retrouver le salaire de son DR. Elle se saisit dans Données agences ou dans Charges CG. La masse salariale non roulante du mois vaut exactement brut × (1 + charges), par exemple 11 430 € × 1,3669 = 15 624 €, sans lien avec l'écran Équipe. Si un régulateur a une part roulante dans l'équipe, elle compte dans les heures disponibles mais n'est pas payée deux fois. Une facturière avec une part roulante compte en roulant : son coût n'est pas dans cette ligne. Saisissez aussi le <b>nombre d'ETP non roulants</b> : chaque ETP acquiert 2,5 jours de congés par mois, l'agence pose les jours, et la variation (acquis − posés) × coût d'un jour (ligne / ETP / 26) entre dans la masse salariale du mois."],
+      ["Où régler le ratio de maintien de salaire ?", "En haut de l'écran Données agences. C'est un seul paramètre pour tout le réseau : la part du salaire payée pendant un arrêt maladie ou AT. Il est recopié dans toutes les agences à l'enregistrement. Tant qu'il est vide, SOMA retire les absences à 100 %, ce qui sous-estime la masse salariale des agences où l'absentéisme est fort."],
+      ["Pourquoi deux taux horaires ?", "Le Smic peut être revalorisé en cours d'année. Le taux du 1er janvier s'applique de janvier à mai, celui du 1er juin de juin à décembre. Sans revalorisation, laissez juin vide."],
+      ["Peut-on importer les données ou les équipes depuis Excel ?", "Oui, sur l'écran Données agences : <b>Importer données agences</b> charge les références depuis le fichier du réseau, <b>Importer registre RH</b> charge les équipes. L'horaire mensuel du registre est converti en heures par semaine (× 12/52, arrondi au quart d'heure) : 152 h donnent 35 h. Vérifiez le compte rendu après chaque import."],
+      ["Les équipes ont été importées : que se passe-t-il si je réimporte le registre ?", "Un nouvel import ne remplace jamais une équipe déjà construite. Seules les versions dont l'équipe est vide sont remplies, et SOMA liste les agences laissées telles quelles. Les REX gardent la main sur leurs salariés."],
+      ["Quel calendrier scolaire SOMA utilise-t-il ?", "Le calendrier officiel de l'Éducation nationale (2026-2027 puis 2027-2028), selon la zone de l'agence : fin des vacances de Noël le 3 janvier, hiver et printemps selon la zone, été du 3 juillet au 1er septembre, Toussaint du 23 octobre au 7 novembre, Noël à partir du 18 décembre 2027. Un jour de rentrée est un jour de semaine normal. Les 11 fériés de 2027 sont appliqués."]
     ]
   },
   {
-    "t": "Étape 2 — Périodes de paie",
+    "t": "Étape 2. Périodes de paie",
     "items": [
-      [
-        "Comment fonctionnent les périodes de paie ?",
-        "Chaque mois de paie collecte les variables d'une période qui ne coïncide pas avec le mois civil (par défaut, la paie de janvier couvre du 7 décembre 2026 au 10 janvier 2027). Les salaires de base sont mensualisés (le même montant chaque mois, art. L3242-1 du Code du travail) : seules les variables (heures supplémentaires, retenues pour maladie non maintenue ou absence non payée) sont rattachées à la période de paie. La paie de janvier comprend les variables de décembre 2026 saisies ; les variables du 6 au 31 décembre 2027 sont reportées sur la paie de janvier 2028. Chaque trimestre compte un mois de paie à 5 semaines (janvier, avril, juillet, octobre). On ne garde que 4 semaines de variables par mois : les heures supplémentaires de la 5e semaine sont lissées sur le trimestre (le mois à 5 semaines est diminué des 2/3 de cette semaine, chacun des deux mois suivants en reçoit 1/3)."
-      ],
-      [
-        "Comment voir le détail du calcul de la masse salariale d'un mois ?",
-        "Menu <b>Détail des calculs</b> (après avoir ouvert l'agence) : quatre onglets. <b>Masse salariale</b> : une ligne par poste (salaire de base mensualisé des roulants, heures supplémentaires majorées, retenues pour maladie non maintenue et absences non payées, lissage de la 5e semaine, variables de décembre 2026, non-roulants, quote-part DR, HS des non-roulants, repas et IDJF) et une colonne par mois de paie ; cliquez sur un mois pour la formule chiffrée de chaque ligne. <b>Variables de paie</b> : les variables de chaque période de paie. <b>Stock de congés payés</b> : jours acquis (stockage) et posés (déstockage) chaque mois, valorisés au coût horaire chargé, variation et stock cumulé. <b>Heures</b> : besoin, heures du contrat, congés, maladie, absences, heures disponibles et HS par mois. « Tout exporter (Excel) » donne les cinq tableaux. Le détail de la masse salariale reste aussi accessible depuis Périodes de paie."
-      ],
-      [
-        "Les dates s'appliquent-elles à toutes les agences ?",
-        "Non : les périodes sont propres à chaque agence. Choisissez l'agence dans le sélecteur « Agence ouverte » en haut de l'écran Périodes de paie, puis vérifiez ou corrigez ses dates ; la modification est enregistrée automatiquement. Si le calendrier standard correspond à votre paie, il n'y a rien à faire. « Réinitialiser le calendrier par défaut » remet le calendrier standard sur l'agence ouverte."
-      ],
-      [
-        "Pourquoi la masse salariale ne colle pas au temps travaillé du mois ?",
-        "Parce que la paie suit ses propres périodes, décalées par rapport aux mois civils, et qu'elle intègre des éléments variables (heures supplémentaires, indemnités) rattachés à la période où ils sont payés, pas à celle où ils sont travaillés."
-      ]
+      ["Comment fonctionnent les périodes de paie ?", "Chaque mois de paie couvre une période décalée par rapport au mois civil. Par défaut, la paie de janvier va du 7 décembre 2026 au 10 janvier 2027. Les salaires de base sont mensualisés (même montant chaque mois, art. L3242-1 du Code du travail). Seules les variables (heures supplémentaires, retenues pour maladie non maintenue ou absence non payée) suivent la période. Janvier comprend les variables de décembre 2026, et celles du 6 au 31 décembre 2027 passent sur la paie de janvier 2028. Chaque trimestre a un mois à 5 semaines (janvier, avril, juillet, octobre) : les heures supplémentaires de cette 5e semaine sont lissées sur le trimestre (2/3 retirés du mois, 1/3 sur chacun des deux suivants)."],
+      ["Comment voir le détail du calcul de la masse salariale d'un mois ?", "Menu <b>Détail des calculs</b>, après avoir ouvert l'agence. <b>Masse salariale</b> : une ligne par poste et une colonne par mois de paie. Cliquez sur un mois pour voir la formule chiffrée de chaque ligne. <b>Variables de paie</b> : les variables de chaque période. <b>Stock de congés payés</b> : jours acquis et posés par mois, valorisés, avec le stock cumulé. <b>Heures</b> : besoin, contrats, congés, maladie, absences, disponible et HS. <b>Tout exporter (Excel)</b> donne tout. Le Prévisionnel propose aussi un export détaillé avec les formules."],
+      ["Les dates s'appliquent-elles à toutes les agences ?", "Non, chaque agence a ses périodes. Choisissez l'agence en haut de l'écran Périodes de paie, vérifiez ou corrigez ses dates : c'est enregistré automatiquement. Si le calendrier standard correspond, il n'y a rien à faire. <b>Réinitialiser le calendrier par défaut</b> le remet sur l'agence ouverte."],
+      ["Pourquoi la masse salariale ne colle pas au temps travaillé du mois ?", "Parce que la paie a ses propres périodes, décalées par rapport aux mois civils. Les heures supplémentaires et les indemnités sont rattachées au mois où elles sont payées, pas à celui où elles sont faites."]
     ]
   },
   {
-    "t": "Étape 3 — Variables de décembre 2026",
+    "t": "Étape 3. Variables de décembre 2026",
     "items": [
-      [
-        "Comment saisir les variables de paie de décembre 2026 ?",
-        "La paie de janvier 2027 règle les variables de la fin de décembre 2026. Dans l'écran Variables déc. 2026, saisissez pour chaque agence les montants bruts du réalisé : heures supplémentaires à 25% et à 50%, dimanches et fériés, primes et autres variables, indemnités repas. SOMA ajoute les charges patronales de l'agence aux éléments de salaire (pas aux indemnités repas) et reporte le total sur le mois de paie de janvier, et lui seul. Cliquez sur « Enregistrer ». Si le taux de charge de l'agence change ensuite, le total est recalculé."
-      ],
-      [
-        "Pourquoi une agence est-elle « sans taux de charge » ?",
-        "Son taux de charges patronales n'est pas encore renseigné dans Données agences. Le total affiché ne contient alors que les montants bruts, sans charges. Renseignez le taux à l'étape 1 : le total des variables se recalcule tout seul, sans ressaisie."
-      ]
+      ["Comment saisir les variables de paie de décembre 2026 ?", "La paie de janvier 2027 règle les variables de fin décembre 2026. Dans l'écran Variables déc. 2026, saisissez pour chaque agence les montants bruts réels : heures supplémentaires à 25 % et à 50 %, dimanches et fériés, primes, indemnités repas. SOMA ajoute les charges patronales aux éléments de salaire (pas aux repas) et met le total sur la paie de janvier. Cliquez sur <b>Enregistrer</b>. Si le taux de charges change ensuite, le total est recalculé."],
+      ["Pourquoi une agence est-elle « sans taux de charge » ?", "Son taux de charges patronales manque dans Données agences, donc le total n'est qu'en brut. Renseignez-le à l'étape 1, le total se recalcule."]
     ]
   },
   {
-    "t": "Étape 4 — Affectation DR",
+    "t": "Étape 4. Affectation DR",
     "items": [
-      [
-        "Comment fonctionne l'affectation des DR ?",
-        "Dans l'écran Affectation DR, choisissez pour chaque agence son directeur régional dans la liste. L'affectation est enregistrée immédiatement. Elle détermine qui valide le budget de l'agence à la première étape du circuit, et ce que le DR voit dans sa consolidation régionale. Une agence sans DR ne peut pas franchir la première étape de validation."
-      ]
+      ["Comment fonctionne l'affectation des DR ?", "Dans l'écran Affectation DR, choisissez le DR de chaque agence. C'est enregistré tout de suite. Le DR valide le budget en premier et voit l'agence dans sa consolidation. Sans DR, une agence ne passe pas la première étape."]
     ]
   },
   {
-    "t": "Étape 5 — Charges par agence",
+    "t": "Étape 5. Charges par agence",
     "items": [
-      [
-        "Comment préparer les charges de tout le réseau en une fois ?",
-        "Écran « Charges CG », carte « Classeur des charges du réseau ». « Télécharger le classeur » produit un fichier Excel pré-rempli avec ce qui est déjà saisi dans SOMA. Feuille « Réseau » : une ligne par poste, une colonne par agence et par structure. Saisissez un montant annuel (réparti « ÷ 12 » ou « prorata CA » selon la colonne Répartition de la ligne) ou un pourcentage du CA (« 3,2 % »). Une case vide ne change rien ; 0 met le poste à zéro. Feuille « Mensuel », facultative : un poste d'une agence saisi mois par mois. « Importer le classeur » affiche ensuite, par agence, le nombre de postes modifiés et les cases ignorées (agence ou poste inconnus, valeur illisible) ; rien n'est enregistré avant votre confirmation. Les charges s'appliquent à toutes les versions du budget de chaque agence ; SOMA vous demande une confirmation de plus si des budgets sont déjà en validation. Le reste des budgets (équipe, présence, références) n'est jamais modifié. Un poste déjà modifié par le REX dans son étape « Charges » n'est pas écrasé par l'import."
-      ],
-      [
-        "Comment saisir les charges d'une agence ?",
-        "Choisissez l'agence dans le sélecteur « Agence ouverte ». En haut de l'écran Charges CG, le bloc « Paramétrage salarial » reprend les taux horaires et la ligne non-roulante des Données agences ; vous pouvez les ajuster ici. Puis, pour chaque poste, choisissez le <b>mode</b> : saisie par mois, montant annuel (réparti en douze mois égaux ou au prorata du CA mensuel, selon la clé), ou pourcentage du CA ; et le <b>type</b>, fixe ou variable. La saisie est enregistrée automatiquement. Les lignes CA et Charges de personnel sont calculées par SOMA. Six postes sont construits par le REX dans son étape « Charges » : matériels ambulances, carburant, entretiens petits équipements et fournitures de bureau - vêtements en % du CA de chaque mois, sous-traitance et entretiens véhicules - bâtiment en montant par mois. Vos valeurs lui servent de point de départ ; vous pouvez toujours les corriger ici."
-      ],
-      [
-        "Fixe ou variable : à quoi ça sert ?",
-        "Ce classement ne change pas le résultat. Il sert à l'analyse : l'écran Contrôles et la synthèse séparent les charges fixes des charges variables, pour juger la sensibilité du résultat à l'activité."
-      ],
-      [
-        "Que comprend exactement la masse salariale du prévisionnel ?",
-        "Pour les roulants : les heures travaillées au coût horaire chargé du mois (taux du 1er janvier, puis du 1er juin), les heures supplémentaires selon leur majoration réelle (25% ou 50%), la part de salaire maintenue pendant les arrêts maladie et AT, et la provision de 10% de prime de précarité sur les heures en CDD. Pour les non-roulants : la ligne globale mensuelle telle que saisie, plus la variation du stock de leurs congés si le nombre d\'ETP non roulants est saisi. S'y ajoutent les heures supplémentaires des improductifs, les indemnités et, sur la paie de janvier, les variables de décembre 2026. C'est le coût complet du personnel, charges patronales comprises."
-      ],
-      [
-        "À quoi sert l'écran Contrôles ?",
-        "Sur l'agence ouverte, il récapitule charges fixes, charges variables, charges de personnel, heures supplémentaires et résultat, et liste les contrôles de cohérence. Ces contrôles ne bloquent rien. Il signale aussi le paramétrage salarial incomplet : ligne non-roulante absente, ratio de maintien vide, taux de juin absent."
-      ],
-      [
-        "Comment saisir Formation, Exceptionnel, Réseau adhérent et Siège ?",
-        "Ces quatre structures se gèrent comme une agence que vous complétez entièrement : ouvrez-la avec « Ouvrir une agence » (elles sont en fin de liste), l'écran affiche alors le <b>Budget 2027</b> de la structure : créez une ou plusieurs lignes de <b>chiffre d'affaires</b> (une par source, nom libre) et une ou plusieurs lignes de <b>masse salariale</b> (nom libre), et saisissez chaque montant mois par mois (bouton « ÷12 » pour répartir un montant annuel). Les autres charges se saisissent dans « Charges CG ». Elles n'ont ni activités (sanitaire, assis, saisonnier, funéraire), ni équipe, ni calendrier, ni REX : c'est vous qui préparez leur budget. Le directeur financier les consulte en lecture seule. Elles entrent dans le compte de résultat consolidé du réseau (écran Consolidation)."
-      ],
-      [
-        "Où saisir l'impôt sur les sociétés et la participation ?",
-        "Sur le Siège uniquement : ouvrez SIEGE, écran « Charges CG », lignes « Impôt sur les sociétés » et « Participation aux bénéfices ». Le résultat net = résultat courant avant impôt + résultat exceptionnel − impôt sur les sociétés − participation. Ces lignes n'existent pas pour les agences et apparaissent dans le consolidé réseau."
-      ],
-      [
-        "Où saisir la quote-part MS siège et la régulation mutualisée ?",
-        "Deux lignes sur chaque agence, incluses dans « Charges de personnel » comme dans les tableaux de bord (elles apparaissent dessous en détail, « dont … ») : « Quote-part MS siège » et « Quote-part régulation mutualisée ». Saisissez le montant annuel de l'agence obtenu avec votre clé de répartition : SOMA le lisse à l'identique sur les 12 mois (répartition ÷ 12) et le déduit de l'EBE. Mettez 0 pour une agence non concernée par la régulation mutualisée : la ligne reste en place si le périmètre évolue. Le plus rapide est le classeur « Charges du réseau » : une colonne par agence. Ces lignes n'existent pas pour les structures ; le Siège reste à 0 en charges de personnel puisque tout son coût est ventilé sur les agences. Le total « Charges de personnel » = masse salariale de l'agence + ces deux quotes-parts ; le ratio masse salariale / CA en tient compte."
-      ],
-      [
-        "Comment saisir un poste en % du CA différent chaque mois (péages par exemple) ?",
-        "Dans « Charges CG » de l'agence, choisissez le mode « % CA différent chaque mois » sur la ligne : une case de % apparaît pour chaque mois, avec le montant calculé dessous (CA du mois × % du mois). Un mois laissé vide vaut 0. Pour tout le réseau d'un coup, utilisez la feuille « Mensuel » du classeur « Charges du réseau » : une ligne Agence + Poste avec 12 pourcentages (« 2,1 % », « 3 % »…), chaque agence ayant les siens. Une même ligne contient soit 12 montants, soit 12 % ; un mélange est signalé à l'import."
-      ]
+      ["Comment préparer les charges de tout le réseau en une fois ?", "Écran Charges CG, carte <b>Classeur des charges du réseau</b>. <b>Télécharger le classeur</b> donne un fichier Excel déjà rempli avec ce qui est dans SOMA. Feuille « Réseau » : une ligne par poste, une colonne par agence et structure. Saisissez un montant annuel (réparti ÷ 12 ou au prorata du CA selon la colonne Répartition) ou un % du CA (« 3,2 % »). Case vide = pas de changement, 0 = poste à zéro. Feuille « Mensuel », facultative, pour un poste saisi mois par mois. <b>Importer le classeur</b> montre ensuite, agence par agence, les postes modifiés et les cases ignorées. Rien n'est enregistré avant votre confirmation. Les charges valent pour toutes les versions. SOMA redemande confirmation si des budgets sont en validation. Un poste déjà modifié par le REX n'est pas écrasé."],
+      ["Comment saisir les charges d'une agence ?", "Choisissez l'agence en haut de l'écran Charges CG. Le bloc Paramétrage salarial reprend les taux horaires et la ligne non roulante, vous pouvez les ajuster ici. Pour chaque poste, choisissez le <b>mode</b> (par mois, montant annuel réparti ÷ 12 ou au prorata du CA, ou % du CA) et le <b>type</b> (fixe ou variable). C'est enregistré automatiquement. CA et charges de personnel sont calculés par SOMA. Six postes sont construits par le REX dans son étape Charges : matériels ambulances, carburant, petits équipements et fournitures-vêtements en % du CA, sous-traitance et entretien véhicules-bâtiment en montant par mois. Vos valeurs lui servent de départ et vous pouvez toujours les corriger."],
+      ["Fixe ou variable : à quoi ça sert ?", "Ça ne change pas le résultat. Ça sert à l'analyse : l'écran Contrôles et la synthèse séparent fixes et variables pour mesurer la sensibilité du résultat à l'activité."],
+      ["Que comprend exactement la masse salariale du prévisionnel ?", "Pour les roulants : heures travaillées au coût horaire chargé du mois (taux de janvier puis de juin), heures supplémentaires selon leur majoration (25 % ou 50 %), part de salaire maintenue pendant les arrêts, et 10 % de prime de précarité sur les heures en CDD. Pour les non-roulants : la ligne mensuelle saisie, plus la variation de leur stock de congés si le nombre d'ETP est renseigné. S'y ajoutent les heures supplémentaires des improductifs, les indemnités et, en janvier, les variables de décembre 2026. Tout est chargé."],
+      ["À quoi sert l'écran Contrôles ?", "Pour l'agence ouverte, il récapitule charges fixes, charges variables, charges de personnel, heures supplémentaires et résultat, et liste les contrôles de cohérence, sans rien bloquer. Il signale aussi un paramétrage salarial incomplet : ligne non roulante absente, ratio de maintien vide, taux de juin manquant."],
+      ["Comment saisir Formation, Exceptionnel, Réseau adhérent et Siège ?", "Ces quatre structures se préparent entièrement par vous. Ouvrez-les avec <b>Ouvrir une agence</b> (en fin de liste) : l'écran affiche leur <b>Budget 2027</b>. Créez une ou plusieurs lignes de <b>chiffre d'affaires</b> et de <b>masse salariale</b> (nom libre), puis saisissez les montants par mois (bouton ÷12 pour répartir un annuel). Les autres charges se saisissent dans Charges CG. Pas d'activités, d'équipe, de calendrier ni de REX. Le directeur financier les consulte en lecture seule et elles entrent dans le consolidé du réseau."],
+      ["Où saisir l'impôt sur les sociétés et la participation ?", "Sur le Siège seulement : ouvrez SIEGE, écran Charges CG, lignes « Impôt sur les sociétés » et « Participation aux bénéfices ». Résultat net = résultat courant avant impôt + résultat exceptionnel − impôt − participation. Ces lignes n'existent pas pour les agences et apparaissent dans le consolidé."],
+      ["Où saisir la quote-part MS siège et la régulation mutualisée ?", "Deux lignes sur chaque agence, comprises dans les charges de personnel comme dans les tableaux de bord : « Quote-part MS siège » et « Quote-part régulation mutualisée ». Saisissez le montant annuel issu de votre clé de répartition : SOMA le répartit à parts égales sur les 12 mois et le déduit de l'EBE. Mettez 0 pour une agence hors régulation mutualisée. Le plus rapide reste le classeur des charges du réseau. Ces lignes n'existent pas pour les structures, et le Siège reste à 0 en charges de personnel puisque son coût est réparti sur les agences. Charges de personnel = masse salariale de l'agence + ces deux quotes-parts."],
+      ["Comment saisir un poste en % du CA différent chaque mois (péages par exemple) ?", "Dans Charges CG, choisissez le mode « % CA différent chaque mois » sur la ligne : une case de % apparaît pour chaque mois, avec le montant dessous. Un mois vide vaut 0. Pour tout le réseau, utilisez la feuille « Mensuel » du classeur des charges : une ligne agence + poste avec 12 pourcentages. Une même ligne contient soit 12 montants soit 12 %, un mélange est signalé à l'import."]
     ]
   },
   {
-    "t": "Étape 6 — Suivre le réseau",
+    "t": "Étape 6. Suivre le réseau",
     "items": [
-      [
-        "Comment suivre l'avancement des agences ?",
-        "Le Tableau de bord affiche votre parcours et l'avancement de la préparation (données de référence, charges saisies). L'écran Consolidation donne l'état de chaque agence (non commencé, brouillon, soumis, validé) et ses indicateurs clés."
-      ],
-      [
-        "Comment repérer une agence qui sort de l'ordinaire ?",
-        "SOMA compare chaque agence à la médiane du réseau et signale les écarts notables. Une agence dont un indicateur s'éloigne fortement de ses pairs est mise en évidence. Cela vous permet de concentrer votre attention là où elle est utile."
-      ],
-      [
-        "À quoi sert la vue comparative ?",
-        "Elle met les agences côte à côte sur les mêmes indicateurs : TXR, absentéisme cible, coût horaire, ETP roulants, part des heures supplémentaires dans le CA. Les médianes du réseau sont affichées en haut ; les valeurs en orange s'en écartent significativement. Une agence n'est jamais bonne ou mauvaise dans l'absolu : elle l'est par rapport à ses pairs et à son contexte."
-      ],
-      [
-        "À quoi servent les graphiques ?",
-        "Ils donnent une vision d'ensemble : l'évolution du CA par agence (réalisé 2025 et 2026, budgété 2027) pour repérer les trajectoires atypiques, et un nuage qui situe chaque agence selon son taux de charge. Utile pour préparer une présentation à la direction."
-      ],
-      [
-        "Comment savoir où en sont les budgets en préparation ?",
-        "L'écran Consolidation affiche, pour chaque agence, une colonne « Avancement » : la construction du budget par le REX, sur six jalons à parts égales (objectif fixé, références CA, équipe, absentéisme mensuel, mois validés, postes de charges saisis par le REX). Survolez la barre pour le détail ; le nombre de mois validés et la part des charges saisies par le contrôle de gestion sont rappelés dessous. Un brouillon sans modification depuis une semaine ou plus est signalé en orange, et le commentaire en haut de l'écran donne l'avancement moyen des brouillons et la liste des agences à relancer. Un directeur régional voit ses agences ; la direction, tout le réseau. L'export Excel reprend ces colonnes."
-      ]
+      ["Comment suivre l'avancement des agences ?", "Le Tableau de bord montre votre parcours et l'avancement de la préparation. La Consolidation donne l'état de chaque agence (non commencé, brouillon, soumis, validé) et ses principaux indicateurs."],
+      ["Comment repérer une agence qui sort de l'ordinaire ?", "SOMA compare chaque agence à la médiane du réseau et met en évidence celles qui s'en écartent nettement. Ça vous dit où regarder."],
+      ["À quoi sert la vue comparative ?", "Elle aligne les agences sur les mêmes indicateurs : TXR, absentéisme cible, coût horaire, ETP roulants, poids des heures supplémentaires dans le CA. Les médianes sont en haut, les valeurs en orange s'en écartent nettement. Un écart se lit toujours avec le contexte de l'agence."],
+      ["À quoi servent les graphiques ?", "À avoir une vue d'ensemble : évolution du CA par agence (réalisé 2025 et 2026, budget 2027) et un nuage qui situe chaque agence selon son taux de charge. Pratique pour une présentation à la direction."],
+      ["Comment savoir où en sont les budgets en préparation ?", "La colonne Avancement de la Consolidation mesure la construction de chaque budget sur six étapes : objectif, références CA, équipe, absentéisme, mois validés, charges saisies par le REX. Survolez la barre pour le détail. Un brouillon sans modification depuis une semaine est en orange, et le haut de l'écran liste les agences à relancer. L'export Excel reprend ces colonnes."]
     ]
   },
   {
-    "t": "Étape 7 — Valider",
+    "t": "Étape 7. Valider",
     "items": [
-      [
-        "Mon rôle dans le circuit de validation ?",
-        "Le circuit compte trois étapes : le DR de l'agence, puis le contrôleur de gestion et le directeur financier ensemble, puis la Direction. Un budget arrive dans votre écran « Budgets à valider » une fois validé par le DR. Les deux validations, la vôtre et celle du directeur financier, sont nécessaires pour qu'il passe à la Direction."
-      ],
-      [
-        "Comment valider ou refuser un budget ?",
-        "Dans « Budgets à valider », chaque budget se présente en fiche : point de départ, décisions du REX, résultat. Rédigez votre commentaire (obligatoire), puis cliquez sur « ✓ Valider » ou « ✕ Refuser ». Votre décision est enregistrée avec la date et votre nom."
-      ],
-      [
-        "Que se passe-t-il après un refus ?",
-        "Le budget revient au REX en brouillon, et toutes les validations déjà obtenues sont effacées, y compris celle du DR. Le REX voit votre motif dans un bandeau, corrige et resoumet ; un nouveau cycle commence au DR. L'historique des refus est conservé et reste visible sur la fiche."
-      ]
+      ["Mon rôle dans le circuit de validation ?", "Trois étapes : le DR, puis le contrôleur de gestion et le directeur financier ensemble, puis la Direction. Un budget arrive dans <b>Budgets à valider</b> après le DR. Il faut votre validation et celle du directeur financier pour qu'il passe à la Direction."],
+      ["Comment valider ou refuser un budget ?", "Dans <b>Budgets à valider</b>, chaque budget a sa fiche : point de départ, décisions du REX, résultat. Écrivez votre commentaire (obligatoire), puis <b>Valider</b> ou <b>Refuser</b>. La décision est enregistrée avec la date et votre nom."],
+      ["Que se passe-t-il après un refus ?", "Le budget repart en brouillon chez le REX et toutes les validations sont effacées, y compris celle du DR. Le REX voit votre motif, corrige et soumet de nouveau. La validation repart du DR. Les refus restent visibles sur la fiche."]
     ]
   }
 ];

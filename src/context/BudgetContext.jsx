@@ -99,7 +99,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
           };
           snapRef.current = null; viderHistorique(histRef.current); queueMicrotask(majHistInfo);
           setAgency((prev) => { const n = patch(prev); if (pendingRef.current) pendingRef.current = patch(pendingRef.current); return n; });
-          toast('Budget mis à jour avec les modifications enregistrées par un autre utilisateur', 'info');
+          toast('Un collègue vient de modifier ce budget : ses changements sont affichés', 'info');
         }
         budgetIdRef.current = id;
         setBudgetId(id);
@@ -312,18 +312,18 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     metaBaseRef.current = data.meta ? JSON.parse(JSON.stringify(data.meta)) : null;
     return remplie
       ? 'Version ' + VERSION_LABELS[v] + ' active'
-      : 'Version ' + VERSION_LABELS[v] + ' vide : paramétrage du CG, charges et équipe repris, le reste est à construire — ou dupliquez une autre version';
+      : 'Version ' + VERSION_LABELS[v] + ' vide. L\'équipe, les charges et le paramétrage du CG sont repris, le reste est à construire. Vous pouvez aussi dupliquer une autre version.';
   }, [agenceNom, flush, majMeta]);
 
   // Duplique la version active vers la première version libre et bascule dessus
   const duplicateVersion = useCallback(async () => {
     if (!editable) return { ok: false, message: 'Budget en validation : les versions ne peuvent plus être modifiées' };
     await flush();
-    if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
+    if (!budgetIdRef.current) return { ok: false, message: 'Le budget n\'est pas encore enregistré.' };
     const { data } = await loadBudgetData(budgetIdRef.current);
     const source = versionRef.current;
     const cible = cibleDuplication(data, source);
-    if (!cible) return { ok: false, message: 'Les 3 versions sont déjà utilisées. Videz-en une ou modifiez une version existante.' };
+    if (!cible) return { ok: false, message: 'Les trois versions sont utilisées. Supprimez-en une ou modifiez une version existante.' };
     const versions = { ...(data.versions || {}), [cible]: copieVersion(agencyRef.current) };
     const m = { ...(metaRef.current || DEFAULT_META()) };
     m.descriptions = { ...(m.descriptions || {}), [cible]: descriptionCopie(m.descriptions && m.descriptions[source], VERSION_LABELS[source]) };
@@ -346,7 +346,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
     if (!ids || !ids.length) return { ok: false, message: 'Choisissez au moins un bloc à reprendre.' };
     if (source === versionRef.current) return { ok: false, message: 'Choisissez une autre version que la version active.' };
     await flush();
-    if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
+    if (!budgetIdRef.current) return { ok: false, message: 'Le budget n\'est pas encore enregistré.' };
     const { data } = await loadBudgetData(budgetIdRef.current);
     if (!(data.versions && data.versions[source] && Object.keys(data.versions[source]).length)) return { ok: false, message: 'La version ' + VERSION_LABELS[source] + ' est vide.' };
     const src = agenceDeVersion(agenceNom, data, source);
@@ -366,7 +366,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   // Supprime une version (V2 ou V3, non choisie pour la soumission). Si c'était la version active, retour sur la V1.
   const deleteVersion = useCallback(async (v) => {
     await flush();
-    if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
+    if (!budgetIdRef.current) return { ok: false, message: 'Le budget n\'est pas encore enregistré.' };
     const { data } = await loadBudgetData(budgetIdRef.current);
     const courant = { ...data, meta: { ...(data.meta || {}), ...(metaRef.current || {}) } };
     const motif = motifRefusSuppression(courant, v, editable);
@@ -420,7 +420,7 @@ export function BudgetProvider({ agenceNom, lectureSeule = false, saisieDR = fal
   // Soumission au Directeur Régional (nouveau cycle de validation)
   const submit = useCallback(async (parNom) => {
     await saveNow();
-    if (!budgetIdRef.current) return { ok: false, message: 'Le budget doit d\'abord être enregistré.' };
+    if (!budgetIdRef.current) return { ok: false, message: 'Le budget n\'est pas encore enregistré.' };
     const d = await submitBudget(budgetIdRef.current, versionRef.current, parNom);
     majMeta(d.meta);
     setValidation(d.validation);

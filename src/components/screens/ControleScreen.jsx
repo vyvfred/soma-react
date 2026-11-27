@@ -14,7 +14,7 @@ export default function ControleScreen() {
   if (!agenceNom) return <div className="card"><h2>Contrôles</h2><p className="hint">Ouvrez une agence pour lancer l'audit.</p></div>;
   if (loading) return <div className="card"><h2>Contrôles</h2><p className="hint">Chargement…</p></div>;
   if (error) return <div className="card"><h2>Contrôles</h2><p className="hint">Erreur : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Contrôles — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Contrôles · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const s = chargesSummary(a);
   const ca = s.ca;
@@ -32,7 +32,7 @@ export default function ControleScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Contrôles — {a.name}</h2>
+      <h2 style={{ marginBottom: 14 }}>Contrôles · {a.name}</h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 10, marginBottom: 18 }}>
         {items.map(([label, val, sub], i) => (
@@ -53,7 +53,7 @@ export default function ControleScreen() {
           </div>
         ))
       ) : (
-        <p className="hint" style={{ color: 'var(--green, #2e7d6f)' }}>✓ Aucune anomalie détectée sur ce budget.</p>
+        <p className="hint" style={{ color: 'var(--green, #2e7d6f)' }}>Aucune anomalie sur ce budget.</p>
       )}
     </div>
   );

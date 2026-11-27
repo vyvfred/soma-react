@@ -37,6 +37,6 @@ describe('teamInsight — KPI et interprétation', () => {
   it('sans objectif : renvoie à l’étape 1', () => {
     const a = agenceReference();
     a.targetCA = 0; a.targetTXR = 0;
-    expect(teamInsight(a).phrase).toMatch(/Renseignez votre objectif/);
+    expect(teamInsight(a).phrase).toMatch(/Saisissez votre objectif|Renseignez l.objectif/);
   });
 });

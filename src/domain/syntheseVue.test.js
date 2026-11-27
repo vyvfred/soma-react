@@ -16,7 +16,7 @@ describe('syntheseVue', () => {
     expect(v.avecRepere).toBe(false);
     const h = syntheseVueHTML(v, {});
     expect(h).toContain('data-testid="sv-kpi-ca"');
-    expect(h).toContain('Disponible dès que le tableau de bord 2026');
+    expect(h).toContain('Apparaît quand le contrôle de gestion a importé le tableau de bord 2026');
   });
   it('affiche l\'avancement du REX', () => {
     const h = svAvancementHTML({ pct: 50, objectif: true, refsPct: 100, nbSalaries: 2, absSaisis: 12, moisValides: 3, chargesREX: 6 });

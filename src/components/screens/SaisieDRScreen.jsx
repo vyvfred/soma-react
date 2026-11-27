@@ -23,13 +23,13 @@ export default function SaisieDRScreen() {
     <section className="panel active">
       <h2>Saisir pour un REX</h2>
       <p className="hint" style={{ maxWidth: 760 }}>
-        Ouvrez le budget d'une agence de votre région pour le saisir à la place du REX, par exemple pendant un accompagnement.
-        Tout ce que vous saisissez s'affiche <span className="legendeDR"><i /> en orange</span> : le REX voit ce que vous avez modifié.
-        Dès qu'il modifie une de ces valeurs, elle reprend la couleur normale. Un budget déjà soumis ne se saisit plus : il se valide dans « Budgets à valider ».
+        Ouvrez le budget d'une agence pour le saisir à la place du REX, pendant un accompagnement par exemple.
+        Vos saisies s'affichent <span className="legendeDR"><i /> en orange</span>, chez vous comme chez le REX, jusqu'à ce qu'il les modifie.
+        Un budget soumis ne se saisit plus, il se valide dans Budgets à valider.
       </p>
       {etat.loading ? <p>Chargement…</p> : null}
       {etat.error ? <p className="hint" style={{ color: 'var(--orange)' }}>Erreur : {etat.error}</p> : null}
-      {!etat.loading && !etat.error && !etat.agences.length ? <p className="hint">Aucune agence n'est rattachée à votre région. Le contrôleur de gestion fait l'affectation.</p> : null}
+      {!etat.loading && !etat.error && !etat.agences.length ? <p className="hint">Aucune agence n'est rattachée à votre région. Voyez avec le contrôleur de gestion.</p> : null}
       {etat.agences.length ? (
         <div style={{ overflowX: 'auto' }}>
           <table data-testid="saisie-dr-agences" data-visite="saisie-agences" style={{ borderCollapse: 'collapse', minWidth: 460 }}>
@@ -43,7 +43,7 @@ export default function SaisieDRScreen() {
                     <td style={{ padding: '6px 10px' }}><b>{nom}</b></td>
                     <td style={{ padding: '6px 10px' }}>{b ? <span className={'statut ' + b.statut}>{statutLabel(b.statut)}</span> : <span className="hint">Budget pas encore créé</span>}</td>
                     <td style={{ padding: '6px 10px' }}>
-                      <button disabled={!ok || !!profile.consultatif} title={profile.consultatif ? 'Consultation : saisie impossible' : !b ? 'Le budget sera créé à la première connexion du REX ou par le contrôleur de gestion' : (!ok ? 'Budget en validation' : '')}
+                      <button disabled={!ok || !!profile.consultatif} title={profile.consultatif ? 'Consultation : saisie impossible' : !b ? 'Budget créé à la première connexion du REX ou par le contrôleur de gestion' : (!ok ? 'Budget en validation' : '')}
                         onClick={() => navigate('__saisir', nom)} style={{ width: 'auto', margin: 0 }}>✎ Saisir le budget</button>
                     </td>
                   </tr>

@@ -39,7 +39,7 @@ function RecapModal({ a, onClose, onSynthese }) {
       <div className="modalCard" style={{ width: '100%', maxWidth: 480 }} data-testid="recap">
         <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 6 }}>🎉</div>
         <h2 style={{ textAlign: 'center', margin: '0 0 6px' }}>Budget {a.name} construit</h2>
-        <p style={{ textAlign: 'center', color: 'var(--ink65)', fontSize: 13, margin: '0 0 22px' }}>Voici le fruit de votre travail pour 2027</p>
+        <p style={{ textAlign: 'center', color: 'var(--ink65)', fontSize: 13, margin: '0 0 22px' }}>Votre budget 2027 en quatre chiffres</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: 22 }}>
           {carte('Chiffre d\'affaires', euro(r.ca), 'var(--violet2)')}
           {carte('Effectif', r.etp.toFixed(1) + ' ETP', 'var(--blue2)')}
@@ -48,8 +48,8 @@ function RecapModal({ a, onClose, onSynthese }) {
         </div>
         <p data-testid="recap-texte" style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink65)', margin: '0 0 16px' }}>
           {peutSoumettre
-            ? <>Votre travail est enregistré. Quand votre budget est prêt, soumettez-le à votre directeur régional : la version <b>{VERSION_LABELS[activeVersion] || 'V1'}</b> deviendra le budget officiel et ne sera plus modifiable pendant la validation.</>
-            : 'Votre travail est enregistré.'}
+            ? <>Tout est enregistré. Quand votre budget est prêt, soumettez-le à votre DR. La version <b>{VERSION_LABELS[activeVersion] || 'V1'}</b> devient alors le budget officiel et n'est plus modifiable pendant la validation.</>
+            : 'Tout est enregistré.'}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, margin: 0, background: 'transparent', color: 'var(--ink65)', border: '1px solid var(--border)', padding: 12 }}>Continuer à modifier</button>

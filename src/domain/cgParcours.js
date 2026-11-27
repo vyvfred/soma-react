@@ -10,7 +10,7 @@ export const CG_PARCOURS = [
     comment: [
       'Renseignez une fois le <b>ratio de maintien de salaire</b>, au-dessus du tableau : il vaut pour tout le réseau.',
       'Pour chaque agence, complétez la ligne : CA 2025 et 2026, TXR 2026, absentéisme cible, taux brut au 1<sup>er</sup> janvier et au 1<sup>er</sup> juin, charges patronales, masse salariale non-roulante (brut mensuel et charges).',
-      'Cliquez sur <b>« Enregistrer les modifications »</b> : les valeurs partent dans le budget de chaque agence et se verrouillent côté REX.'
+      'Cliquez sur <b>Enregistrer les modifications</b>. Les valeurs vont dans le budget de chaque agence et sont verrouillées pour le REX.'
     ],
     fini: 'Chaque agence a ses références et le ratio de maintien est renseigné.',
     vigilance: ['Une saisie non enregistrée est perdue si vous quittez l\'écran.'],
@@ -19,22 +19,22 @@ export const CG_PARCOURS = [
   { n: 2, panel: 'periodes', ecrans: ['periodes'], titre: 'Périodes de paie',
     quoi: 'Vérifier, pour chaque agence, les dates de collecte des variables de chaque mois de paie 2027.',
     comment: [
-      'Choisissez l\'agence dans le sélecteur <b>« Agence ouverte »</b> en haut de l\'écran.',
-      'Contrôlez le début et la fin de chaque période ; corrigez une date directement dans le tableau (enregistrement automatique).',
-      '<b>« Réinitialiser le calendrier par défaut »</b> remet le calendrier standard (paie de janvier : du 7 décembre 2026 au 10 janvier 2027).'
+      'Choisissez l\'agence en haut de l\'écran.',
+      'Vérifiez le début et la fin de chaque période. Corrigez une date dans le tableau, c\'est enregistré tout de suite.',
+      '<b>Réinitialiser le calendrier par défaut</b> remet le calendrier standard (paie de janvier du 7 décembre 2026 au 10 janvier 2027).'
     ],
     fini: 'Les dates correspondent au calendrier de paie réel. Si le calendrier standard convient, il n\'y a rien à modifier.',
-    vigilance: ['Mois de paie à 5 semaines : les heures supplémentaires de la 5e semaine sont lissées sur le trimestre (colonne « dont lissage 5e semaine »).'],
+    vigilance: ['Dans un mois de paie à 5 semaines, les HS de la 5e semaine sont lissées sur le trimestre.'],
     aide: 'Les dates s\'appliquent',
-    etat: () => ({ ok: null, txt: 'Calendrier standard par défaut — à vérifier par agence' }) },
+    etat: () => ({ ok: null, txt: 'Calendrier standard, à vérifier agence par agence' }) },
   { n: 3, panel: 'variablesdec', ecrans: ['variablesdec'], titre: 'Variables de décembre 2026',
     quoi: 'Saisir les variables de fin décembre 2026, payées sur la paie de janvier 2027.',
     comment: [
       'Pour chaque agence, saisissez les montants <b>bruts</b> du réalisé : HS à 25 %, HS à 50 %, dimanches et fériés, primes et autres, indemnités repas.',
-      'Contrôlez le total chargé de chaque ligne, puis cliquez sur <b>« Enregistrer »</b>.'
+      'Vérifiez le total chargé de chaque ligne, puis cliquez sur <b>Enregistrer</b>.'
     ],
     fini: 'Toutes les agences sont renseignées et aucune n\'est « sans taux de charge ».',
-    vigilance: ['Le total chargé utilise le taux de charges des Données agences : renseignez-le d\'abord (étape 1).', 'Les indemnités repas ne sont pas chargées.'],
+    vigilance: ['Le total chargé utilise le taux de charges des Données agences. Renseignez-le d\'abord.', 'Les indemnités repas ne sont pas chargées.'],
     aide: 'variables de paie de décembre',
     etat: (e) => ({ ok: e.avecVarDec === e.total, txt: e.avecVarDec + '/' + e.total + ' agences renseignées' }) },
   { n: 4, panel: 'affectation', ecrans: ['affectation'], titre: 'Affectation DR',
@@ -47,9 +47,9 @@ export const CG_PARCOURS = [
   { n: 5, panel: 'cg', ecrans: ['cg', 'controle'], titre: 'Charges par agence',
     quoi: 'Saisir les charges hors personnel de chaque agence, puis contrôler la cohérence de son budget.',
     comment: [
-      'Choisissez l\'agence dans le sélecteur <b>« Agence ouverte »</b>.',
+      'Choisissez l\'agence en haut de l\'écran.',
       'Vérifiez en haut le paramétrage salarial (taux horaires, masse salariale non-roulante), repris des Données agences et modifiable ici.',
-      'Pour chaque poste, choisissez le mode (par mois, montant annuel, % du CA) et le type (fixe ou variable), puis saisissez. Enregistrement automatique.',
+      'Pour chaque poste, choisissez le mode (par mois, annuel, % du CA) et le type (fixe ou variable), puis saisissez. C\'est enregistré automatiquement.',
       'Terminez par l\'écran <b>Contrôles</b> de l\'agence.'
     ],
     fini: 'Tous les postes de chaque agence sont renseignés.',
@@ -60,7 +60,7 @@ export const CG_PARCOURS = [
     quoi: 'Suivre l\'avancement des budgets et repérer les agences atypiques.',
     comment: [
       '<b>Consolidation</b> : l\'état de chaque agence et ses indicateurs clés.',
-      '<b>Vue comparative</b> : chaque agence face à la médiane du réseau ; les valeurs en orange s\'en écartent nettement.',
+      '<b>Vue comparative</b> : chaque agence face à la médiane du réseau, les écarts nets en orange.',
       '<b>Graphiques</b> : trajectoires de CA et taux de charge, pour une lecture d\'ensemble.'
     ],
     fini: 'Tous les budgets sont soumis.',
@@ -72,7 +72,7 @@ export const CG_PARCOURS = [
     comment: [
       'Un budget arrive ici après la validation de son DR.',
       'Lisez la fiche de décisions de l\'agence.',
-      'Rédigez votre commentaire (obligatoire), puis <b>« ✓ Valider »</b> ou <b>« ✕ Refuser »</b>.'
+      'Écrivez votre commentaire (obligatoire), puis <b>Valider</b> ou <b>Refuser</b>.'
     ],
     fini: 'Aucun budget n\'attend votre décision.',
     vigilance: ['Un refus renvoie le budget au REX et efface toutes les validations, y compris celle du DR.'],

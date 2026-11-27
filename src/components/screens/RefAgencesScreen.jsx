@@ -121,8 +121,8 @@ export default function RefAgencesScreen() {
       // L'import fait foi : les saisies en cours pour ces agences sont remplacées
       setEdits((prev) => { const n = { ...prev }; Object.keys(w.ecrits).forEach((k) => delete n[k]); return n; });
       let t = w.count + ' agence(s) mise(s) à jour';
-      if (r.inconnues.length) t += ' — non reconnues : ' + r.inconnues.slice(0, 3).join(', ') + (r.inconnues.length > 3 ? '…' : '');
-      if (w.echecs.length) t += ' — refusées par le serveur : ' + w.echecs.join(', ');
+      if (r.inconnues.length) t += '. Non reconnues : ' + r.inconnues.slice(0, 3).join(', ') + (r.inconnues.length > 3 ? '…' : '');
+      if (w.echecs.length) t += '. Refusées par le serveur : ' + w.echecs.join(', ');
       setImportMsg({ ok: !r.inconnues.length && !w.echecs.length, t });
       reload();
     } catch (err) {
@@ -145,9 +145,9 @@ export default function RefAgencesScreen() {
       Object.entries(w.ecrites).forEach(([nom, employees]) => applyExternal(nom, { employees }, true));
       invaliderEtatCG();
       let t = w.count + ' agence(s) mise(s) à jour (' + w.totalSal + ' salariés importés)';
-      if (r.ecartes) t += ' — ' + r.ecartes + ' ligne(s) écartée(s) (sortis avant 2027, emploi ou agence non reconnus)';
-      if (w.gardees.length) t += ' — équipe déjà construite par le REX, non remplacée : ' + w.gardees.join(', ');
-      if (w.echecs.length) t += ' — refusées par le serveur : ' + w.echecs.join(', ');
+      if (r.ecartes) t += '. ' + r.ecartes + ' ligne(s) écartée(s) : sortis avant 2027, emploi ou agence non reconnus';
+      if (w.gardees.length) t += '. Équipe déjà construite par le REX, non remplacée : ' + w.gardees.join(', ');
+      if (w.echecs.length) t += '. Refusées par le serveur : ' + w.echecs.join(', ');
       setImportMsg({ ok: !w.echecs.length, t });
       reload();
     } catch (err) {
@@ -159,7 +159,7 @@ export default function RefAgencesScreen() {
     <div className="card">
       <fieldset disabled={lectureConsult} data-testid="fieldset-consultation" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-        <h2 style={{ margin: 0 }}>Données agences — références CG</h2>
+        <h2 style={{ margin: 0 }}>Données agences</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => fichierRegistre.current && fichierRegistre.current.click()} disabled={importing}>👥 Importer registre RH</button>
           <button onClick={() => fichierRefs.current && fichierRefs.current.click()} disabled={importing}>📥 Importer données agences</button>
@@ -181,7 +181,7 @@ export default function RefAgencesScreen() {
         <label style={{ margin: 0, fontSize: 12 }}>Ratio de maintien de salaire, tout le réseau (%) :</label>
         <input type="number" min="0" max="100" value={ratio !== null ? ratio : ratioBase} placeholder="ex : 50"
           onChange={(e) => setRatio(e.target.value)} style={{ width: 100 }} />
-        <span style={{ fontSize: 12, color: 'var(--ink65)' }}>Part du salaire maintenue par l'entreprise pendant un arrêt maladie / AT. Vide = absences déduites à 100 %. Appliqué à toutes les agences à l'enregistrement.</span>
+        <span style={{ fontSize: 12, color: 'var(--ink65)' }}>Part du salaire maintenue pendant un arrêt maladie ou AT. Vide : les absences sont retirées à 100 %. S'applique à toutes les agences.</span>
       </div>
 
       <div style={{ overflowX: 'auto', marginBottom: 14 }}>
@@ -221,7 +221,7 @@ export default function RefAgencesScreen() {
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button onClick={save} disabled={!dirty || saving}>{saving ? '⏳ Enregistrement…' : '💾 Enregistrer les modifications'}</button>
-        {dirty ? <span className="hint" style={{ fontSize: 12 }}>{Object.keys(edits).length} agence(s) modifiée(s){ratio !== null ? ' · ratio réseau modifié' : ''} — non enregistré</span> : null}
+        {dirty ? <span className="hint" style={{ fontSize: 12 }}>{Object.keys(edits).length} agence(s) modifiée(s){ratio !== null ? ' · ratio réseau modifié' : ''} · non enregistré</span> : null}
         {savedMsg ? <span style={{ fontSize: 13, color: savedMsg.startsWith('✓') ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{savedMsg}</span> : null}
       </div>
       </fieldset>

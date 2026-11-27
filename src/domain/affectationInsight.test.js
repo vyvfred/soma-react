@@ -22,6 +22,6 @@ describe('affectationInsight', () => {
 
   it('signale l’absence de DR', () => {
     const r = affectationInsight(ops, {}, []);
-    expect(r.text).toMatch(/Aucun directeur régional/);
+    expect(r.text).toMatch(/Aucun compte DR/);
   });
 });

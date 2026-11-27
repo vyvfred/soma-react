@@ -49,7 +49,7 @@ function appliquerDecision(v, role, decision, commentaire, parNom){
     return { ok:false, message:'Ce budget n\'est pas à votre étape de validation.' };
   }
   if(!commentaire || !commentaire.trim()){
-    return { ok:false, message:'Un commentaire est obligatoire pour justifier votre décision.' };
+    return { ok:false, message:'Le commentaire est obligatoire.' };
   }
   let entry = { decision: decision, commentaire: commentaire.trim(), date: new Date().toISOString(), par: parNom||'' };
   v.decisions[role] = entry;
@@ -69,13 +69,13 @@ function appliquerDecision(v, role, decision, commentaire, parNom){
     v.historique.push({ type:'etage_validé', etage:v.etage, date:entry.date });
     if(v.etage >= 3){
       v.statut = 'valide';
-      return { ok:true, definitif:true, message:'Budget définitivement validé par tous les étages.', validation:v };
+      return { ok:true, definitif:true, message:'Budget validé à toutes les étapes.', validation:v };
     } else {
       v.etage += 1;
       return { ok:true, etageSuivant:v.etage, message:'Étage validé. Le budget passe à l\'étape suivante.', validation:v };
     }
   }
-  return { ok:true, message:'Votre validation est enregistrée. En attente des autres validateurs de cette étape.', validation:v };
+  return { ok:true, message:'Validation enregistrée. On attend les autres valideurs de cette étape.', validation:v };
 }
 
 function decisionLabel(d) {

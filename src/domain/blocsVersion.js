@@ -27,7 +27,7 @@ function alerteRepriseBlocs(cible,source,ids){
   if(ids.indexOf('presence')<0||ids.indexOf('equipe')>=0)return null;
   let n=function(a){return (a&&a.employees||[]).length;};
   if(n(cible)===n(source))return null;
-  return 'La présence de la version source a été saisie pour '+n(source)+' salariés, la version active en compte '+n(cible)+'. Reprenez aussi l\'équipe pour garder des saisies cohérentes.';
+  return 'La présence de la version source a été saisie pour '+n(source)+' salariés, la version active en compte '+n(cible)+'. Reprenez aussi l\'équipe pour rester cohérent.';
 }
 function versionsRempliesDe(data){return ['v1','v2','v3'].filter(function(v){return !!(data&&data.versions&&data.versions[v]&&Object.keys(data.versions[v]).length);});}
 // Une version peut être supprimée si : remplie, pas la seule remplie, pas choisie pour la soumission, budget modifiable.

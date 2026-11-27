@@ -15,20 +15,20 @@ function previsionnelInsight(a, ca, net, tauxMS, libMin = 'résultat') {
   if (!ca) {
     const nbRoulants = a.employees ? a.employees.filter((e) => isRoulant(e.qual)).length : 0;
     if (nbRoulants === 0) {
-      return 'Le prévisionnel se remplit automatiquement à partir de votre objectif, votre équipe et vos charges. Commencez par <b>renseigner votre objectif et votre équipe</b> — les montants apparaîtront ici.';
+      return 'Le prévisionnel se calcule à partir de votre objectif, de votre équipe et de vos charges. Renseignez d\'abord <b>l\'objectif et l\'équipe</b>.';
     }
     if (!(+a.targetCA > 0)) {
-      return 'Renseignez votre <b>objectif de chiffre d\u2019affaires</b> (étape Objectif) pour que le compte de résultat prévisionnel se calcule.';
+      return 'Renseignez votre <b>objectif de CA</b> sur l\u2019écran Objectif pour calculer le prévisionnel.';
     }
-    return 'Les charges ne sont pas encore saisies. Le contrôleur de gestion renseigne les charges de chaque poste ; le résultat prévisionnel se complètera au fur et à mesure.';
+    return 'Les charges ne sont pas encore saisies. Le résultat se complétera à mesure que le contrôle de gestion les renseigne.';
   }
   let phrase;
-  if (net > 0) phrase = 'Votre budget dégage un ' + libMin + ' positif de <b>' + euro(net) + '</b>. ';
-  else if (net < 0) phrase = 'Votre budget présente un ' + libMin + ' déficitaire de <b>' + euro(Math.abs(net)) + '</b>. ';
-  else phrase = 'Votre budget est à l\u2019équilibre. ';
+  if (net > 0) phrase = '' + libMin.charAt(0).toUpperCase() + libMin.slice(1) + ' : <b>' + euro(net) + '</b>. ';
+  else if (net < 0) phrase = libMin.charAt(0).toUpperCase() + libMin.slice(1) + ' : <b>−' + euro(Math.abs(net)) + '</b>. ';
+  else phrase = 'Budget à l\u2019équilibre. ';
 
   // Pas de seuil de masse salariale (nov. 2026) : le ratio se compare à 2025, 2026 et au réseau dans la Synthèse
-  if (tauxMS > 0) phrase += 'La masse salariale représente <b>' + pct(tauxMS) + '</b> du chiffre d\u2019affaires (comparaisons avec 2025, 2026 et la moyenne du réseau dans la Synthèse). ';
+  if (tauxMS > 0) phrase += 'Masse salariale : <b>' + pct(tauxMS) + '</b> du CA. La Synthèse la compare à 2025, 2026 et au réseau. ';
   return phrase;
 }
 
@@ -50,7 +50,7 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   if (!agenceNom) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Prévisionnel</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Prévisionnel — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Prévisionnel · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const ca = annuel(a, "Chiffre d'affaires");
   const indMois = M.map((_, m) => indemnitesMS(a, m));
@@ -80,11 +80,11 @@ export default function PrevisionnelScreen({ vueCG = false }) {
   return (
     <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
-        <h2 style={{ margin: 0 }}>Prévisionnel — {agenceNom}</h2>
+        <h2 style={{ margin: 0 }}>Prévisionnel · {agenceNom}</h2>
         <BoutonExportDetaille testid="export-budget-detaille" libelle="📥 Budget détaillé (Excel)" titre="Classeur Excel avec tous les calculs en formules : calendrier, semaines, heures supplémentaires, masse salariale, compte de résultat"
           fichiers={() => fichierDepuisAgence(a, agenceNom, { activeVersion, meta, statut }, role)} />
       </div>
-      {vueCG ? <p className="hint" style={{ margin: '0 0 14px', fontSize: 13 }}>📊 <b>Prévisionnel de l'agence sélectionnée.</b> Ce tableau de résultat (SIG) est calculé automatiquement à partir des données du REX et des charges que vous avez saisies. Vue en lecture seule.</p> : null}
+      {vueCG ? <p className="hint" style={{ margin: '0 0 14px', fontSize: 13 }}>Prévisionnel de l'agence, calculé à partir des saisies du REX et de vos charges. Lecture seule.</p> : null}
 
       <div className="kpis" data-visite="previsionnel" style={{ marginBottom: 16 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} />)}

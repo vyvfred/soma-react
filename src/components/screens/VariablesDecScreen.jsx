@@ -63,7 +63,7 @@ export default function VariablesDecScreen() {
   });
   const enCours = Object.keys(edits).length;
   let insight = nb === 0
-    ? 'Aucune agence n\'a encore ses variables de décembre 2026. Sans elles, la paie de janvier 2027 est sous-estimée.'
+    ? 'Aucune agence n\'a encore ses variables de décembre 2026. Sans elles, la paie de janvier est sous-estimée.'
     : '<b>' + nb + ' agence' + (nb > 1 ? 's' : '') + ' sur ' + ops.length + '</b> ' + (nb > 1 ? 'ont' : 'a') + ' leurs variables de décembre 2026.';
   if (sansTaux.length) insight += ' Taux de charge patronal manquant pour ' + sansTaux.slice(0, 3).join(', ') + (sansTaux.length > 3 ? '…' : '') + ' : les charges ne sont pas ajoutées tant qu\'il n\'est pas renseigné dans Données agences.';
   if (enCours) insight += ' <b>' + enCours + ' agence' + (enCours > 1 ? 's' : '') + ' modifiée' + (enCours > 1 ? 's' : '') + ', pensez à enregistrer.</b>';
@@ -89,7 +89,7 @@ export default function VariablesDecScreen() {
         return n;
       });
       const nbLues = Object.keys(r.saisies).length;
-      setMsg((r.inconnues.length ? '' : '✓ ') + nbLues + ' agence(s) lue(s) — vérifiez puis enregistrez' + (r.inconnues.length ? ' (non reconnues : ' + r.inconnues.slice(0, 3).join(', ') + ')' : ''));
+      setMsg((r.inconnues.length ? '' : '✓ ') + nbLues + ' agence(s) lue(s). Vérifiez puis enregistrez' + (r.inconnues.length ? ' (non reconnues : ' + r.inconnues.slice(0, 3).join(', ') + ')' : ''));
     } catch (err) {
       setMsg('Erreur : ' + (err.message || 'lecture impossible'));
     }

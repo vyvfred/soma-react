@@ -25,7 +25,7 @@ function SaisieStockCP({ a, peutSaisir, applyExternal }) {
   }
   return (
     <div data-testid="stock-cp-ouverture" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 12px', padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--card2)', fontSize: 13 }}>
-      <span><b>Stock de congés au 31/12/2026</b> (jours ouvrables, équipe roulante) — facultatif :</span>
+      <span><b>Stock de congés au 31/12/2026</b> (jours ouvrables, équipe roulante), facultatif :</span>
       {peutSaisir ? (
         <>
           <input data-testid="stock-cp-input" type="number" min="0" step="0.5" value={v} placeholder="non saisi" onChange={(e) => { setV(e.target.value); setMsg(null); }} style={{ width: 100 }} />
@@ -33,7 +33,7 @@ function SaisieStockCP({ a, peutSaisir, applyExternal }) {
           {msg ? <span style={{ fontSize: 12, color: msg.startsWith('✓') ? 'var(--green)' : 'var(--orange)' }}>{msg}</span> : null}
         </>
       ) : <b>{ouv === null ? 'non saisi (le stock part de 0)' : ouv.toLocaleString('fr-FR') + ' j'}</b>}
-      <span className="hint" style={{ fontSize: 11, flexBasis: '100%', margin: 0 }}>Reliquat des droits acquis et non pris à la fin de 2026, issu de la paie. Sans saisie, le stock part de 0 et peut devenir négatif quand les congés posés en 2027 puisent dans les droits acquis avant.</span>
+      <span className="hint" style={{ fontSize: 11, flexBasis: '100%', margin: 0 }}>Jours acquis et pas encore pris fin 2026, d'après la paie. Sans saisie, le stock part de 0 et peut passer en négatif.</span>
     </div>
   );
 }
@@ -69,13 +69,13 @@ export default function JustifScreen() {
   const pret = a.costHour && a.cal && a.cal.length;
   const sum = (t, k) => t.reduce((s, x) => s + x[k], 0);
   let contenu = null;
-  if (!pret) contenu = <p className="hint">Le coût horaire de l'agence (Charges CG) et le calendrier doivent être renseignés pour afficher les calculs.</p>;
+  if (!pret) contenu = <p className="hint">Renseignez le coût horaire (Charges CG) et le calendrier pour voir les calculs.</p>;
   else if (onglet === 'ms') contenu = <DetailCalculMS a={a} ouvertParDefaut sansFermer />;
   else if (onglet === 'var') {
     const v = avecCacheMoteur(() => tableauVariables(a));
     contenu = (
       <>
-        <p className="hint" style={{ fontSize: 12 }}>Variables payées sur la période de paie de chaque mois (4 ou 5 semaines, dates dans Périodes de paie) : heures supplémentaires majorées (25 / 50 %, précarité CDD comprise), retenues pour la part de maladie non maintenue et les absences non payées, lissage de la 5e semaine, variables de décembre 2026 sur janvier, heures supplémentaires des non-roulants, indemnités repas et IDJF. Le salaire de base, mensualisé, n'en fait pas partie.</p>
+        <p className="hint" style={{ fontSize: 12 }}>Ce qui est payé sur la période de paie de chaque mois : heures supplémentaires majorées (précarité CDD comprise), retenues pour maladie non maintenue et absences non payées, lissage de la 5e semaine, variables de décembre 2026 en janvier, HS des non-roulants, repas et IDJF. Le salaire de base n'en fait pas partie.</p>
         <Tableau testid="justif-var"
           entetes={[['Mois de paie'], ['Période'], ['HS majorées'], ['Retenue maladie'], ['Retenue absences'], ['Lissage 5e sem.'], ['Variables déc. 2026'], ['HS non-roulants'], ['Repas et IDJF'], ['Total variables']]}
           lignes={v.map((x) => [x.lib, x.periode ? x.periode.debut.split('-').reverse().slice(0, 2).join('/') + ' – ' + x.periode.fin.split('-').reverse().slice(0, 2).join('/') : '', n0(x.hs), n0(x.retMaladie), n0(x.retAbsences), n0(x.lissage), n0(x.dec2026), n0(x.hsNR), n0(x.repas), n0(x.total)])}
@@ -98,7 +98,7 @@ export default function JustifScreen() {
     const h = avecCacheMoteur(() => tableauHeures(a));
     contenu = (
       <>
-        <p className="hint" style={{ fontSize: 12 }}>Heures des roulants par mois civil (une semaine à cheval sur deux mois est répartie au prorata des jours). Besoin = CA des jours du calendrier ÷ TXR. Disponibles = heures du contrat − congés − maladie − absences. HS = besoin − disponibles, calculé semaine par semaine.</p>
+        <p className="hint" style={{ fontSize: 12 }}>Heures des roulants par mois civil. Besoin = CA du jour ÷ TXR. Disponible = contrats − congés − maladie − absences − fériés. HS = besoin − disponible, semaine par semaine.</p>
         <Tableau testid="justif-h"
           entetes={[['Mois'], ['Besoin'], ['Heures contrat'], ['Congés'], ['Maladie'], ['Abs. payées'], ['Abs. non payées'], ['Fériés chômés'], ['Disponibles'], ['HS']]}
           lignes={h.map((x) => [x.lib, n0(x.besoin), n0(x.base), n0(x.cp), n0(x.maladie), n0(x.absPayees), n0(x.absNonPayees), n0(x.feries), n0(x.dispo), n0(x.hs)])}
@@ -109,11 +109,11 @@ export default function JustifScreen() {
   return (
     <div className="card" data-testid="justif">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0 }}>Détail des calculs — {a.name}</h2>
+        <h2 style={{ margin: 0 }}>Détail des calculs · {a.name}</h2>
         <span style={{ flex: 1 }} />
         {pret ? <button data-testid="justif-export" className="secondary" style={{ fontSize: 12 }} onClick={() => telechargerClasseur(feuillesJustif(a), 'SOMA_detail_calculs_' + a.name.replace(/\s+/g, '_') + '_2027.xlsx')}>⬇ Tout exporter (Excel)</button> : null}
       </div>
-      <p className="hint" style={{ margin: '6px 0 12px' }}>Comment SOMA obtient chaque montant : masse salariale du mois poste par poste, variables de paie, stockage et déstockage des congés payés, heures. Les chiffres sont ceux de l'application, à l'euro près (arrondis).</p>
+      <p className="hint" style={{ margin: '6px 0 12px' }}>Le détail de chaque montant : masse salariale poste par poste, variables de paie, stock de congés, heures. Les chiffres sont ceux de l'application, arrondis à l'euro.</p>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
         {ONGLETS.map(([k, l]) => <button key={k} data-testid={'justif-onglet-' + k} className={onglet === k ? '' : 'secondary'} style={{ fontSize: 12 }} onClick={() => setOnglet(k)}>{l}</button>)}
       </div>

@@ -23,12 +23,12 @@ export function objectifInsight(a) {
 
   // Cas 1 : objectif non renseigné.
   if (!caObj || !txr) {
-    return { recall, phrase: 'Renseignez votre objectif de chiffre d\u2019affaires et votre TXR cible. SOMA évaluera aussitôt si cet objectif est atteignable avec votre effectif actuel.', banner: null };
+    return { recall, phrase: 'Saisissez votre objectif de CA et votre TXR cible. SOMA vous dira si votre équipe peut le tenir.', banner: null };
   }
 
   // Cas 2 : effectif pas encore saisi.
   if (!baseHebdo || nbRoulants === 0) {
-    return { recall, phrase: 'Votre objectif est fixé à ' + euro(caObj) + '. Renseignez votre équipe (étape suivante) pour que SOMA vérifie que cet objectif est réalisable.', banner: null, phraseHtml: true };
+    return { recall, phrase: 'Votre objectif est fixé à ' + euro(caObj) + '. Renseignez votre équipe pour savoir si l\u2019objectif est tenable.', banner: null, phraseHtml: true };
   }
 
   // Cas 3 : interprétation complète.
@@ -48,16 +48,16 @@ export function objectifInsight(a) {
   const detail = 'Capacité sans heures supp. : ' + euro(caMaxSansHS) + ' · Objectif : ' + euro(caObj);
   let phrase, banner;
   if (tauxCharge > 115) {
-    phrase = evolTxt + 'Cet objectif dépasse nettement la capacité de votre effectif actuel : il nécessiterait un recours massif aux heures supplémentaires, difficile à tenir. Un renfort d\u2019effectif est probablement nécessaire.';
+    phrase = evolTxt + 'Cet objectif dépasse nettement ce que l\u2019équipe peut faire. Il faudrait beaucoup d\u2019heures supplémentaires : un renfort sera sans doute nécessaire.';
     banner = { class: 'warn', icon: '⚠', title: 'Objectif supérieur à votre capacité (' + tauxCharge + ' %)', detail };
   } else if (tauxCharge > 100) {
-    phrase = evolTxt + 'Cet objectif est atteignable, mais demandera un recours modéré aux heures supplémentaires (jusqu\u2019à 20 %). Surveillez les semaines de tension.';
+    phrase = evolTxt + 'Objectif tenable, avec des heures supplémentaires (jusqu\u2019à 20 %). Surveillez les semaines chargées.';
     banner = { class: 'info', icon: '🔵', title: 'Objectif atteignable avec des heures supplémentaires (' + tauxCharge + ' %)', detail };
   } else if (tauxCharge > 85) {
-    phrase = evolTxt + 'Votre effectif actuel permet d\u2019atteindre cet objectif. Quelques semaines pourront être tendues, mais l\u2019ensemble reste cohérent.';
+    phrase = evolTxt + 'Votre équipe peut tenir cet objectif. Quelques semaines seront chargées.';
     banner = { class: 'ok', icon: '✓', title: 'Objectif cohérent avec votre effectif (' + tauxCharge + ' %)', detail };
   } else {
-    phrase = evolTxt + 'Votre effectif dispose d\u2019une capacité confortable pour cet objectif. Vous pourriez viser plus haut, ou dégager de la marge sur les congés.';
+    phrase = evolTxt + 'Votre équipe a de la marge pour cet objectif. Vous pouvez viser plus haut ou poser plus librement les congés.';
     banner = { class: 'ok', icon: '✓', title: 'Capacité disponible confortable (' + tauxCharge + ' %)', detail };
   }
 
@@ -85,10 +85,10 @@ export function coherenceCapacite(a) {
     caJourCible: nbRoulants > 0 ? Math.round((dispoHebdoMoy / 5) * txr) : 0,
     icone: { critique: '🔴', tendu: '🟡', coherent: '🔵', confortable: '🟢' }[niveau],
     message: {
-      critique: 'Objectif difficile à atteindre sans recours massif aux HS. Vérifiez vos références CA.',
-      tendu: 'Objectif atteignable avec un recours modéré aux HS (≤ 20%).',
-      coherent: 'Objectif cohérent. Quelques semaines tendues possibles.',
-      confortable: 'Objectif confortable. Capacité disponible suffisante.'
+      critique: 'Objectif difficile sans beaucoup d\u2019HS. Vérifiez vos références CA.',
+      tendu: 'Objectif tenable avec des HS (20 % au plus).',
+      coherent: 'Objectif cohérent, quelques semaines chargées.',
+      confortable: 'Objectif confortable, l\u2019équipe a de la marge.'
     }[niveau]
   };
 }

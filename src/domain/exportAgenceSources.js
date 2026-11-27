@@ -4,7 +4,7 @@ import { statutLabel } from '../config/statut.js';
 import { classeurBudgetAgence, nomFichierBudgetAgence } from './exportAgenceDetail.js';
 import { VERSION_LABELS } from './versions.js';
 
-const libVersion = (v, desc) => ((VERSION_LABELS && VERSION_LABELS[v]) || (v ? v.toUpperCase() : '')) + (desc ? ' — ' + desc : '');
+const libVersion = (v, desc) => ((VERSION_LABELS && VERSION_LABELS[v]) || (v ? v.toUpperCase() : '')) + (desc ? ' (' + desc + ')' : '');
 
 // entree = { statut, data } de la map réseau ; null si le budget est vide
 export function fichierDepuisReseau(nom, entree, role) {

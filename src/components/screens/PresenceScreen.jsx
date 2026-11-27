@@ -176,7 +176,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
         <span style={{ color: imp.critM ? 'var(--orange, #c45300)' : 'var(--green, #2e7d6f)' }}>{imp.critM ? '⚠ ' + imp.critM + ' semaine(s) critique(s)' : '✓ Aucune semaine critique'}</span>
       </div>
 
-      {e.verrouille ? <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>🔒 Mois validé : les congés sont figés. Déverrouillez-le pour les modifier.</p> : null}
+      {e.verrouille ? <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>Mois validé. Rouvrez-le pour modifier ses congés.</p> : null}
       {saisie && propose != null ? (
         <div data-testid="cp-proposition-mois" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: '8px 12px', border: '1px solid var(--border)', fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
           <span>Proposition de SOMA : <b>{fmt1(propose)} J</b> · posés : <b>{fmt1(imp.cpM)} J</b></span>
@@ -198,9 +198,9 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
             <tr style={{ textAlign: 'right', color: 'var(--ink65)' }}>
               <th style={{ ...cell, textAlign: 'left' }}>Semaine</th>
               <th style={cell}>Base (h)</th>
-              <th style={cell} title="Congés payés en jours ouvrables — une semaine de congés = 6 jours (lundi au samedi)">CP (J)</th>
-              <th style={cell} title="Absences payées en jours — formation, événements familiaux, récupération… Coûtées au taux horaire comme les congés.">Abs. payées (J)</th>
-              <th style={cell} title="Absences non payées en jours — congé sans solde… Retirées de la capacité, sans coût salarial.">Abs. non payées (J)</th>
+              <th style={cell} title="Congés payés en jours ouvrables (une semaine = 6 jours)">CP (J)</th>
+              <th style={cell} title="Absences payées, en jours : formation, événement familial, récupération. Payées comme des congés.">Abs. payées (J)</th>
+              <th style={cell} title="Absences non payées, en jours : congé sans solde. Pas de coût salarial.">Abs. non payées (J)</th>
               <th style={cell}>Maladie (h)</th>
               <th style={cell}>Dispo (h)</th>
               <th style={cell}>Besoin (h)</th>
@@ -219,7 +219,7 @@ function DetailMois({ a, m, editable, onNav, onFermer, onSet, onValider, onDever
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.otherPaid') ? '1' : undefined} min="0" step="0.5" value={s.parts.otherPaid || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).otherPaid) || 0) + ' J' : 'Absences payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'otherPaid', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}><input type="number" data-saisie-dr={estSaisieDR(a, 'presence.' + s.week + '.other') ? '1' : undefined} min="0" step="0.5" value={s.parts.other || ''} title={s.aCheval ? 'Semaine à cheval sur deux mois : jours de ce mois. Total de la semaine : ' + fmt1(+((a.presence[s.week] || {}).other) || 0) + ' J' : 'Absences non payées (jours)'} placeholder="0" disabled={!saisie} onChange={(ev) => onSet(s.week, 'other', ev.target.value, m)} style={{ width: 56 }} /></td>
                 <td style={cell}>{Math.round(s.mal)}</td>
-                <td style={cell}>{s.aCheval ? <PartSemaine mois={s.dispoMois} semaine={s.av} /> : Math.round(s.av)}{s.ferieH >= 0.5 ? <div data-testid={'ferie-' + s.week} title="Jour férié du lundi au samedi : 7 h par ETP retirées du disponible, hors équipe de permanence (dimensionnée sur le besoin du jour)" style={{ fontSize: 9, color: 'var(--orange, #c45300)', whiteSpace: 'nowrap' }}>férié −{Math.round(s.ferieH)} h</div> : null}</td>
+                <td style={cell}>{s.aCheval ? <PartSemaine mois={s.dispoMois} semaine={s.av} /> : Math.round(s.av)}{s.ferieH >= 0.5 ? <div data-testid={'ferie-' + s.week} title="Férié en semaine : 7 h par ETP retirées du disponible, sauf l'équipe de permanence" style={{ fontSize: 9, color: 'var(--orange, #c45300)', whiteSpace: 'nowrap' }}>férié −{Math.round(s.ferieH)} h</div> : null}</td>
                 <td style={cell}>{s.aCheval ? <PartSemaine mois={s.besoinMois} semaine={s.besoin} /> : Math.round(s.besoin)}</td>
                 <td data-testid={'hs-' + s.week} style={{ ...cell, fontWeight: 700, color: (s.aCheval ? s.hsMois : s.hs) > 0.5 ? 'var(--orange, #c45300)' : 'var(--ink65)' }}>{s.aCheval ? <PartSemaine mois={s.hsMois} semaine={s.hs} /> : Math.round(s.hs)}</td>
                 <td style={cell}>{s.hsParPers != null ? <b>{(+s.hsParPers).toFixed(1)}</b> : '—'}</td>
@@ -241,7 +241,7 @@ export default function PresenceScreen() {
   if (!agenceNom) return <div className="card"><h2>Présence &amp; HS</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Présence &amp; HS</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Présence &amp; HS</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Présence &amp; HS — {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
+  if (!a) return <div className="card"><h2>Présence &amp; HS · {agenceNom}</h2><p className="hint">Budget non commencé pour cette agence.</p></div>;
 
   const nbRoulants = (a.employees || []).filter((e) => ['DEA', 'AA', 'TAXI', 'TPMR'].includes((e.qual || '').toUpperCase())).length;
   const hasObjectif = +a.targetCA > 0 && +a.targetTXR > 0;
@@ -285,11 +285,11 @@ export default function PresenceScreen() {
   if (nbRoulants === 0 || !hasObjectif) {
     return (
       <div className="card">
-        <h2 style={{ marginBottom: 10 }}>Présence &amp; HS — {agenceNom}</h2>
+        <h2 style={{ marginBottom: 10 }}>Présence &amp; HS · {agenceNom}</h2>
         <p className="hint" data-testid="presence-incomplet" style={{ padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)' }}>
           {nbRoulants === 0
-            ? 'Les congés et les heures supplémentaires se calculent à partir des salariés roulants : renseignez d\'abord l\'équipe pour les voir apparaître. L\'absentéisme peut déjà être saisi ci-dessous.'
-            : 'Les congés et les heures supplémentaires se calculent à partir de l\'objectif de chiffre d\'affaires et du TXR : renseignez l\'objectif pour les voir apparaître. L\'absentéisme peut déjà être saisi ci-dessous.'}
+            ? 'Renseignez d\'abord l\'équipe : congés et heures supplémentaires se calculent à partir des roulants. Vous pouvez déjà saisir l\'absentéisme plus bas.'
+            : 'Renseignez d\'abord l\'objectif de CA et le TXR : congés et heures supplémentaires en dépendent. Vous pouvez déjà saisir l\'absentéisme plus bas.'}
         </p>
         <div data-visite="absenteisme"><BlocAbsenteisme a={a} editable={editable} setSick={setSick} rebalance={rebalance} /></div>
       </div>
@@ -320,8 +320,8 @@ export default function PresenceScreen() {
   const cpEtat = Math.abs(rest) <= tol
     ? <span style={{ color: 'var(--green, #2e7d6f)' }}>✓ Équilibré</span>
     : rest > tol
-      ? <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours acquis que de jours posés : relancez la répartition ou posez-les à la main">⚠ {rest.toFixed(1)} J encore à poser</span>
-      : <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours posés que de jours acquis, congés ajoutés à la main ou mois déjà validés : relancez la répartition ou retirez des congés">⚠ {Math.abs(rest).toFixed(1)} J posés en trop</span>;
+      ? <span style={{ color: 'var(--orange, #c45300)' }} title="Il reste des jours acquis à poser. Relancez la répartition ou posez-les à la main.">⚠ {rest.toFixed(1)} J encore à poser</span>
+      : <span style={{ color: 'var(--orange, #c45300)' }} title="Plus de jours posés que de jours acquis. Relancez la répartition ou retirez des congés.">⚠ {Math.abs(rest).toFixed(1)} J posés en trop</span>;
 
 
   const hs50 = a.hs50 || Array(12).fill(null);
@@ -334,7 +334,7 @@ export default function PresenceScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Présence &amp; HS — {agenceNom}</h2>
+      <h2 style={{ marginBottom: 14 }}>Présence &amp; HS · {agenceNom}</h2>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="HS estimées" value={hsAnn.toFixed(0) + ' h'} note={hsVerdict} />
@@ -365,7 +365,7 @@ export default function PresenceScreen() {
         <div data-visite="conges" style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
           <button onClick={distribuerCP} style={{ width: 'auto', margin: 0 }}>Répartir les congés automatiquement</button>
           <button data-testid="reset-cp" onClick={resetCP} style={btnSec}>Remettre les CP à zéro</button>
-          <span className="hint" style={{ fontSize: 12 }}>Refait toute la proposition sur les mois non validés (vos ajustements à la main sur ces mois sont remplacés). Les mois validés ne bougent pas.</span>
+          <span className="hint" style={{ fontSize: 12 }}>Refait la proposition sur les mois non validés et remplace vos ajustements sur ces mois. Les mois validés ne bougent pas.</span>
         </div>
       ) : null}
 
@@ -386,10 +386,9 @@ export default function PresenceScreen() {
         <span style={{ marginLeft: 'auto' }}>{cpEtat}</span>
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '-10px 0 16px' }}>
-        <b>Comment SOMA propose les congés.</b> Il pose exactement les jours acquis, en respectant les périodes (60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai).
-        Dans chaque période, il les place d'abord sur les semaines où l'équipe est plus nombreuse que le besoin, sans créer d'heure supplémentaire, en les étalant ;
-        s'il en reste, il les met là où les heures supplémentaires par personne sont les plus basses, pour garder une charge régulière.
-        Si les jours acquis changent (absentéisme, équipe, CDD, dates d'entrée ou de sortie, temps de travail, part roulante), SOMA ajoute ou retire <b>seulement la différence</b> sur les mois non validés : les congés déjà placés, y compris ceux ajustés à la main, ne bougent pas.
+        SOMA pose exactement les jours acquis : 60 % de juin à octobre, 20 % de novembre à janvier, 20 % de février à mai.
+        Il les met d'abord sur les semaines où l'équipe dépasse le besoin, puis là où il y a le moins d'heures supplémentaires par personne.
+        Si les jours acquis changent ensuite, seule la différence est ajoutée ou retirée sur les mois non validés. Les congés déjà placés restent où ils sont.
       </p>
 
       {/* ── Mois par mois ── */}
@@ -399,11 +398,10 @@ export default function PresenceScreen() {
           <div style={{ width: (prog.nbVerrouilles / 12) * 100 + '%', height: '100%', background: 'var(--green, #2e7d6f)', transition: 'width .3s' }} />
         </div>
         <span><b>{prog.nbVerrouilles}/12</b> mois validés</span>
-        <span title="Jours acquis moins les jours déjà posés sur les mois validés : c'est ce que la répartition place sur les mois encore ouverts">Congés à poser sur les mois non validés : <b>{fmt1(prog.cpLibres)} J</b></span>
+        <span title="Jours acquis moins ceux déjà posés sur les mois validés">Congés à poser sur les mois non validés : <b>{fmt1(prog.cpLibres)} J</b></span>
       </div>
       <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
-        💡 Ouvrez un mois, ajustez les congés et les absences semaine par semaine, puis <b>validez-le</b> : il est figé, et l'écart avec la proposition
-        (jours en plus ou en moins) est ajouté ou retiré sur les mois non validés, sans toucher aux congés déjà placés. Un bilan montre ensuite les mois qui ont bougé et l'effet sur le coût des heures supplémentaires. <Pourquoi k="conges" />
+        Ouvrez un mois, ajustez les congés semaine par semaine, puis validez-le. Si vous avez posé plus ou moins que prévu, la différence est reportée sur les mois non validés. <Pourquoi k="conges" />
       </p>
       <div data-visite="mois" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8 }}>
         {etats.map((e) => <CarteMois key={e.m} e={e} ouvert={ouvert === e.m} onOuvrir={() => (ouvert === e.m ? setOuvert(null) : ouvrir(e.m))} />)}
@@ -425,7 +423,7 @@ export default function PresenceScreen() {
           <div style={{ marginTop: 6, color: 'var(--ink65)' }}>
             {critiques.map((c) => 'S' + c.week + ' (' + c.mois + ', ' + Math.round(c.hs) + ' h)').join(' · ')}
           </div>
-          <div style={{ marginTop: 6, color: 'var(--ink65)' }}>Évitez d'y poser des congés ou envisagez un renfort ponctuel.</div>
+          <div style={{ marginTop: 6, color: 'var(--ink65)' }}>Évitez d'y poser des congés, ou prévoyez un renfort.</div>
         </div>
       ) : null}
 
@@ -433,10 +431,10 @@ export default function PresenceScreen() {
       <Repli titre={<>Répartition des heures supplémentaires (25% / 50%) <Pourquoi k="hs50" /></>} testid="repli-hs50">
         <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
           <span>⏱️</span>
-          <div>Les 8 premières heures supplémentaires par semaine et par salarié sont majorées à <b>+25%</b>, au-delà à <b>+50%</b>.
+          <div>Les 8 premières heures supplémentaires d'un salarié dans la semaine sont à <b>+25 %</b>, les suivantes à <b>+50 %</b>.
             {auto50
-              ? <> SOMA calcule la part à +50% <b>semaine par semaine</b> : chaque salarié présent absorbe ses 8 premières heures à +25% (équipe présente = heures disponibles ÷ 35), le reste part à +50%. On suppose les heures supp réparties entre les présents ; si elles se concentrent sur quelques personnes, la part réelle à +50% sera plus forte.</>
-              : <> Indiquez, pour chaque mois, la <b>part de vos heures supplémentaires qui part à +50%</b> — d'après la réalité de votre agence.</>}</div>
+              ? <> SOMA fait le calcul semaine par semaine, en supposant les heures réparties entre les présents. Si elles reposent sur quelques personnes, la part à +50 % sera en réalité plus forte.</>
+              : <> Indiquez pour chaque mois la part de vos heures supplémentaires payées à +50 %.</>}</div>
         </div>
         <div role="radiogroup" aria-label="Mode de calcul de la part à +50%" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, marginBottom: 8 }}>
           <label><input type="radio" name="hs50Mode" data-testid="hs50-mode-auto" checked={auto50} disabled={!editable} onChange={() => setHS50Mode('auto')} /> Calcul automatique (règle des 8 h)</label>
@@ -464,16 +462,16 @@ export default function PresenceScreen() {
         </div>
         <div style={{ marginTop: 8, fontSize: 12, color: moy50 <= 0 ? 'var(--green, #2e7d6f)' : 'var(--ink65)' }}>
           {moy50 <= 0
-            ? '✓ Toutes vos heures supplémentaires sont à +25% — répartition saine.'
+            ? 'Toutes vos heures supplémentaires sont à +25 %.'
             : auto50
-              ? <><b>{pct(moy50)}</b> de vos heures supplémentaires partent à +50% sur l'année ({sem50} semaine{sem50 > 1 ? 's' : ''} dépasse{sem50 > 1 ? 'nt' : ''} 8 h par salarié présent). Placer des congés ailleurs ou renforcer l'équipe sur ces semaines réduit ce surcoût.</>
-              : <>En moyenne <b>{pct(moy50)}</b> de vos heures supplémentaires partent à +50% sur l'année. Le coût moyen de vos HS sera calculé en conséquence.</>}
+              ? <><b>{pct(moy50)}</b> de vos heures supplémentaires sont à +50 % sur l'année ({sem50} semaine{sem50 > 1 ? 's' : ''} au-delà de 8 h par salarié présent). Déplacer des congés ou renforcer l'équipe ces semaines-là réduit le surcoût.</>
+              : <>En moyenne <b>{pct(moy50)}</b> de vos heures supplémentaires sont à +50 % en moyenne sur l'année.</>}
         </div>
       </Repli>
 
       {/* ── Indemnités ── */}
       <Repli titre="Indemnités (repas et dimanche/jour férié)" testid="repli-indemnites" open={false}>
-        <p className="hint" style={{ margin: '6px 0 12px', fontSize: 12 }}>Saisissez pour chaque semaine le montant total des indemnités, en euros, séparément pour le personnel roulant et non-roulant. Ces montants sont intégrés à la masse salariale du prévisionnel (ligne « Charges de personnel », détail « dont indemnités »), <b>sur le mois de paie</b> indiqué dans la dernière colonne : une semaine de fin de mois est payée le mois suivant, et les semaines après le 5 décembre sur la paie de janvier 2028.</p>
+        <p className="hint" style={{ margin: '6px 0 12px', fontSize: 12 }}>Saisissez le montant de chaque semaine, en euros, pour les roulants et les non-roulants. Il est ajouté à la masse salariale <b>sur le mois de paie</b> de la dernière colonne. Une fin de mois est souvent payée le mois suivant, et après le 5 décembre tout part sur la paie de janvier 2028.</p>
         <div data-testid="indemnites-totaux" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
           <Kpi label="Repas" value={euro(ind.tot.repas)} note={'roulant ' + euro(ind.tot.rR) + ' · non-roulant ' + euro(ind.tot.rNR)} />
           <Kpi label="Dimanche & jour férié" value={euro(ind.tot.idjf)} note={'roulant ' + euro(ind.tot.iR) + ' · non-roulant ' + euro(ind.tot.iNR)} />
@@ -517,7 +515,7 @@ export default function PresenceScreen() {
 
       {/* ── HS des improductifs ── */}
       <Repli titre="Personnel improductif (régulateurs, responsables)" testid="repli-improductif" open={false}>
-        <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>La masse salariale des improductifs est saisie en une ligne globale par le contrôleur de gestion. Leur absentéisme suit le même taux que les roulants, mois par mois. Renseignez ici, si besoin, leurs heures supplémentaires par semaine (majorées selon le barème 25/50 du mois). Indiquez aussi le nombre de jours de congés payés qu'ils posent chaque mois.</p>
+        <p className="hint" style={{ margin: '6px 0 10px', fontSize: 12 }}>Leur salaire est saisi en une ligne par le contrôleur de gestion, et leur absentéisme suit celui des roulants. Saisissez ici leurs heures supplémentaires par semaine si besoin, et les jours de congés posés chaque mois.</p>
         <div style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 12 }}>
           Absentéisme des improductifs : <b>{pct(imp.absMoy)}</b> en moyenne (aligné sur les roulants) · ratio de maintien de salaire : <b>{imp.ratioMaintien} %</b>
           {imp.totalHS ? <> · HS saisies : <b>{fmt1(imp.totalHS)} h</b> soit <b>{euro(imp.totalCout)}</b></> : null}
@@ -562,8 +560,8 @@ function BlocAbsenteisme({ a, editable, setSick, rebalance }) {
       <div style={{ display: 'flex', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, margin: '6px 0 10px' }}>
         <span>🩺</span>
         <div>
-          <b>Taux d'absentéisme fixé par le contrôle de gestion : {pct(cible)}</b> (basé sur l'historique).<br />
-          Vous pouvez ajuster la répartition mois par mois, mais la <b>moyenne annuelle doit rester à {pct(cible)}</b>.
+          <b>Taux d'absentéisme fixé par le contrôle de gestion : {pct(cible)}</b> (d'après l'historique).<br />
+          Vous pouvez le moduler d'un mois à l'autre, mais la <b>moyenne de l'année doit rester à {pct(cible)}</b>.
         </div>
       </div>
       <div style={{ overflowX: 'auto', marginBottom: 12 }}>
@@ -592,7 +590,7 @@ function BlocAbsenteisme({ a, editable, setSick, rebalance }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ fontSize: 13, color: aCible ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>
-          {aCible ? '✓ Conforme à la cible du contrôle de gestion' : 'Écart de ' + pct(Math.abs(diff)) + ' ' + (diff > 0 ? 'au-dessus' : 'en dessous') + ' de la cible — à corriger'}
+          {aCible ? 'Conforme à la cible du contrôle de gestion' : 'Écart de ' + pct(Math.abs(diff)) + ' ' + (diff > 0 ? 'au-dessus' : 'en dessous') + ' de la cible, à corriger'}
         </span>
         {editable && !aCible ? <button className="secondary" onClick={rebalance}>Rééquilibrer automatiquement</button> : null}
       </div>
@@ -612,11 +610,11 @@ function CongesNonRoulants({ a, editable, muter }) {
     <div data-testid="repli-cp-nr" style={{ marginBottom: 18 }}>
       <h4 style={{ margin: '10px 0 6px', fontSize: 13, color: 'var(--ink65)' }}>Congés payés : nombre de jours par mois</h4>
       <p className="hint" style={{ margin: '0 0 10px', fontSize: 12 }}>
-        Nombre de jours de congés de l'équipe non roulante pour chaque mois, pour planifier toute l'équipe et vérifier que les jours acquis sont bien posés.
-        Ils ne sont pas remplacés. {etpNR(a) !== null ? <>Les jours acquis viennent du nombre d'ETP non roulants saisi par le contrôleur de gestion ({String(etpNR(a)).replace('.', ',')} ETP × 2,5 j par mois) ; la <b>variation du stock</b> (acquis − posés) entre dans la masse salariale du mois : calez vos jours posés sur les jours acquis.</> : <>Leur salaire est dans la ligne globale du contrôleur de gestion.</>}
+        Jours de congés de l'équipe non roulante, mois par mois. Ces absences ne sont pas remplacées.
+        {etpNR(a) !== null ? <> Les jours acquis viennent des ETP non roulants saisis par le contrôleur de gestion ({String(etpNR(a)).replace('.', ',')} ETP × 2,5 j par mois). L'écart entre acquis et posés entre dans la masse salariale du mois : posez autant de jours que de jours acquis.</> : null}
       </p>
       <div data-testid="cp-nr-compteur" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, marginBottom: 10 }}>
-        <span title={etpNR(a) !== null ? 'ETP non roulants (Données agences) × 2,5 jours ouvrables par mois' : '30 jours ouvrables par an (6 par semaine de congés) au prorata du temps de travail et de la part non roulante ; pendant les arrêts maladie, 80 % du rythme normal (loi 2024)'}>Acquis {etpNR(a) !== null ? <>({String(etpNR(a)).replace('.', ',')} ETP)</> : <>par {nb} non-roulant{nb > 1 ? 's' : ''}</>} : <b>{acquis.toFixed(1)} J</b></span>
+        <span title={etpNR(a) !== null ? 'ETP non roulants (Données agences) × 2,5 jours ouvrables par mois' : '30 jours ouvrables par an au prorata du temps de travail. 80 % du rythme pendant les arrêts maladie (loi de 2024).'}>Acquis {etpNR(a) !== null ? <>({String(etpNR(a)).replace('.', ',')} ETP)</> : <>par {nb} non-roulant{nb > 1 ? 's' : ''}</>} : <b>{acquis.toFixed(1)} J</b></span>
         <span>Posés : <b>{saisis.toFixed(1)} J</b></span>
         <span>Reste à poser : <b style={{ color: Math.abs(reste) < 1 ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>{reste.toFixed(1)} J</b></span>
         {editable ? <button type="button" data-testid="cp-nr-repartir" onClick={() => muter((x) => repartirCPNRAuto(x))} style={{ marginLeft: 'auto', fontSize: 12 }}>↗ Répartir les jours acquis (60/20/20)</button> : null}

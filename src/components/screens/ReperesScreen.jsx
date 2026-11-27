@@ -34,7 +34,7 @@ function Estimation({ agence, r, a, onEnregistre }) {
   return (
     <div data-testid="estimation-cg" style={{ marginBottom: 10 }}>
       <h4 style={{ margin: '6px 0' }}>Estimation des derniers mois (contrôle de gestion)</h4>
-      <p className="hint" style={{ fontSize: 12, margin: '0 0 6px' }}>L'atterrissage 2026 = réalisé {M[0]}–{M[mc - 1]} + votre estimation pour {mois.map((m) => M[m]).join(', ')}. En gris : ce qui est retenu tant que vous n'avez rien saisi (CA : votre « CA 2026 » des Données agences moins le réalisé, réparti comme le budget ; autres indicateurs : budget 2026 du mois).</p>
+      <p className="hint" style={{ fontSize: 12, margin: '0 0 6px' }}>L'atterrissage 2026 = réalisé {M[0]}–{M[mc - 1]} + votre estimation pour {mois.map((m) => M[m]).join(', ')}. En gris, ce qui est retenu tant que vous n'avez rien saisi : pour le CA, le CA 2026 des Données agences moins le réalisé ; pour le reste, le budget 2026 du mois.</p>
       <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
         <thead><tr><th style={{ textAlign: 'left', padding: '3px 6px' }}>Indicateur</th>{mois.map((m) => <th key={m} style={{ padding: '3px 6px' }}>{M[m]}</th>)}</tr></thead>
         <tbody>
@@ -114,7 +114,7 @@ export default function ReperesScreen() {
           <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input ref={fichier} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} data-testid="tdb-fichier" onChange={(e) => importer(e.target.files[0])} />
             <button type="button" data-testid="tdb-importer" disabled={import_} onClick={() => fichier.current && fichier.current.click()} style={{ width: 'auto', margin: 0, fontSize: 12, padding: '8px 14px' }}>{import_ ? 'Import…' : '⇪ Importer le tableau de bord (Excel)'}</button>
-            <span className="hint" style={{ fontSize: 12 }}>Le classeur 2026 (en cours) et le classeur de l'exercice 2025 (complet) : un onglet par agence (nom en A1, colonnes « B mm-AA » pour le budget) et l'onglet de comparaison avec l'année précédente. L'exercice est reconnu tout seul. Réimportez après chaque clôture : vos estimations sont conservées.</span>
+            <span className="hint" style={{ fontSize: 12 }}>Le classeur 2026 et celui de 2025 : un onglet par agence et l'onglet de comparaison avec l'année précédente. SOMA reconnaît l'exercice. Réimportez après chaque clôture, vos estimations sont gardées.</span>
           </div>
         ) : null}
         {msg ? <div data-testid="tdb-message" style={{ marginTop: 8, fontSize: 12, color: 'var(--ink65)' }}>{msg}</div> : null}

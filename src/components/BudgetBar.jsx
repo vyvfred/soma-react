@@ -36,10 +36,10 @@ function CompareModal({ cols, nom, onClose, expl }) {
     <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{ padding: 20 }}>
       <div className="modalCard" style={{ width: '100%', maxWidth: 800, maxHeight: '88vh', overflow: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, gap: 10 }}>
-          <h2 style={{ margin: 0 }}>Comparaison des versions — {nom}</h2>
+          <h2 style={{ margin: 0 }}>Comparaison des versions · {nom}</h2>
           <button onClick={onClose} style={{ ...btn, background: 'transparent', border: '1px solid var(--border)', color: 'var(--ink65)' }} aria-label="Fermer">✕</button>
         </div>
-        <p className="hint" style={{ marginBottom: 18 }}>★ = version choisie pour la soumission. Comparez les scénarios avant de décider.</p>
+        <p className="hint" style={{ marginBottom: 18 }}>★ : version choisie pour la soumission.</p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -113,18 +113,18 @@ export default function BudgetBar() {
 
   const onSwitch = run(async (v) => { const msg = await switchVersion(v); if (msg) toast(msg, msg.includes('vide') ? 'warn' : 'info'); });
   const onDup = run(async () => {
-    if (!window.confirm('Dupliquer la version ' + VERSION_LABELS[activeVersion] + ' vers la prochaine version libre ? Vous pourrez ensuite la modifier indépendamment.')) return;
+    if (!window.confirm('Dupliquer la version ' + VERSION_LABELS[activeVersion] + ' dans la prochaine version libre ?')) return;
     const r = await duplicateVersion();
     toast(r.message, r.ok ? 'success' : 'warn');
   });
   const onCompare = run(async () => {
     const c = await compareVersions();
-    if (c.length < 2) { toast('Il faut au moins 2 versions remplies pour comparer. Utilisez « Dupliquer la version active » pour créer une variante.', 'warn'); return; }
+    if (c.length < 2) { toast('Il faut deux versions pour comparer. Dupliquez d\'abord celle-ci.', 'warn'); return; }
     setCols(c);
   });
   const onReprise = run(async (source, ids) => {
     const libelles = BLOCS_VERSION.filter((b) => ids.includes(b.id)).map((b) => b.label).join(', ');
-    if (!window.confirm('Remplacer dans la ' + VERSION_LABELS[activeVersion] + ' : ' + libelles + ' — par les données de la ' + VERSION_LABELS[source] + ' ?')) return;
+    if (!window.confirm('Remplacer dans la ' + VERSION_LABELS[activeVersion] + ' : ' + libelles + ', par les données de la ' + VERSION_LABELS[source] + ' ?')) return;
     const r = await reprendreVersion(source, ids, (alerte) => window.confirm(alerte + '\n\nReprendre quand même ?'));
     if (r.annule) return;
     toast(r.message, r.ok ? 'success' : 'warn');
@@ -175,7 +175,7 @@ export default function BudgetBar() {
             {editable && autresRemplies.length ? <button onClick={() => setReprise(true)} disabled={busy || !editable} style={btn} data-testid="reprise-ouvrir">↧ Reprendre d'une autre version</button> : null}
             {editable && VERSIONS.filter((v) => versionsRemplies[v]).length > 1 && VERSIONS_SUPPRIMABLES.filter((v) => versionsRemplies[v]).map((v) => (
               <button key={v} onClick={() => onDelete(v)} disabled={busy || !editable || meta.submittedVersion === v}
-                title={meta.submittedVersion === v ? 'Version choisie pour la soumission : choisissez-en une autre avant de la supprimer' : 'Supprimer définitivement la ' + VERSION_LABELS[v]}
+                title={meta.submittedVersion === v ? 'C\'est la version choisie pour la soumission. Choisissez-en une autre avant de la supprimer.' : 'Supprimer définitivement la ' + VERSION_LABELS[v]}
                 style={{ ...btn, color: 'var(--red, #b42318)', borderColor: 'var(--red, #b42318)' }} data-testid={'version-supprimer-' + v}>🗑 Supprimer la {VERSION_LABELS[v]}</button>
             ))}
           </div>
@@ -186,19 +186,19 @@ export default function BudgetBar() {
           ) : null}
           {lectureSeule ? (
             <div data-testid="versions-consultation" style={{ fontSize: 12, color: 'var(--ink65)', marginBottom: 8 }}>
-              👁 {VERSIONS.filter((v) => versionsRemplies[v]).length > 1
-                ? 'Le REX a préparé ' + VERSIONS.filter((v) => versionsRemplies[v]).length + ' versions : cliquez sur une version pour la parcourir écran par écran. Rien n\'est modifié chez lui.'
-                : 'Une seule version préparée pour l\'instant. Rien n\'est modifié chez le REX pendant votre consultation.'}
+              {VERSIONS.filter((v) => versionsRemplies[v]).length > 1
+                ? 'Le REX a préparé ' + VERSIONS.filter((v) => versionsRemplies[v]).length + ' versions. Cliquez sur une version pour la parcourir, rien ne change chez lui.'
+                : 'Une seule version pour l\'instant. Votre consultation ne change rien chez le REX.'}
             </div>
           ) : null}
           <input type="text" value={(meta.descriptions && meta.descriptions[activeVersion]) || ''} onChange={(e) => setVersionDesc(e.target.value)} disabled={!editable}
             placeholder={'Description de la version ' + VERSION_LABELS[activeVersion] + ' (ex. : scénario avec renfort estival)'} style={{ width: '100%', marginBottom: 8 }} />
           <div style={{ fontSize: 12 }}>
             {meta.submittedVersion === activeVersion
-              ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>★ Cette version est celle choisie pour la soumission.</span>
+              ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>★ Version choisie pour la soumission.</span>
               : <>
                   {meta.submittedVersion ? <span style={{ color: 'var(--ink65)' }}>La version {VERSION_LABELS[meta.submittedVersion]} est actuellement choisie pour la soumission. </span> : null}
-                  {editable ? <button className="ok" onClick={onChoose} disabled={busy} style={{ ...btn, fontSize: 11, padding: '5px 10px' }}>✓ Choisir cette version pour la soumission</button> : null}
+                  {editable ? <button className="ok" onClick={onChoose} disabled={busy} style={{ ...btn, fontSize: 11, padding: '5px 10px' }}>Choisir cette version pour la soumission</button> : null}
                 </>}
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function BudgetBar() {
         <span className={'statut ' + statut} data-testid="statut-badge">{statutLabel(statut)}</span>
         <span style={{ flex: 1 }} />
         {peutSoumettre && budgetId ? <button className={statut === 'brouillon' ? 'ok' : 'warn'} onClick={onSubmit} disabled={busy} style={btn}>{libelleSoumettre}</button> : null}
-        {!editable ? <span style={{ fontSize: 12, color: 'var(--blue2)' }}>{lectureSeule ? '👁 Consultation — lecture seule' : '🔒 En validation — lecture seule'}</span> : null}
+        {!editable ? <span style={{ fontSize: 12, color: 'var(--blue2)' }}>{lectureSeule ? 'Consultation, lecture seule' : 'En validation, lecture seule'}</span> : null}
       </div>
 
       {reprise ? <RepriseModal active={activeVersion} sources={autresRemplies} onClose={() => setReprise(false)} onValider={onReprise} /> : null}

@@ -57,7 +57,7 @@ function TxrMensuel({ a, editable, update }) {
   const td = { padding: '4px 6px', textAlign: 'right', whiteSpace: 'nowrap' };
   return (
     <details className="objCollapse" data-testid="txr-mensuel" open={ouvert} onToggle={(e) => setOuvert(e.currentTarget.open)} style={{ margin: '-6px 0 18px' }}>
-      <summary>Moduler le TXR mois par mois (facultatif){mod ? ' — TXR moyen appliqué : ' + txrEffectif(a).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' €/h' : ''}</summary>
+      <summary>Moduler le TXR mois par mois (facultatif){mod ? ' · TXR moyen appliqué : ' + txrEffectif(a).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' €/h' : ''}</summary>
       <div className="objCollapseBody">
         <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>
           Si votre recette par heure varie selon la saison (longues distances l'été, tarifs, type de transports), saisissez un TXR pour les mois concernés.
@@ -98,7 +98,7 @@ export default function ObjectifScreen() {
   if (!agenceNom) return <div className="card"><h2>Objectif</h2><p className="hint">Aucune agence n'est rattachée à votre profil.</p></div>;
   if (loading) return <div className="card"><h2>Objectif</h2><p className="hint">Chargement du budget…</p></div>;
   if (error) return <div className="card"><h2>Objectif</h2><p className="hint">Impossible de charger le budget : {error}</p></div>;
-  if (!a) return <div className="card"><h2>Objectif — {agenceNom}</h2><p className="hint">Budget indisponible.</p></div>;
+  if (!a) return <div className="card"><h2>Objectif · {agenceNom}</h2><p className="hint">Budget indisponible.</p></div>;
   // Structures (Siège, formation, réseau, exceptionnel) : lignes de CA et de masse salariale saisies par le CG
   if (estStructure(a)) return <StructureScreen />;
 
@@ -141,9 +141,9 @@ export default function ObjectifScreen() {
     <div className="card">
       <BudgetBar />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0 }}>Objectif 2027 — {agenceNom}</h2>
+        <h2 style={{ margin: 0 }}>Objectif 2027 · {agenceNom}</h2>
         <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {verrouCG ? <span style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--blue2)', color: 'var(--blue2)', background: 'var(--blue-light)' }}>🔒 Données historiques verrouillées par le CG</span> : null}
+          {verrouCG ? <span style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--blue2)', color: 'var(--blue2)', background: 'var(--blue-light)' }}>Historiques saisis par le contrôle de gestion</span> : null}
           <SaveIndicator status={saveStatus} />
         </span>
       </div>
@@ -151,9 +151,9 @@ export default function ObjectifScreen() {
       <div data-testid="contexte-2027" data-visite="contexte" style={{ margin: '14px 0 18px', padding: '14px 16px', border: '1px solid ' + (ctxOk ? 'var(--border)' : 'var(--violet)'), background: ctxOk ? 'var(--card2)' : 'var(--violet-light)' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
           <b style={{ fontSize: 15 }}>1. Perspectives &amp; contexte 2027</b>
-          <span style={{ fontSize: 11, fontWeight: 700, color: ctxOk ? 'var(--green)' : 'var(--orange)' }}>{ctxOk ? '✓ rédigé' : 'obligatoire — à rédiger en premier'}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: ctxOk ? 'var(--green)' : 'var(--orange)' }}>{ctxOk ? '✓ rédigé' : 'obligatoire, à rédiger en premier'}</span>
         </div>
-        <p className="hint" style={{ fontSize: 12, margin: '0 0 8px' }}>Avant de fixer votre objectif de CA et votre TXR cible, décrivez ce qui va changer en 2027 : contrats gagnés ou perdus (EHPAD, cliniques, transports réguliers), évolution de l'activité et de la concurrence, gardes, effectifs (départs, recrutements, saisonniers), véhicules, locaux… C'est ce texte qui justifie vos chiffres auprès du DR et de la direction.</p>
+        <p className="hint" style={{ fontSize: 12, margin: '0 0 8px' }}>Décrivez ce qui change en 2027 : contrats gagnés ou perdus, activité, concurrence, gardes, départs et recrutements, véhicules, locaux. Ce texte explique vos chiffres au DR et à la direction.</p>
         <textarea data-testid="contexte-texte" rows={5} data-saisie-dr={estSaisieDR(a, 'perspectives') ? '1' : undefined} value={a.perspectives || ''} onChange={texte('perspectives')} disabled={!editable} style={{ width: '100%' }}
           placeholder="Ex : renouvellement du contrat EHPAD en janvier (+8 % d'activité attendue), fin du contrat de la clinique X en juin, recrutement d'un CDD saisonnier en juillet, TXR attendu stable car mêmes tarifs…" />
         {!ctxOk ? <div data-testid="contexte-manque" style={{ fontSize: 12, color: 'var(--orange)', marginTop: 4 }}>Encore {contexteManque(a)} caractère{contexteManque(a) > 1 ? 's' : ''} au minimum pour débloquer l'objectif de CA et le TXR cible.</div> : null}
@@ -171,7 +171,7 @@ export default function ObjectifScreen() {
         </label>
         <label style={{ flex: 1, minWidth: 220 }}>
           <span style={{ display: 'block', fontSize: 12, color: 'var(--ink65)', marginBottom: 6 }}>
-            TXR cible <span className="objKpiHelp" title="Taux de recette par heure : chiffre d'affaires ÷ heures de conduite. Généralement proche du TXR réalisé en 2026.">?</span>
+            TXR cible <span className="objKpiHelp" title="CA par heure d'équipage. En général proche du TXR réalisé en 2026.">?</span>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="text" inputMode="decimal" placeholder="0" autoComplete="off" data-saisie-dr={estSaisieDR(a, 'targetTXR') ? '1' : undefined} value={valeur('targetTXR')} onBlur={fin('targetTXR')} onChange={nombre('targetTXR')} disabled={!editable || !ctxOk} title={!ctxOk ? 'Rédigez d\'abord les perspectives et le contexte 2027' : undefined} style={{ flex: 1 }} />
@@ -199,7 +199,7 @@ export default function ObjectifScreen() {
           <label className="objActChip checked"><input type="checkbox" checked disabled /> Sanitaire <span style={{ fontSize: 10, color: 'var(--ink65)' }}>obligatoire</span></label>
           <label className={'objActChip' + (a.actSai ? ' checked' : '')}><input type="checkbox" checked={!!a.actSai} onChange={activite('actSai')} disabled={!editable} data-testid="act-sai" /> Saisonnier</label>
           <label className={'objActChip' + (a.actTP ? ' checked' : '')}><input type="checkbox" checked={!!a.actTP} onChange={activite('actTP')} disabled={!editable} /> Transport de personnes</label>
-          <label className={'objActChip' + (a.actFun ? ' checked' : '')} title="Activité commerciale sans besoin d'équipage : CA saisi par mois dans Références CA, hors heures nécessaires, TXR et objectif"><input type="checkbox" checked={!!a.actFun} onChange={activite('actFun')} disabled={!editable} data-testid="act-fun-obj" /> Funéraire</label>
+          <label className={'objActChip' + (a.actFun ? ' checked' : '')} title="Activité sans équipage. Le CA se saisit par mois dans Références CA et n'entre pas dans le besoin d'heures."><input type="checkbox" checked={!!a.actFun} onChange={activite('actFun')} disabled={!editable} data-testid="act-fun-obj" /> Funéraire</label>
         </div>
       </div>
 
@@ -213,7 +213,7 @@ export default function ObjectifScreen() {
           {ref('histCA2025', 'CA 2025 (si disponible)', 'ex : 1 850 000')}
           {ref('histCA', 'CA 2026', 'ex : 2 200 000')}
           {ref('histTXR', 'TXR moyen réalisé 2026 (€/h)', 'ex : 42')}
-          {ref('targetAbsRate', 'Absentéisme cible % (maladie)', 'ex : 7', 'Taux d\'absence (maladie + accidents du travail) que vous anticipez pour 2027, en pourcentage. Référence réseau : environ 8%.')}
+          {ref('targetAbsRate', 'Absentéisme cible % (maladie)', 'ex : 7', 'Taux de maladie et d\'accidents du travail prévu pour 2027. Autour de 8 % dans le réseau.')}
           <div>
             <label style={lbl} htmlFor="obj-zone">Zone vacances scolaires</label>
             <select id="obj-zone" data-saisie-dr={estSaisieDR(a, 'schoolZone') ? '1' : undefined} value={a.schoolZone || 'B'} onChange={zone} disabled={!editable}>
@@ -255,7 +255,7 @@ export default function ObjectifScreen() {
             </div>
             {coh.caJourCible > 0 ? (
               <div style={{ marginTop: 12, fontSize: 12, color: 'var(--ink65)', padding: '8px 12px', background: 'var(--bg3)', border: '1px solid var(--border)' }}>
-                💡 <b>Référence CA cohérente pour une journée de semaine normale :</b> environ <b style={{ color: 'var(--accent-blue, var(--blue2))' }}>{euro(coh.caJourCible)}</b> ({coh.dispoHebdoMoy.toFixed(0)} h dispo ÷ 5 jours × {coh.txr} €/h). Si vos références CA dépassent significativement ce montant, des tensions HS apparaîtront.
+                <b>CA cohérent pour un jour de semaine normal :</b> environ <b style={{ color: 'var(--accent-blue, var(--blue2))' }}>{euro(coh.caJourCible)}</b> ({coh.dispoHebdoMoy.toFixed(0)} h dispo ÷ 5 jours × {coh.txr} €/h). Au-dessus, attendez-vous à des heures supplémentaires.
               </div>
             ) : null}
           </div>

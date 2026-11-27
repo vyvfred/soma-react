@@ -52,7 +52,7 @@ export default function AdminScreen() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: 14 }}>Administration — utilisateurs &amp; budgets</h2>
+      <h2 style={{ marginBottom: 14 }}>Administration : utilisateurs et budgets</h2>
 
       {msg ? (
         <div style={{ marginBottom: 16, padding: '10px 14px', border: '1px solid ' + (msg.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)'), background: msg.ok ? 'rgba(46,125,111,.10)' : 'rgba(196,83,0,.10)', fontSize: 13, color: msg.ok ? 'var(--green, #2e7d6f)' : 'var(--orange, #c45300)' }}>
@@ -62,8 +62,8 @@ export default function AdminScreen() {
 
       {/* Voir en tant que… (port de simulerRole) */}
       <div data-testid="voir-en-tant-que" style={{ marginBottom: 20, padding: '12px 14px', border: '1px solid var(--border)', background: 'var(--bg2)' }}>
-        <h3 style={{ fontSize: 14, margin: '0 0 6px' }}>👁 Voir en tant que…</h3>
-        <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>Simulez la vue d'un utilisateur sans vous déconnecter. Utile pour tester l'interface avant de la déployer.</p>
+        <h3 style={{ fontSize: 14, margin: '0 0 6px' }}>Voir en tant que…</h3>
+        <p className="hint" style={{ fontSize: 12, margin: '0 0 10px' }}>Voir SOMA comme un utilisateur, sans vous déconnecter.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[['rex', 'REX Exploitation', 'var(--violet)'], ['cg', 'Contrôleur de gestion', 'var(--blue)'], ['dr', 'Directeur Régional', '#2C3E7A'], ['df', 'Directeur Financier', '#4A235A'], ['dg', 'Direction', '#1A5276']].map(([r, l, c]) => (
             <button key={r} onClick={() => simuler(r)} style={{ width: 'auto', margin: 0, background: c, color: '#fff', border: 'none', fontWeight: 700, fontSize: 12, padding: '7px 12px' }}>{l}</button>
@@ -72,7 +72,7 @@ export default function AdminScreen() {
       </div>
 
       <fieldset disabled={lectureConsult} data-testid="fieldset-consultation" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-      {lectureConsult ? <p className="hint" data-testid="admin-consultation" style={{ fontSize: 12, marginBottom: 16 }}>👁 Administration en consultation : les comptes et les budgets sont visibles, aucune action n'est possible.</p> : null}
+      {lectureConsult ? <p className="hint" data-testid="admin-consultation" style={{ fontSize: 12, marginBottom: 16 }}>Administration en consultation : vous voyez les comptes et les budgets, sans pouvoir agir.</p> : null}
       {!lectureConsult ? (<>
       {/* Création de compte */}
       <h3 style={{ fontSize: 14, marginBottom: 10 }}>Créer un compte</h3>

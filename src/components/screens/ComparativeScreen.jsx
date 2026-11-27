@@ -53,10 +53,10 @@ export default function ComparativeScreen() {
   if (withData.length >= 2) {
     insight = '<b>' + withData.length + ' agences</b> disposent de données comparables. ';
     if (atypiques.length === 0) {
-      insight += "Aucune ne s'écarte significativement de la médiane réseau — l'ensemble est homogène.";
+      insight += "Aucune agence ne s'écarte nettement de la médiane du réseau.";
     } else {
       const ex = atypiques.slice(0, 3).map((a) => '<b>' + a.nom + '</b> (' + a.signaux[0] + ')');
-      insight += '<b>' + atypiques.length + '</b> se distingue' + (atypiques.length > 1 ? 'nt' : '') + ' de la médiane : ' + ex.join(', ') + (atypiques.length > 3 ? ', …' : '') + '. Les valeurs en orange signalent les écarts à examiner.';
+      insight += '<b>' + atypiques.length + '</b> se distingue' + (atypiques.length > 1 ? 'nt' : '') + ' de la médiane : ' + ex.join(', ') + (atypiques.length > 3 ? ', …' : '') + '. En orange, les écarts à regarder.';
     }
   }
 
@@ -64,7 +64,7 @@ export default function ComparativeScreen() {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}><h2 style={{ margin: 0 }}>Vue comparative — réseau</h2><button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button></div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}><h2 style={{ margin: 0 }}>Vue comparative du réseau</h2><button data-testid="actualiser" onClick={() => setK((x) => x + 1)} style={{ width: 'auto', margin: 0, fontSize: 11, padding: '6px 12px' }}>↺ Actualiser</button></div>
 
       <div className="kpis" style={{ marginBottom: 16 }}>
         <Kpi label="TXR médian réseau" value={fmt(medians.txr, 1, ' €/h')} note="2026" />

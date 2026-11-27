@@ -64,7 +64,7 @@ export function lignesFiche(f) {
   }
   l.push({ titre: 'Heures supplémentaires', valeur: '<b>' + f.hsParSalSem.toFixed(1) + ' h</b>/semaine par salarié roulant', verdict: f.medHSsal !== null ? 'Médiane réseau : ' + f.medHSsal.toFixed(1) + ' h/semaine' : '', type: 'neutre' });
   if (f.hs50Moy > 0) l.push({ titre: 'Structure des HS', valeur: '<b>' + pct(f.hs50Moy) + '</b> des heures à +50%', verdict: 'Cette part augmente le coût moyen des heures supplémentaires', type: 'warn' });
-  else l.push({ titre: 'Structure des HS', valeur: 'Toutes les heures à +25%', verdict: 'Répartition saine, pas de bascule dans les heures chères', type: 'ok' });
+  else l.push({ titre: 'Structure des HS', valeur: 'Toutes les heures à +25%', verdict: 'Pas d\'heures à +50 %', type: 'ok' });
   if (f.choix && f.choix.mesurable && f.choix.surcout > 0) l.push({ titre: 'Arbitrage social', valeur: 'Congés déplacés hors optimum · surcoût <b>' + euro(f.choix.surcout) + '</b>', verdict: 'Choix humain assumé, à valider', type: 'choix' });
   return l;
 }

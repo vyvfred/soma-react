@@ -65,14 +65,14 @@ function construireClasseurCharges(entites){
     reseau.push(ligne);
   });
   var aide = [
-    ['Classeur des charges ' + 'du réseau — budget 2027'],
+    ['Classeur des charges ' + 'du réseau, budget 2027'],
     [''],
     ['Feuille « Réseau » : une ligne par poste, une colonne par agence ou structure.'],
     ['• Montant annuel en euros : réparti sur l\'année selon la colonne « Répartition » de la ligne (« ÷ 12 » ou « prorata CA »).'],
     ['• Pourcentage du CA : écrivez par exemple « 3,2 % ». Le montant suit alors le CA mensuel de l\'agence.'],
     ['• Pour une autre répartition sur une seule agence : « 48000 prorata CA » ou « 48000 ÷ 12 ».'],
     ['• Case vide : la valeur actuelle dans SOMA n\'est pas modifiée. Pour mettre un poste à zéro, écrivez 0.'],
-    ['• « — » : poste non applicable (CA et charges de personnel sont calculés par SOMA pour les agences ; IS et participation sur le Siège seulement).'],
+    ['• « — » : poste sans objet (CA et charges de personnel sont calculés par SOMA pour les agences ; IS et participation sur le Siège seulement).'],
     ['• « mensuel » : le poste est saisi mois par mois dans la feuille « Mensuel ».'],
     [''],
     ['Feuille « Mensuel » (facultative) : une ligne Agence + Poste avec ses 12 montants. Elle prime sur la feuille Réseau pour ce poste.'],

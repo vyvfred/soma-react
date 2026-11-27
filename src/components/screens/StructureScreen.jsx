@@ -64,11 +64,11 @@ export default function StructureScreen() {
   return (
     <>
       <div className="card">
-        <h2 style={{ marginBottom: 6 }}>Budget 2027 — {LIB_STRUCTURES[a.name] || a.name}</h2>
+        <h2 style={{ marginBottom: 6 }}>Budget 2027 · {LIB_STRUCTURES[a.name] || a.name}</h2>
         <p className="hint" style={{ fontSize: 13, margin: 0 }}>
-          Structure hors agence, préparée par le contrôleur de gestion : pas d'activités sanitaire, assis, saisonnière ni funéraire, pas de calendrier ni d'équipe.
-          Créez autant de lignes de <b>chiffre d'affaires</b> et de <b>masse salariale</b> que nécessaire, nommez chacune et saisissez son montant mois par mois (ou « ÷12 » pour répartir un montant annuel).
-          Les autres charges se saisissent dans <b>Charges CG</b> ; le compte de résultat est dans <b>Prévisionnel</b>.
+          Structure préparée par le contrôleur de gestion, sans activités, calendrier ni équipe.
+          Créez les lignes de <b>chiffre d'affaires</b> et de <b>masse salariale</b> dont vous avez besoin et saisissez-les mois par mois (÷12 répartit un montant annuel).
+          Les autres charges sont dans <b>Charges CG</b>, le compte de résultat dans <b>Prévisionnel</b>.
         </p>
         <div className="kpis" style={{ marginTop: 14 }}>
           <div className="kpi"><div className="label">CA 2027</div><div className="value" data-testid="structure-ca">{euro(Math.round(ca))}</div><div className="note">{lignesStructure(a, 'lignesCA').length} ligne(s)</div></div>
